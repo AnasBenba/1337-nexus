@@ -1,0 +1,43 @@
+# Git metadata
+.git/
+.gitignore
+
+# Secrets and local environment
+.env
+**/.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.crt
+
+# Local dependencies / caches
+**/node_modules/
+**/__pycache__/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.venv/
+**/venv/
+
+# Build and test output
+**/dist/
+**/build/
+coverage.xml
+htmlcov/
+artifacts/
+playwright-report/
+test-results/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Logs / temporary files
+*.log
+*.tmp
+*.temp
