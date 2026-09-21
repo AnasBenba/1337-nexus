@@ -1,5 +1,7 @@
 ARG NODE_IMAGE=node:22-alpine
 
+ARG NGINX_IMAGE=nginx:1.27-alpine
+
 FROM ${NODE_IMAGE} AS frontend-build
 
 WORKDIR /src
@@ -13,7 +15,6 @@ COPY frontend ./frontend
 RUN npm run build --prefix frontend
 
 
-ARG NGINX_IMAGE=nginx:1.27-alpine
 
 FROM ${NGINX_IMAGE}
 
