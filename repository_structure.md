@@ -1,3 +1,4 @@
+```text
 1337-nexus/
 │
 ├── backend/
@@ -361,3 +362,4 @@
 ├── .editorconfig
 ├── Makefile
 └── README.md
+```
