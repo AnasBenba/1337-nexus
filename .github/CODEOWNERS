@@ -1,0 +1,232 @@
+# 1337 Nexus CODEOWNERS
+#
+# Replace the GitHub usernames only if a team member's account changes.
+#
+# IMPORTANT:
+# CODEOWNERS uses the LAST matching rule for a path.
+# Keep broad/shared rules before more specific feature rules.
+
+
+# ============================================================
+# DEFAULT
+# ============================================================
+
+* @AnasBenba
+
+
+# ============================================================
+# SHARED APPLICATION AREAS
+# ============================================================
+# These rules come before the specific feature rules below.
+# More specific paths later in this file take precedence.
+
+# Backend application composition
+/backend/app/ @AnasBenba @souel-bo @zombieB0Y @aylaaouf @Yassine-Aitmouloud
+
+# Frontend application shell
+/frontend/src/app/ @AnasBenba @souel-bo @zombieB0Y @aylaaouf @Yassine-Aitmouloud
+/frontend/src/components/ui/ @AnasBenba @souel-bo @zombieB0Y @aylaaouf @Yassine-Aitmouloud
+
+# Shared frontend configuration and dependencies
+/frontend/package.json @AnasBenba @souel-bo @zombieB0Y @aylaaouf @Yassine-Aitmouloud
+/frontend/package-lock.json @AnasBenba @souel-bo @zombieB0Y @aylaaouf @Yassine-Aitmouloud
+
+# Shared documentation
+/docs/api.md @AnasBenba @souel-bo @zombieB0Y @aylaaouf @Yassine-Aitmouloud
+/docs/frontend.md @AnasBenba @souel-bo @zombieB0Y @aylaaouf @Yassine-Aitmouloud
+/docs/design-system.md @AnasBenba @souel-bo @zombieB0Y @aylaaouf @Yassine-Aitmouloud
+
+# Shared database migrations
+/backend/alembic/versions/ @AnasBenba @souel-bo @zombieB0Y @aylaaouf @Yassine-Aitmouloud
+
+# Shared unit tests
+/backend/tests/unit/ @souel-bo @zombieB0Y @aylaaouf @Yassine-Aitmouloud
+
+
+# ============================================================
+# ANAS — DEVOPS & INFRASTRUCTURE
+# ============================================================
+
+/backend/app/main.py @AnasBenba
+/backend/app/api.py @AnasBenba
+
+/backend/app/core/config.py @AnasBenba
+/backend/app/core/db.py @AnasBenba
+/backend/app/core/errors.py @AnasBenba
+/backend/app/core/logging.py @AnasBenba
+/backend/app/core/uow.py @AnasBenba
+
+/backend/app/flows/landing/ @AnasBenba
+/backend/app/user/dashboard/ @AnasBenba
+
+/backend/app/realtime/server.py @AnasBenba
+/backend/app/realtime/validation.py @AnasBenba
+
+/backend/app/shared/models.py @AnasBenba
+/backend/app/shared/pagination.py @AnasBenba
+
+/backend/app/cli/seed.py @AnasBenba
+/backend/app/cli/export_openapi.py @AnasBenba
+
+/backend/alembic/env.py @AnasBenba
+/backend/alembic/script.py.mako @AnasBenba
+/backend/tests/conftest.py @AnasBenba
+
+/backend/pyproject.toml @AnasBenba
+/backend/requirements.lock @AnasBenba
+/backend/Dockerfile @AnasBenba
+/backend/entrypoint.sh @AnasBenba
+
+/frontend/src/app/App.tsx @AnasBenba
+/frontend/src/app/main.tsx @AnasBenba
+/frontend/src/app/routes/ @AnasBenba
+/frontend/src/flows/landing/ @AnasBenba
+/frontend/src/flows/user/dashboard/ @AnasBenba
+
+/frontend/src/components/layout/ @AnasBenba
+/frontend/src/lib/api-client.ts @AnasBenba
+/frontend/src/lib/socket.ts @AnasBenba
+/frontend/src/lib/query-client.ts @AnasBenba
+/frontend/src/lib/utils.ts @AnasBenba
+/frontend/src/stores/ @AnasBenba
+/frontend/src/types/ @AnasBenba
+
+/frontend/vite.config.ts @AnasBenba
+/frontend/vitest.setup.ts @AnasBenba
+/frontend/tsconfig.json @AnasBenba
+/frontend/tsconfig.app.json @AnasBenba
+/frontend/tsconfig.node.json @AnasBenba
+/frontend/eslint.config.js @AnasBenba
+/frontend/.prettierrc @AnasBenba
+/frontend/components.json @AnasBenba
+
+/nginx/ @AnasBenba
+/deploy/ @AnasBenba
+/.github/ @AnasBenba
+/.gitignore @AnasBenba
+/.dockerignore @AnasBenba
+/.editorconfig @AnasBenba
+/Makefile @AnasBenba
+/docs/architecture.md @AnasBenba
+/docs/operations.md @AnasBenba
+/README.md @AnasBenba
+
+
+# ============================================================
+# SFY — AUTHENTICATION / SECURITY / CAMPUS / ADMINISTRATION
+# ============================================================
+
+/backend/app/flows/authentication/ @souel-bo
+/backend/app/flows/role_selection/ @souel-bo
+
+/backend/app/admin/ @souel-bo
+/backend/app/user/profile/ @souel-bo
+
+/backend/app/core/security.py @souel-bo
+/backend/app/core/middleware.py @souel-bo
+/backend/app/realtime/auth.py @souel-bo
+/backend/app/cli/admin.py @souel-bo
+
+/frontend/src/flows/authentication/ @souel-bo
+/frontend/src/flows/admin/ @souel-bo
+/frontend/src/flows/user/profile/ @souel-bo
+
+
+# ============================================================
+# ZOUBAIR — AI CO-PILOT / WHITEBOARD
+# ============================================================
+
+/backend/app/user/copilot/ @zombieB0Y
+/backend/app/user/projects/refine_project/ @zombieB0Y
+
+/backend/app/collaboration/canvas/ @zombieB0Y
+/backend/app/jobs/ @zombieB0Y
+/backend/app/shared/ai/ @zombieB0Y
+/backend/app/cli/ingest_subjects.py @zombieB0Y
+
+/backend/content/ @zombieB0Y
+
+/backend/tests/crdt/ @zombieB0Y
+/backend/tests/realtime/ @AnasBenba @zombieB0Y @Yassine-Aitmouloud
+
+/frontend/src/flows/user/copilot/ @zombieB0Y
+/frontend/src/flows/user/projects/refine_project/ @zombieB0Y
+/frontend/src/lib/sse-client.ts @zombieB0Y
+
+
+# ============================================================
+# AYOUB — RECRUITMENT / TEAMS / KANBAN / GITHUB
+# ============================================================
+
+/backend/app/user/projects/my_projects/ @aylaaouf
+/backend/app/user/projects/recommended_projects/ @aylaaouf
+/backend/app/user/projects/create_project/ @aylaaouf
+/backend/app/user/projects/edit_project/ @aylaaouf
+/backend/app/user/projects/publish_project/ @aylaaouf
+/backend/app/user/projects/archive_project/ @aylaaouf
+
+/backend/app/user/opportunities/ @aylaaouf
+/backend/app/user/quick_actions/ @aylaaouf
+/backend/app/teams/ @aylaaouf
+/backend/app/collaboration/board/ @aylaaouf
+/backend/app/integrations/ @aylaaouf
+
+/frontend/src/flows/user/projects/my_projects/ @aylaaouf
+/frontend/src/flows/user/projects/recommended_projects/ @aylaaouf
+/frontend/src/flows/user/projects/create_project/ @aylaaouf
+/frontend/src/flows/user/projects/edit_project/ @aylaaouf
+/frontend/src/flows/user/projects/publish_project/ @aylaaouf
+/frontend/src/flows/user/projects/archive_project/ @aylaaouf
+/frontend/src/flows/user/projects/refine_project/ @zombieB0Y
+
+/frontend/src/flows/user/opportunities/ @aylaaouf
+/frontend/src/flows/user/quick_actions/ @aylaaouf
+
+
+# ============================================================
+# YASSIN — PITCHES / CHAT / GAMIFICATION / NOTIFICATIONS
+# ============================================================
+
+/backend/app/user/pitches/ @Yassine-Aitmouloud
+
+/backend/app/user/messages/ @Yassine-Aitmouloud
+/backend/app/collaboration/chat/ @Yassine-Aitmouloud
+/backend/app/gamification/ @Yassine-Aitmouloud
+
+/backend/app/realtime/presence.py @Yassine-Aitmouloud
+/backend/app/realtime/rooms.py @Yassine-Aitmouloud
+
+/frontend/src/flows/user/pitches/ @Yassine-Aitmouloud
+/frontend/src/flows/user/messages/ @Yassine-Aitmouloud
+/frontend/src/flows/user/notifications/ @Yassine-Aitmouloud
+
+
+# ============================================================
+# SHARED REALTIME / DATABASE / TESTING CROSS-OWNERSHIP
+# ============================================================
+
+/backend/tests/integration/ @AnasBenba @souel-bo @zombieB0Y @aylaaouf @Yassine-Aitmouloud
+/backend/tests/realtime/ @AnasBenba @zombieB0Y @Yassine-Aitmouloud
+
+
+# ============================================================
+# NOTES
+# ============================================================
+#
+# 1. main.py and api.py are owned by Anas because they are
+#    application composition/entry-point files.
+#
+# 2. The feature owners still own their feature routers/services,
+#    including both backend and frontend implementations.
+#
+# 3. Yassin's Pitch feature is now explicitly represented at:
+#
+#      backend/app/user/pitches/
+#      frontend/src/flows/user/pitches/
+#
+# 4. Ayoub owns normal project lifecycle workflows.
+#    Zoubair owns the AI-assisted refine_project workflow.
+#
+# 5. Shared files should be changed with coordination from the
+#    relevant owners rather than treated as one developer's
+#    private feature area.
