@@ -1,365 +1,336 @@
 ```text
 1337-nexus/
 │
-├── backend/
+├── backend/                                      # SHARED — ALL BACKEND DEVELOPERS
 │   │
-│   ├── app/
-│   │   │
-│   │   ├── main.py
-│   │   ├── api.py
-│   │   │
-│   │   ├── core/
-│   │   │   ├── config.py
-│   │   │   ├── db.py
-│   │   │   ├── security.py
-│   │   │   ├── errors.py
-│   │   │   ├── middleware.py
-│   │   │   ├── logging.py
-│   │   │   └── uow.py
-│   │   │
-│   │   ├── flows/
-│   │   │   │
-│   │   │   ├── landing/
-│   │   │   │   ├── router.py
-│   │   │   │   ├── schemas.py
-│   │   │   │   └── service.py
-│   │   │   │
-│   │   │   ├── authentication/
-│   │   │   │   │
-│   │   │   │   ├── login/
-│   │   │   │   │   ├── router.py
-│   │   │   │   │   ├── schemas.py
-│   │   │   │   │   ├── service.py
-│   │   │   │   │   └── repository.py
-│   │   │   │   │
-│   │   │   │   ├── oauth/
-│   │   │   │   │   ├── router.py
-│   │   │   │   │   ├── schemas.py
-│   │   │   │   │   ├── service.py
-│   │   │   │   │   └── repository.py
-│   │   │   │   │
-│   │   │   │   ├── refresh-session/
-│   │   │   │   │   ├── router.py
-│   │   │   │   │   ├── service.py
-│   │   │   │   │   └── repository.py
-│   │   │   │   │
-│   │   │   │   └── logout/
-│   │   │   │       ├── router.py
-│   │   │   │       └── service.py
-│   │   │   │
-│   │   │   └── role-selection/
-│   │   │       ├── service.py
-│   │   │       └── schemas.py
-│   │   │
-│   │   ├── admin/
-│   │   │   │
-│   │   │   ├── dashboard/
-│   │   │   │   ├── router.py
-│   │   │   │   ├── schemas.py
-│   │   │   │   └── service.py
-│   │   │   │
-│   │   │   ├── users/
-│   │   │   │   │
-│   │   │   │   ├── list-users/
-│   │   │   │   │   ├── router.py
-│   │   │   │   │   ├── schemas.py
-│   │   │   │   │   ├── service.py
-│   │   │   │   │   └── repository.py
-│   │   │   │   │
-│   │   │   │   ├── view-user/
-│   │   │   │   │   ├── router.py
-│   │   │   │   │   ├── schemas.py
-│   │   │   │   │   └── service.py
-│   │   │   │   │
-│   │   │   │   ├── manage-user/
-│   │   │   │   │   ├── router.py
-│   │   │   │   │   ├── schemas.py
-│   │   │   │   │   └── service.py
-│   │   │   │   │
-│   │   │   │   └── suspend-user/
-│   │   │   │       ├── router.py
-│   │   │   │       ├── schemas.py
-│   │   │   │       └── service.py
-│   │   │   │
-│   │   │   ├── projects/
-│   │   │   │   │
-│   │   │   │   ├── view-projects/
-│   │   │   │   ├── review-project/
-│   │   │   │   ├── moderate-project/
-│   │   │   │   └── feature-project/
-│   │   │   │
-│   │   │   ├── campuses/
-│   │   │   │   ├── view-campus/
-│   │   │   │   ├── create-campus/
-│   │   │   │   └── manage-campus/
-│   │   │   │
-│   │   │   ├── moderation/
-│   │   │   │   ├── flags/
-│   │   │   │   └── reports/
-│   │   │   │
-│   │   │   └── configuration/
-│   │   │       ├── platform-settings/
-│   │   │       └── system-settings/
-│   │   │
-│   │   ├── user/
-│   │   │   │
-│   │   │   ├── dashboard/
-│   │   │   │   ├── router.py
-│   │   │   │   ├── schemas.py
-│   │   │   │   └── service.py
-│   │   │   │
-│   │   │   ├── projects/
-│   │   │   │   │
-│   │   │   │   ├── my-projects/
-│   │   │   │   │   ├── router.py
-│   │   │   │   │   └── service.py
-│   │   │   │   │
-│   │   │   │   ├── recommended-projects/
-│   │   │   │   │   ├── router.py
-│   │   │   │   │   └── service.py
-│   │   │   │   │
-│   │   │   │   ├── create-project/
-│   │   │   │   │   ├── router.py
-│   │   │   │   │   ├── schemas.py
-│   │   │   │   │   ├── service.py
-│   │   │   │   │   └── repository.py
-│   │   │   │   │
-│   │   │   │   ├── edit-project/
-│   │   │   │   ├── publish-project/
-│   │   │   │   ├── archive-project/
-│   │   │   │   └── refine-project/
-│   │   │   │       ├── router.py
-│   │   │   │       ├── schemas.py
-│   │   │   │       └── service.py
-│   │   │   │
-│   │   │   ├── opportunities/
-│   │   │   │   │
-│   │   │   │   ├── browse-opportunities/
-│   │   │   │   ├── view-opportunity/
-│   │   │   │   ├── apply/
-│   │   │   │   └── withdraw-application/
-│   │   │   │
-│   │   │   ├── messages/
-│   │   │   │   ├── team-chat/
-│   │   │   │   ├── direct-message/
-│   │   │   │   └── notifications/
-│   │   │   │
-│   │   │   ├── copilot/
-│   │   │   │   │
-│   │   │   │   ├── ask/
-│   │   │   │   │   ├── router.py
-│   │   │   │   │   ├── schemas.py
-│   │   │   │   │   └── service.py
-│   │   │   │   │
-│   │   │   │   ├── retrieve-curriculum/
-│   │   │   │   │   ├── router.py
-│   │   │   │   │   ├── schemas.py
-│   │   │   │   │   └── service.py
-│   │   │   │   │
-│   │   │   │   ├── threads/
-│   │   │   │   │   ├── router.py
-│   │   │   │   │   └── service.py
-│   │   │   │   │
-│   │   │   │   └── cancel-job/
-│   │   │   │       ├── router.py
-│   │   │   │       └── service.py
-│   │   │   │
-│   │   │   ├── quick-actions/
-│   │   │   │   ├── create-project/
-│   │   │   │   ├── find-team/
-│   │   │   │   └── continue-project/
-│   │   │   │
-│   │   │   └── profile/
-│   │   │       ├── view-profile/
-│   │   │       ├── edit-profile/
-│   │   │       └── settings/
-│   │   │
-│   │   ├── teams/
-│   │   │   ├── create-team/
-│   │   │   ├── invite-member/
-│   │   │   ├── accept-member/
-│   │   │   └── remove-member/
-│   │   │
-│   │   ├── collaboration/
-│   │   │   │
-│   │   │   ├── board/
-│   │   │   │   ├── create-board/
-│   │   │   │   ├── create-column/
-│   │   │   │   ├── move-card/
-│   │   │   │   └── delete-column/
-│   │   │   │
-│   │   │   ├── canvas/
-│   │   │   │   ├── join-canvas/
-│   │   │   │   ├── send-update/
-│   │   │   │   └── compact-document/
-│   │   │   │
-│   │   │   └── chat/
-│   │   │       ├── send-team-message/
-│   │   │       ├── send-direct-message/
-│   │   │       ├── mark-message-read/
-│   │   │       └── reconnect/
-│   │   │
-│   │   ├── integrations/
-│   │   │   ├── github/
-│   │   │   │   ├── refresh-activity/
-│   │   │   │   └── view-activity/
-│   │   │   └── ...
-│   │   │
-│   │   ├── gamification/
-│   │   │   ├── view-xp/
-│   │   │   ├── view-badges/
-│   │   │   └── view-leaderboard/
-│   │   │
-│   │   ├── realtime/
-│   │   │   ├── server.py
-│   │   │   ├── auth.py
-│   │   │   ├── presence.py
-│   │   │   ├── rooms.py
-│   │   │   └── validation.py
-│   │   │
-│   │   ├── jobs/
-│   │   │   ├── worker.py
-│   │   │   ├── registry.py
-│   │   │   └── scheduler.py
-│   │   │
-│   │   ├── shared/
-│   │   │   ├── models.py
-│   │   │   ├── pagination.py
-│   │   │   └── ai/
-│   │   │       ├── provider.py
-│   │   │       ├── client.py
-│   │   │       ├── embeddings.py
-│   │   │       ├── tokenizer.py
-│   │   │       └── stub.py
-│   │   │
-│   │   └── cli/
-│   │       ├── seed.py
-│   │       ├── ingest_subjects.py
-│   │       ├── export_openapi.py
-│   │       └── admin.py
+│   ├── app/                                      # SHARED — ALL BACKEND DEVELOPERS
 │   │
-│   ├── alembic/
-│   │   ├── env.py
-│   │   ├── script.py.mako
-│   │   └── versions/
+│   ├── main.py                                   # ANAS
+│   ├── api.py                                    # ANAS
 │   │
-│   ├── content/
-│   │   └── subjects/
+│   ├── core/                                     # SHARED BACKEND INFRASTRUCTURE
+│   │   ├── config.py                             # ANAS
+│   │   ├── db.py                                 # ANAS
+│   │   ├── security.py                           # SFY
+│   │   ├── errors.py                             # ANAS
+│   │   ├── middleware.py                         # SFY
+│   │   ├── logging.py                            # ANAS
+│   │   └── uow.py                                # ANAS
 │   │
-│   ├── tests/
-│   │   ├── unit/
-│   │   ├── integration/
-│   │   ├── realtime/
-│   │   ├── crdt/
-│   │   └── conftest.py
+│   ├── flows/                                    # APPLICATION ENTRY FLOWS
+│   │   │
+│   │   ├── landing/                              # ANAS
+│   │   │   ├── router.py                         # ANAS
+│   │   │   ├── schemas.py                        # ANAS
+│   │   │   └── service.py                        # ANAS
+│   │   │
+│   │   ├── authentication/                       # SFY
+│   │   │   │
+│   │   │   ├── login/                            # SFY
+│   │   │   │   ├── router.py                     # SFY
+│   │   │   │   ├── schemas.py                    # SFY
+│   │   │   │   ├── service.py                    # SFY
+│   │   │   │   └── repository.py                 # SFY
+│   │   │   │
+│   │   │   ├── oauth/                            # SFY
+│   │   │   │   ├── router.py                     # SFY
+│   │   │   │   ├── schemas.py                    # SFY
+│   │   │   │   ├── service.py                    # SFY
+│   │   │   │   └── repository.py                 # SFY
+│   │   │   │
+│   │   │   ├── refresh_session/                  # SFY
+│   │   │   │   ├── router.py                     # SFY
+│   │   │   │   ├── service.py                    # SFY
+│   │   │   │   └── repository.py                 # SFY
+│   │   │   │
+│   │   │   └── logout/                           # SFY
+│   │   │       ├── router.py                     # SFY
+│   │   │       └── service.py                    # SFY
+│   │   │
+│   │   └── role_selection/                       # SFY
+│   │       ├── service.py                        # SFY
+│   │       └── schemas.py                        # SFY
 │   │
-│   ├── pyproject.toml
-│   ├── requirements.lock
-│   ├── Dockerfile
-│   └── entrypoint.sh
+│   ├── admin/                                    # SFY
+│   │   ├── dashboard/                            # SFY
+│   │   │   ├── router.py                         # SFY
+│   │   │   ├── schemas.py                        # SFY
+│   │   │   └── service.py                        # SFY
+│   │   │
+│   │   ├── users/                                # SFY
+│   │   │   ├── list_users/                       # SFY
+│   │   │   ├── view_user/                        # SFY
+│   │   │   ├── manage_user/                      # SFY
+│   │   │   └── suspend_user/                     # SFY
+│   │   │
+│   │   ├── projects/                             # SFY
+│   │   │   ├── view_projects/                    # SFY
+│   │   │   ├── review_project/                   # SFY
+│   │   │   ├── moderate_project/                # SFY
+│   │   │   └── feature_project/                  # SFY
+│   │   │
+│   │   ├── campuses/                             # SFY
+│   │   │   ├── view_campus/                      # SFY
+│   │   │   ├── create_campus/                    # SFY
+│   │   │   └── manage_campus/                    # SFY
+│   │   │
+│   │   ├── moderation/                           # SFY
+│   │   │   ├── flags/                            # SFY
+│   │   │   └── reports/                          # SFY
+│   │   │
+│   │   └── configuration/                       # SFY
+│   │       ├── platform_settings/               # SFY
+│   │       └── system_settings/                 # SFY
+│   │
+│   ├── user/                                     # SHARED — FEATURE OWNERS BELOW
+│   │   │
+│   │   ├── dashboard/                            # ANAS
+│   │   │   ├── router.py                         # ANAS
+│   │   │   ├── schemas.py                        # ANAS
+│   │   │   └── service.py                        # ANAS
+│   │   │
+│   │   ├── projects/                             # AYOUB + ZOUBAIR
+│   │   │   ├── my_projects/                      # AYOUB
+│   │   │   ├── recommended_projects/             # AYOUB
+│   │   │   ├── create_project/                   # AYOUB
+│   │   │   ├── edit_project/                     # AYOUB
+│   │   │   ├── publish_project/                 # AYOUB
+│   │   │   ├── archive_project/                # AYOUB
+│   │   │   └── refine_project/                  # ZOUBAIR
+│   │   │
+│   │   ├── opportunities/                        # AYOUB
+│   │   │   ├── browse_opportunities/             # AYOUB
+│   │   │   ├── view_opportunity/                 # AYOUB
+│   │   │   ├── apply/                            # AYOUB
+│   │   │   └── withdraw_application/             # AYOUB
+│   │   │
+│   │   ├── messages/                             # YASSIN
+│   │   │   ├── team_chat/                        # YASSIN
+│   │   │   ├── direct_message/                   # YASSIN
+│   │   │   └── notifications/                   # YASSIN
+│   │   │
+│   │   ├── copilot/                              # ZOUBAIR
+│   │   │   ├── ask/                              # ZOUBAIR
+│   │   │   │   ├── router.py                     # ZOUBAIR
+│   │   │   │   ├── schemas.py                    # ZOUBAIR
+│   │   │   │   └── service.py                    # ZOUBAIR
+│   │   │   │
+│   │   │   ├── retrieve_curriculum/              # ZOUBAIR
+│   │   │   │   ├── router.py                     # ZOUBAIR
+│   │   │   │   ├── schemas.py                    # ZOUBAIR
+│   │   │   │   └── service.py                    # ZOUBAIR
+│   │   │   │
+│   │   │   ├── threads/                          # ZOUBAIR
+│   │   │   │   ├── router.py                     # ZOUBAIR
+│   │   │   │   └── service.py                    # ZOUBAIR
+│   │   │   │
+│   │   │   └── cancel_job/                       # ZOUBAIR
+│   │   │       ├── router.py                     # ZOUBAIR
+│   │   │       └── service.py                    # ZOUBAIR
+│   │   │
+│   │   ├── quick_actions/                        # AYOUB
+│   │   │   ├── create_project/                   # AYOUB
+│   │   │   ├── find_team/                       # AYOUB
+│   │   │   └── continue_project/                # AYOUB
+│   │   │
+│   │   └── profile/                              # SFY
+│   │       ├── view_profile/                     # SFY
+│   │       ├── edit_profile/                     # SFY
+│   │       └── settings/                        # SFY
+│   │
+│   ├── teams/                                    # AYOUB
+│   │   ├── create_team/                          # AYOUB
+│   │   ├── invite_member/                        # AYOUB
+│   │   ├── accept_member/                        # AYOUB
+│   │   └── remove_member/                        # AYOUB
+│   │
+│   ├── collaboration/                            # FEATURE OWNERS BELOW
+│   │   │
+│   │   ├── board/                                # AYOUB
+│   │   │   ├── create_board/                     # AYOUB
+│   │   │   ├── create_column/                    # AYOUB
+│   │   │   ├── move_card/                        # AYOUB
+│   │   │   └── delete_column/                    # AYOUB
+│   │   │
+│   │   ├── canvas/                               # ZOUBAIR
+│   │   │   ├── join_canvas/                     # ZOUBAIR
+│   │   │   ├── send_update/                     # ZOUBAIR
+│   │   │   └── compact_document/                # ZOUBAIR
+│   │   │
+│   │   └── chat/                                 # YASSIN
+│   │       ├── send_team_message/                # YASSIN
+│   │       ├── send_direct_message/             # YASSIN
+│   │       ├── mark_message_read/               # YASSIN
+│   │       └── reconnect/                       # YASSIN
+│   │
+│   ├── integrations/                             # AYOUB
+│   │   └── github/                               # AYOUB
+│   │       ├── refresh_activity/                 # AYOUB
+│   │       └── view_activity/                    # AYOUB
+│   │
+│   ├── gamification/                             # YASSIN
+│   │   ├── view_xp/                              # YASSIN
+│   │   ├── view_badges/                          # YASSIN
+│   │   └── view_leaderboard/                    # YASSIN
+│   │
+│   ├── realtime/                                 # SHARED — OWNERS BY FUNCTION
+│   │   ├── server.py                             # ANAS
+│   │   ├── auth.py                               # SFY
+│   │   ├── presence.py                           # YASSIN
+│   │   ├── rooms.py                              # YASSIN
+│   │   └── validation.py                         # ANAS
+│   │
+│   ├── jobs/                                     # ZOUBAIR
+│   │   ├── worker.py                             # ZOUBAIR
+│   │   ├── registry.py                           # ZOUBAIR
+│   │   └── scheduler.py                          # ZOUBAIR
+│   │
+│   ├── shared/                                   # SHARED BACKEND
+│   │   ├── models.py                             # ANAS
+│   │   ├── pagination.py                         # ANAS
+│   │   └── ai/                                   # ZOUBAIR
+│   │       ├── provider.py                       # ZOUBAIR
+│   │       ├── client.py                         # ZOUBAIR
+│   │       ├── embeddings.py                     # ZOUBAIR
+│   │       ├── tokenizer.py                      # ZOUBAIR
+│   │       └── stub.py                           # ZOUBAIR
+│   │
+│   └── cli/                                     # SHARED / FEATURE OWNERS
+│       ├── seed.py                               # ANAS
+│       ├── ingest_subjects.py                   # ZOUBAIR
+│       ├── export_openapi.py                    # ANAS
+│       └── admin.py                              # SFY
 │
-├── frontend/
+│   ├── alembic/                                  # SHARED BACKEND
+│   │   ├── env.py                                # ANAS
+│   │   ├── script.py.mako                        # ANAS
+│   │   └── versions/                             # ALL BACKEND DEVELOPERS
+│   │
+│   ├── content/                                  # ZOUBAIR
+│   │   └── subjects/                             # ZOUBAIR
+│   │
+│   ├── tests/                                    # EACH DEVELOPER TESTS THEIR FEATURES
+│   │   ├── unit/                                 # FEATURE OWNER
+│   │   ├── integration/                          # ANAS + FEATURE OWNERS
+│   │   ├── realtime/                             # ANAS + ZOUBAIR
+│   │   ├── crdt/                                 # ZOUBAIR
+│   │   └── conftest.py                           # ANAS
+│   │
+│   ├── pyproject.toml                             # ANAS
+│   ├── requirements.lock                          # ANAS
+│   ├── Dockerfile                                 # ANAS
+│   └── entrypoint.sh                              # ANAS
+│
+├── frontend/                                     # ALL FEATURE DEVELOPERS
 │   │
 │   ├── src/
 │   │   │
-│   │   ├── app/
-│   │   │   ├── App.tsx
-│   │   │   ├── main.tsx
-│   │   │   └── routes/
+│   │   ├── app/                                  # ANAS + ALL
+│   │   │   ├── App.tsx                           # ANAS
+│   │   │   ├── main.tsx                          # ANAS
+│   │   │   └── routes/                           # ANAS
 │   │   │
 │   │   ├── flows/
 │   │   │   │
-│   │   │   ├── landing/
-│   │   │   │   ├── components/
-│   │   │   │   └── pages/
+│   │   │   ├── landing/                          # ANAS
+│   │   │   │   ├── components/                   # ANAS
+│   │   │   │   └── pages/                        # ANAS
 │   │   │   │
-│   │   │   ├── authentication/
-│   │   │   │   ├── login/
-│   │   │   │   ├── oauth/
-│   │   │   │   └── callback/
+│   │   │   ├── authentication/                   # SFY
+│   │   │   │   ├── login/                        # SFY
+│   │   │   │   ├── oauth/                        # SFY
+│   │   │   │   └── callback/                     # SFY
 │   │   │   │
-│   │   │   ├── admin/
-│   │   │   │   ├── dashboard/
-│   │   │   │   ├── users/
-│   │   │   │   ├── projects/
-│   │   │   │   ├── campuses/
-│   │   │   │   ├── moderation/
-│   │   │   │   └── configuration/
+│   │   │   ├── admin/                            # SFY
+│   │   │   │   ├── dashboard/                    # SFY
+│   │   │   │   ├── users/                        # SFY
+│   │   │   │   ├── projects/                     # SFY
+│   │   │   │   ├── campuses/                     # SFY
+│   │   │   │   ├── moderation/                   # SFY
+│   │   │   │   └── configuration/               # SFY
 │   │   │   │
-│   │   │   └── user/
-│   │   │       ├── dashboard/
-│   │   │       ├── projects/
-│   │   │       ├── opportunities/
-│   │   │       ├── messages/
-│   │   │       ├── copilot/
-│   │   │       │   ├── ask/
-│   │   │       │   ├── threads/
-│   │   │       │   └── components/
-│   │   │       ├── notifications/
-│   │   │       ├── quick-actions/
-│   │   │       └── profile/
+│   │   │   └── user/                             # FEATURE OWNERS
+│   │   │       ├── dashboard/                    # ANAS
+│   │   │       ├── projects/                     # AYOUB + ZOUBAIR
+│   │   │       │   ├── my_projects/              # AYOUB
+│   │   │       │   ├── recommended_projects/     # AYOUB
+│   │   │       │   ├── create_project/           # AYOUB
+│   │   │       │   ├── edit_project/             # AYOUB
+│   │   │       │   ├── publish_project/          # AYOUB
+│   │   │       │   ├── archive_project/          # AYOUB
+│   │   │       │   └── refine_project/           # ZOUBAIR
+│   │   │       │
+│   │   │       ├── opportunities/                # AYOUB
+│   │   │       ├── messages/                     # YASSIN
+│   │   │       ├── copilot/                      # ZOUBAIR
+│   │   │       │   ├── ask/                      # ZOUBAIR
+│   │   │       │   ├── threads/                  # ZOUBAIR
+│   │   │       │   └── components/               # ZOUBAIR
+│   │   │       ├── notifications/                # YASSIN
+│   │   │       ├── quick_actions/                # AYOUB
+│   │   │       └── profile/                      # SFY
 │   │   │
-│   │   ├── components/
-│   │   │   ├── ui/
-│   │   │   └── layout/
+│   │   ├── components/                           # SHARED FRONTEND
+│   │   │   ├── ui/                               # ANAS + ALL FRONTEND
+│   │   │   └── layout/                           # ANAS
 │   │   │
-│   │   ├── lib/
-│   │   │   ├── api-client.ts
-│   │   │   ├── socket.ts
-│   │   │   ├── sse-client.ts
-│   │   │   ├── query-client.ts
-│   │   │   └── utils.ts
+│   │   ├── lib/                                  # SHARED FRONTEND
+│   │   │   ├── api-client.ts                     # ANAS
+│   │   │   ├── socket.ts                         # ANAS
+│   │   │   ├── sse-client.ts                     # ZOUBAIR
+│   │   │   ├── query-client.ts                   # ANAS
+│   │   │   └── utils.ts                          # ANAS
 │   │   │
-│   │   ├── stores/
-│   │   └── types/
-│   │       └── api.d.ts
+│   │   ├── stores/                               # ANAS
+│   │   └── types/                                # ANAS
+│   │       └── api.d.ts                           # ANAS
 │   │
-│   ├── package.json
-│   ├── package-lock.json
-│   ├── vite.config.ts
-│   ├── vitest.setup.ts
-│   ├── tsconfig.json
-│   ├── tsconfig.app.json
-│   ├── tsconfig.node.json
-│   ├── eslint.config.js
-│   ├── .prettierrc
-│   └── components.json
+│   ├── package.json                              # ANAS + ALL FRONTEND
+│   ├── package-lock.json                         # ANAS + ALL FRONTEND
+│   ├── vite.config.ts                            # ANAS
+│   ├── vitest.setup.ts                           # ANAS
+│   ├── tsconfig.json                             # ANAS
+│   ├── tsconfig.app.json                         # ANAS
+│   ├── tsconfig.node.json                        # ANAS
+│   ├── eslint.config.js                          # ANAS
+│   ├── .prettierrc                               # ANAS
+│   └── components.json                            # ANAS
 │
-├── nginx/
-│   ├── Dockerfile
-│   ├── entrypoint.sh
-│   ├── nginx.conf
+├── nginx/                                        # ANAS
+│   ├── Dockerfile                                # ANAS
+│   ├── entrypoint.sh                             # ANAS
+│   ├── nginx.conf                                # ANAS
 │   └── conf.d/
-│       └── nexus.conf
+│       └── nexus.conf                             # ANAS
 │
-├── deploy/
-│   ├── docker-compose.yml
-│   ├── docker-compose.dev.yml
-│   ├── .env.example
+├── deploy/                                       # ANAS
+│   ├── docker-compose.yml                        # ANAS
+│   ├── docker-compose.dev.yml                    # ANAS
+│   ├── .env.example                              # ANAS
 │   ├── postgres/
-│   │   └── postgresql.conf
+│   │   └── postgresql.conf                      # ANAS
 │   │
 │   └── scripts/
-│       ├── bootstrap.sh
-│       ├── seed.sh
-│       ├── backup.sh
-│       └── perf-smoke.sh
+│       ├── bootstrap.sh                          # ANAS
+│       ├── seed.sh                               # ANAS
+│       ├── backup.sh                             # ANAS
+│       └── perf-smoke.sh                         # ANAS
 │
 ├── docs/
-│   ├── architecture.md
-│   ├── api.md
-│   ├── operations.md
-│   ├── frontend.md
-│   └── design-system.md
+│   ├── architecture.md                           # ANAS
+│   ├── api.md                                    # ALL BACKEND DEVELOPERS
+│   ├── operations.md                             # ANAS
+│   ├── frontend.md                               # ALL FRONTEND DEVELOPERS
+│   └── design-system.md                          # ANAS + ALL FRONTEND
 │
 ├── .github/
-│   ├── CODEOWNERS
+│   ├── CODEOWNERS                                # ANAS
 │   └── workflows/
-│       └── ci.yml
+│       └── ci.yml                                # ANAS
 │
-├── .gitignore
-├── .dockerignore
-├── .editorconfig
-├── Makefile
-└── README.md
+├── .gitignore                                    # ANAS
+├── .dockerignore                                 # ANAS
+├── .editorconfig                                 # ANAS
+├── Makefile                                      # ANAS
+└── README.md                                     # ANAS
 ```
