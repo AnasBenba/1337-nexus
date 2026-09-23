@@ -2,17 +2,17 @@ import asyncio
 import re
 import hashlib
 import random
+import os
 from typing import Protocol
 
-class AIProtocol(Protocol):
+class AIProvider(Protocol):
 	async def stream_complete(self, messages: list[dict]) -> asyncio.AsyncGenerator[str, None]:
 		...
 	async def embed(self, texts: list[str]) -> list[list[float]]:
 		...
 
 
-
-class stub(AIProtocol):
+class stub(AIProvider):
 	def __init__(self):
 		self.response = "This is a stub response."
  
@@ -31,14 +31,9 @@ class stub(AIProtocol):
 			embeddings.append(vector)
 		return embeddings
 
-stub_instance = stub()
-messages = [
-    {"role": "system", "content": "You are a helpful assistant."},
-    {"role": "user", "content": "Explain memory allocation."}
-]
-
-async def main():
-	async for chunk in stub_instance.stream_complete(messages):
-		print(chunk, end="", flush=True)
-
-asyncio.run(main())
+def	get_ai_provider() -> AIProvider:
+	mode = os.getenv("AI_PROVIDER", "stub")
+	if mode == "stub":
+		return stub()
+	elif mode == "remote":
+		raise NotImplementedError("Remote provider is not implemented yet.")
