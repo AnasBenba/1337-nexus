@@ -1,0 +1,4 @@
+import os
+
+
+EMBEDDING_DIMENSIONS = 1536

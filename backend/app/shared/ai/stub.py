@@ -1,4 +1,5 @@
 from .provider import AIProvider
+from .config import EMBEDDING_DIMENSIONS
 import re
 import hashlib
 import random
@@ -19,6 +20,6 @@ class stub(AIProvider):
 			digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
 			seed = int(digest[:16], 16)
 			random.seed(seed)
-			vector = [random.uniform(-1, 1) for _ in range(1536)]
+			vector = [random.uniform(-1, 1) for _ in range(EMBEDDING_DIMENSIONS)]
 			embeddings.append(vector)
 		return embeddings

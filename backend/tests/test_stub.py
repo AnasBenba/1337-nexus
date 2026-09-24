@@ -5,6 +5,8 @@ import random
 import os
 from typing import Protocol
 
+from app.shared.ai.config import EMBEDDING_DIMENSIONS
+
 class AIProvider(Protocol):
 	async def stream_complete(self, messages: list[dict]) -> asyncio.AsyncGenerator[str, None]:
 		...
@@ -27,7 +29,7 @@ class stub(AIProvider):
 			digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
 			seed = int(digest[:16], 16)
 			random.seed(seed)
-			vector = [random.uniform(-1, 1) for _ in range(1536)]
+			vector = [random.uniform(-1, 1) for _ in range(EMBEDDING_DIMENSIONS)]
 			embeddings.append(vector)
 		return embeddings
 
