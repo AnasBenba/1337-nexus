@@ -31,25 +31,15 @@ async def main():
     for md_file in md_folder.glob("*.md"):
         print(f"Chunking {md_file.name}...")
         mark = md_file.read_text()
-
         splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
         chunks = splitter.split_text(mark)
-
         token_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
         final_documents = token_splitter.split_documents(chunks)
-
+        # fron here is just for testing purposes, we can remove it later
         text_chunks = [doc.page_content for doc in final_documents]
         embeddings = await ai.embed(text_chunks)
         print(f"Generated {len(embeddings)} vectors for {md_file.name}")
+        # ----------------------------------------------------------------
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-# for md_file in md_folder.glob("*.md"):
-#     print(f"Chunking {md_file.name}...")
-#     mark = md_file.read_text()
-#     splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
-#     chunks = splitter.split_text(mark)
-#     token_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100) # i can change it to [500,50]
-#     final_chunks = token_splitter.split_documents(chunks)
-#     print(ai.embed(final_chunks))
