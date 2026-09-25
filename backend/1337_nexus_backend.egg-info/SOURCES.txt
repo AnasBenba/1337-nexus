@@ -1,0 +1,17 @@
+pyproject.toml
+./app/cli/ingest_subjects.py
+./app/shared/ai/client.py
+./app/shared/ai/config.py
+./app/shared/ai/provider.py
+./app/shared/ai/stub.py
+1337_nexus_backend.egg-info/PKG-INFO
+1337_nexus_backend.egg-info/SOURCES.txt
+1337_nexus_backend.egg-info/dependency_links.txt
+1337_nexus_backend.egg-info/requires.txt
+1337_nexus_backend.egg-info/top_level.txt
+app/shared/ai/client.py
+app/shared/ai/config.py
+app/shared/ai/provider.py
+app/shared/ai/stub.py
+tests/test_ingestion.py
+tests/test_stub.py
