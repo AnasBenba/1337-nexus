@@ -9,6 +9,7 @@ pyproject.toml
 1337_nexus_backend.egg-info/dependency_links.txt
 1337_nexus_backend.egg-info/requires.txt
 1337_nexus_backend.egg-info/top_level.txt
+app/cli/ingest_subjects.py
 app/shared/ai/client.py
 app/shared/ai/config.py
 app/shared/ai/provider.py

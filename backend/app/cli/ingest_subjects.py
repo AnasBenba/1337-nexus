@@ -27,7 +27,7 @@ async def main():
         print(f"Converting {file.name} to Markdown...")
         mark = pymupdf4llm.to_markdown(file)
         md_file.write_text(mark)
-
+    y = 1
     for md_file in md_folder.glob("*.md"):
         print(f"Chunking {md_file.name}...")
         mark = md_file.read_text()
@@ -35,11 +35,18 @@ async def main():
         chunks = splitter.split_text(mark)
         token_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
         final_documents = token_splitter.split_documents(chunks)
-        # fron here is just for testing purposes, we can remove it later
         text_chunks = [doc.page_content for doc in final_documents]
         embeddings = await ai.embed(text_chunks)
-        print(f"Generated {len(embeddings)} vectors for {md_file.name}")
-        # ----------------------------------------------------------------
+        for chunk, vector in zip(final_documents, embeddings):
+            new_record = CurriculumChunk(
+                subject_document_id=y,
+                content=chunk.page_content,
+                chunk_metadata=chunk.metadata,
+                embedding=vector
+            )
+            db.add(new_record)
+        db.commit()
+        y += 1
 
 if __name__ == "__main__":
     asyncio.run(main())
