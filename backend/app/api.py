@@ -3,6 +3,13 @@ from fastapi import APIRouter, FastAPI
 router = APIRouter()
 
 
+@router.get("/auth/login", tags=["auth"])
+async def auth_login() -> dict[str, str]:
+    return {
+        "message": "Authentication endpoint reached",
+    }
+
+
 @router.get("/health/live", tags=["health"])
 async def health_live() -> dict[str, str]:
     return {
