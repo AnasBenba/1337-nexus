@@ -1,6 +1,9 @@
 pyproject.toml
 ./app/api.py
 ./app/main.py
+./app/oauth/entrypoint.py
+./app/oauth/manager.py
+./app/oauth/redirect.py
 ./app/shared/ai/client.py
 ./app/shared/ai/provider.py
 ./app/shared/ai/stub.py
@@ -11,6 +14,9 @@ pyproject.toml
 1337_nexus_backend.egg-info/top_level.txt
 app/api.py
 app/main.py
+app/oauth/entrypoint.py
+app/oauth/manager.py
+app/oauth/redirect.py
 app/shared/ai/client.py
 app/shared/ai/provider.py
 app/shared/ai/stub.py
