@@ -1,13 +1,15 @@
-from .provider import AIProvider
-import re
+import asyncio
 import hashlib
 import random
-import asyncio
+import re
+
+from .provider import AIProvider
+
 
 class stub(AIProvider):
 	def __init__(self):
 		self.response = "This is a stub response."
- 
+
 	async def stream_complete(self, messages: list[dict]):
 		for chunk in re.split(r'(\s+)', self.response):
 			yield chunk

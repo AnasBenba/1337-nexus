@@ -7,11 +7,15 @@ ENV_FILE := deploy/.env
 COMPOSE_FILE := deploy/docker-compose.yml
 DEV_COMPOSE_FILE := deploy/docker-compose.dev.yml
 
-COMPOSE := $(DOCKER) compose --env-file $(ENV_FILE) -f $(COMPOSE_FILE)
+COMPOSE := sudo $(DOCKER) compose --env-file $(ENV_FILE) -f $(COMPOSE_FILE)
 DEV_COMPOSE := $(COMPOSE) -f $(DEV_COMPOSE_FILE)
 
 BACKUP_SCRIPT := deploy/scripts/backup.sh
 PERF_SCRIPT := deploy/scripts/perf-smoke.sh
+
+PYTHON_VERSION ?= python3.12
+VENV := backend/.venv
+PYTHON := $(VENV)/bin/python
 
 .PHONY: \
 	help \
@@ -125,6 +129,25 @@ ingest:
 
 gen-api:
 	$(DEV_COMPOSE) exec backend python -m app.cli.export_openapi
+
+setup:
+	@command -v $(PYTHON_VERSION) >/dev/null 2>&1 || \
+		{ echo "ERROR: $(PYTHON_VERSION) is required but was not found."; exit 1; }
+
+	@if [ ! -x "$(PYTHON)" ] || ! "$(PYTHON)" --version 2>/dev/null | grep -q '^Python 3\.12\.'; then \
+		echo "Creating Python 3.12 virtual environment..."; \
+		rm -rf "$(VENV)"; \
+		$(PYTHON_VERSION) -m venv "$(VENV)"; \
+	else \
+		echo "Python 3.12 virtual environment already exists."; \
+	fi
+
+	@$(PYTHON) -m pip install --upgrade pip
+	@$(PYTHON) -m pip install -e "backend[dev]"
+
+	@echo
+	@echo "Python development environment is ready."
+	@echo "Python: $$($(PYTHON) --version)"
 
 clean:
 	$(DEV_COMPOSE) down --remove-orphans

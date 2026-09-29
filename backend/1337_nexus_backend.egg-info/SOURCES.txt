@@ -1,6 +1,10 @@
 pyproject.toml
 ./app/api.py
 ./app/main.py
+./app/core/__init__.py
+./app/core/config.py
+./app/core/db.py
+./app/shared/models.py
 ./app/shared/ai/client.py
 ./app/shared/ai/provider.py
 ./app/shared/ai/stub.py
