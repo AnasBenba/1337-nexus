@@ -1,6 +1,8 @@
+import os
+
 from .provider import AIProvider
 from .stub import stub
-import os
+
 
 def	get_ai_provider() -> AIProvider:
 	mode = os.getenv("AI_PROVIDER", "stub")
