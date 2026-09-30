@@ -10,6 +10,7 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
       - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
 
     command:
@@ -47,6 +48,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL}
       TRUSTED_PROXY_SUBNET: ${TRUSTED_PROXY_SUBNET}
+      UVICORN_RELOAD: "1"
 
     depends_on:
       postgres:
