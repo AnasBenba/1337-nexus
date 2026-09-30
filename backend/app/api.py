@@ -1,6 +1,15 @@
 from fastapi import APIRouter, FastAPI
-
+from .oauth import entrypoint
+from fastapi.responses import RedirectResponse
 router = APIRouter()
+
+
+@router.get("/auth/login", tags=["auth"])
+async def auth_login() -> RedirectResponse: 
+    return await entrypoint.redirect_to_forttytwo()
+
+    
+    
 
 
 @router.get("/health/live", tags=["health"])
