@@ -27,11 +27,12 @@ def test_create_pitch():
     }
     response = client.post("/pitches", json=new_pitch)
     
-    # Check the results!
     assert response.status_code == 200
     data = response.json()
     assert data["title"] == new_pitch["title"]
     assert data["content"] == new_pitch["content"]
     assert data["category"] == new_pitch["category"]
+    assert data["state"] == PitchStatus.DRAFT
+    assert data["description"] is None
     print(f"New pitch created: {data['title']}")
 

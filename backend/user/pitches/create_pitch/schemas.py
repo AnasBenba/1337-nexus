@@ -1,6 +1,11 @@
 from enum import Enum
 from pydantic import BaseModel, Field
 
+class PitchStatus(str, Enum):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
+
 class PitchCategory(str, Enum):
     TECH = "Technology"
     HEALTH = "Health"
@@ -17,6 +22,7 @@ class PitchCreate(BaseModel):
     title: str = Field(min_length=10, max_length=30)
     content: str = Field(min_length=50, max_length=400)
     category: PitchCategory
+    description: str = Field(default=None, max_length=200)
 
 
 class PitchResponse(BaseModel):
@@ -24,5 +30,6 @@ class PitchResponse(BaseModel):
     title: str
     content: str
     category: PitchCategory
-    state: str
+    state: PitchStatus
+    description: str = None
     author_id: int

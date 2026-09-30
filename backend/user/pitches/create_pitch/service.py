@@ -1,17 +1,16 @@
 from fastapi import HTTPException
+from sqlalchemy.orm import Session
+from models import Pitch
+from schemas import PitchCreate, PitchResponse, PitchStatus
 
-from schemas import PitchCreate, PitchResponse
-
-def create_pitch(pitch: PitchCreate):
-    return PitchResponse(
-        id = 1,
-        title = pitch.title,
-        content = pitch.content,
-        category = pitch.category,
-        state = "pending",
-        author_id = 123
-    )
-    # just a placeholder ta ndir meaha database
+def create_pitch(db: Session, pitch: PitchCreate):
+    new_pitch = Pitch(**pitch.model_dump())
+    
+    db.add(new_pitch)
+    db.commit()
+    db.refresh(new_pitch)
+    
+    return new_pitch
 
 def get_all_pitches(search: str = None, limit: int = 20):
     # just a placeholder ta ndir meaha database
@@ -22,6 +21,7 @@ def get_all_pitches(search: str = None, limit: int = 20):
             content = "This is the content of pitch 1",
             category = "Technology",
             state = "pending",
+            description = "This is the description of pitch 1",
             author_id = 123
         ),
         PitchResponse(
@@ -30,6 +30,7 @@ def get_all_pitches(search: str = None, limit: int = 20):
             content = "This is the content of pitch 2",
             category = "Health",
             state = "approved",
+            description = "This is the description of pitch 2",
             author_id = 456
         )
     ]
@@ -47,6 +48,7 @@ def get_one_pitch(pitch_id: int):
         content = f"This is the content of pitch {pitch_id}",
         category = "Technology",
         state = "pending",
+        description = f"This is the description of pitch {pitch_id}",
         author_id = 123
     )
 
@@ -66,6 +68,7 @@ def update_pitch(pitch_id: int, pitch: PitchCreate):
         title = pitch.title,
         content = pitch.content,
         category = pitch.category,
+        description = pitch.description,
         state = "pending",
         author_id = 123
     )
