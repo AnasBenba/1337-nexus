@@ -1,7 +1,6 @@
 from fastapi.responses import RedirectResponse
 import secrets
 
-#generate state random code for redirect url (prevent CSRF attacks)
 def generate_state() -> str:
     return secrets.token_urlsafe(16)
 
@@ -18,5 +17,4 @@ def generate_url(state: str) -> str:
 async def redirect_to_forttytwo():
     state = generate_state()
     authorization_url = generate_url(state)
-    print(f"Redirecting to: {authorization_url}")
     return RedirectResponse(url=authorization_url)

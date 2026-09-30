@@ -5,7 +5,7 @@ router = APIRouter()
 
 
 @router.get("/auth/login", tags=["auth"])
-async def auth_login() -> RedirectResponse: #keep the return type as none for now
+async def auth_login() -> RedirectResponse: 
     return await entrypoint.redirect_to_forttytwo()
 
     
