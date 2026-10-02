@@ -35,7 +35,7 @@ echo "PostgreSQL is reachable. Running migrations..."
     alembic upgrade head
 )
 
-unset MIGRATION_DATABASE_URL
+# unset MIGRATION_DATABASE_URL
 
 echo "Starting FastAPI..."
 
