@@ -1,0 +1,35 @@
+from fastapi import APIRouter, FastAPI
+from .oauth import entrypoint
+from fastapi.responses import RedirectResponse
+
+from user.pitches.create_pitch.router import router as pitches_router
+
+router = APIRouter()
+
+
+@router.get("/auth/login", tags=["auth"])
+async def auth_login() -> RedirectResponse: 
+    return await entrypoint.redirect_to_forttytwo()
+
+    
+@router.get("/health/live", tags=["health"])
+async def health_live() -> dict[str, str]:
+    return {
+        "status": "ok",
+        "service": "api",
+    }
+
+
+@router.get("/health/ready", tags=["health"])
+async def health_ready() -> dict[str, object]:
+    return {
+        "status": "ready",
+        "dependencies": {
+            "database": "unknown",
+        },
+    }
+
+
+def register_routes(app: FastAPI) -> None:
+    app.include_router(router)
+    app.include_router(pitches_router, prefix="/api/v1", tags=["Pitches"])

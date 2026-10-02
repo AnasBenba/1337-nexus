@@ -1,14 +1,14 @@
-from fastapi import APIRouter
-from schemas import PitchCreate, PitchResponse
-from service import create_pitch, get_all_pitches, delete_pitch, update_pitch, get_one_pitch
-from app.core.db import get_db
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends
+from .schemas import PitchCreate, PitchResponse
+from .service import create_pitch, get_all_pitches, delete_pitch, update_pitch, get_one_pitch
+from app.core.db import get_db_session as get_db
+from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
 
 @router.post("/pitches", response_model=PitchResponse)
-def create_pitch_endpoint(pitch: PitchCreate, db: Session = Depends(get_db)):
-    return create_pitch(db=db,pitch_data=pitch)
+async def create_pitch_endpoint(pitch: PitchCreate, db: AsyncSession = Depends(get_db)):
+    return await create_pitch(db=db,pitch=pitch)
 
 @router.get("/pitches", response_model=list[PitchResponse])
 def get_all_pitches_endpoint(search: str = None, limit: int = 20):

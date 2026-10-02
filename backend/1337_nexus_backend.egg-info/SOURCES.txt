@@ -1,4 +1,13 @@
 pyproject.toml
+<<<<<<< HEAD
+=======
+./app/api.py
+./app/main.py
+./app/core/__init__.py
+./app/core/config.py
+./app/core/db.py
+./app/shared/models.py
+>>>>>>> 5fefd5a7074e09e751e446eaff057e819f4bdef9
 ./app/shared/ai/client.py
 ./app/shared/ai/provider.py
 ./app/shared/ai/stub.py
@@ -7,4 +16,15 @@ pyproject.toml
 1337_nexus_backend.egg-info/dependency_links.txt
 1337_nexus_backend.egg-info/requires.txt
 1337_nexus_backend.egg-info/top_level.txt
+<<<<<<< HEAD
+=======
+app/api.py
+app/main.py
+app/oauth/entrypoint.py
+app/oauth/manager.py
+app/oauth/redirect.py
+app/shared/ai/client.py
+app/shared/ai/provider.py
+app/shared/ai/stub.py
+>>>>>>> 5fefd5a7074e09e751e446eaff057e819f4bdef9
 tests/test_stub.py

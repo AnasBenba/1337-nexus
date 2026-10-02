@@ -2,14 +2,17 @@ services:
   postgres:
     image: pgvector/pgvector:pg17
     restart: unless-stopped
+    env_file:
+      - .env
 
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # environment:
+    #   POSTGRES_DB: ${POSTGRES_DB}
+    #   POSTGRES_USER: ${POSTGRES_USER}
+    #   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
       - ./postgres/postgresql.conf:/etc/postgresql/postgresql.conf:ro
 
     command:
@@ -42,11 +45,17 @@ services:
         PYTHON_IMAGE: ${PYTHON_IMAGE}
 
     restart: unless-stopped
+    
+    env_file:
+      - .env
+
 
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL}
-      TRUSTED_PROXY_SUBNET: ${TRUSTED_PROXY_SUBNET}
+    
+      # DATABASE_URL: ${DATABASE_URL}
+      # MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL}
+      # TRUSTED_PROXY_SUBNET: ${TRUSTED_PROXY_SUBNET}
+      UVICORN_RELOAD: "1"
 
     depends_on:
       postgres:
@@ -74,6 +83,7 @@ services:
 
     restart: unless-stopped
 
+  
     environment:
       TLS_CERT_PEM: ${TLS_CERT_PEM}
       TLS_KEY_PEM: ${TLS_KEY_PEM}

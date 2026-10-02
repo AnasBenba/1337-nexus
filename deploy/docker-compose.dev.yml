@@ -1,13 +1,13 @@
 services:
+  postgres:
+    ports:
+      - "5432:5432"
+
   backend:
-    environment:
-      UVICORN_RELOAD: "1"
+    ports:
+      - "8000:8000"
 
     volumes:
       - ../backend/app:/app/app
       - ../backend/alembic:/app/alembic
       - ../backend/alembic.ini:/app/alembic.ini:ro
-
-  postgres:
-    ports:
-      - "5432:5432"

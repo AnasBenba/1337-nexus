@@ -18,7 +18,11 @@ Requires-Dist: PyJWT~=2.10.0
 Requires-Dist: pyotp~=2.9.0
 Requires-Dist: cryptography~=46.0.0
 Requires-Dist: httpx~=0.28.0
+<<<<<<< HEAD
 Requires-Dist: pycrdt==0.12.33
+=======
+Requires-Dist: pycrdt==0.12.34
+>>>>>>> 5fefd5a7074e09e751e446eaff057e819f4bdef9
 Requires-Dist: Pillow~=12.0.0
 Requires-Dist: python-multipart~=0.0.20
 Requires-Dist: python-frontmatter~=1.1.0

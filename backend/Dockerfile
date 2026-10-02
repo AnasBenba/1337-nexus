@@ -15,15 +15,16 @@ WORKDIR /app
 RUN groupadd --gid ${APP_GID} app \
     && useradd --uid ${APP_UID} --gid ${APP_GID} --create-home --shell /usr/sbin/nologin app
 
-COPY requirements.lock /tmp/requirements.lock
+COPY backend/requirements.lock /tmp/requirements.lock
 
 RUN pip install --require-hashes --no-cache-dir -r /tmp/requirements.lock \
     && rm /tmp/requirements.lock
 
-COPY app ./app
-COPY alembic ./alembic
-COPY alembic.ini ./alembic.ini
-COPY entrypoint.sh ./entrypoint.sh
+COPY backend/app ./app
+COPY backend/user ./user
+COPY backend/alembic ./alembic
+COPY backend/alembic.ini ./alembic.ini
+COPY backend/entrypoint.sh ./entrypoint.sh
 
 RUN chmod +x /app/entrypoint.sh \
     && chown -R app:app /app

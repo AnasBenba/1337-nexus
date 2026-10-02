@@ -1,14 +1,14 @@
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
-from models import Pitch
-from schemas import PitchCreate, PitchResponse, PitchStatus
+from sqlalchemy.ext.asyncio import AsyncSession
+from .models import Pitch
+from .schemas import PitchCreate, PitchResponse, PitchStatus
 
-def create_pitch(db: Session, pitch: PitchCreate):
+async def create_pitch(db: AsyncSession, pitch: PitchCreate):
     new_pitch = Pitch(**pitch.model_dump())
-    
+
     db.add(new_pitch)
-    db.commit()
-    db.refresh(new_pitch)
+    await db.commit()
+    await db.refresh(new_pitch)
     
     return new_pitch
 

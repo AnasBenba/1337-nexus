@@ -35,15 +35,31 @@ echo "PostgreSQL is reachable. Running migrations..."
     alembic upgrade head
 )
 
-unset MIGRATION_DATABASE_URL
 
 echo "Starting FastAPI..."
 
-exec uvicorn app.main:app \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --workers 1 \
-    --proxy-headers \
-    --forwarded-allow-ips "$TRUSTED_PROXY_SUBNET" \
-    --no-access-log \
-    ${UVICORN_RELOAD:+--reload}
+UVICORN_ARGS="
+    --host 0.0.0.0
+    --port 8000
+    --proxy-headers
+    --forwarded-allow-ips $TRUSTED_PROXY_SUBNET
+    --no-access-log
+"
+
+if [ -n "${UVICORN_RELOAD:-}" ]; then
+    exec uvicorn app.main:app \
+        --host 0.0.0.0 \
+        --port 8000 \
+        --proxy-headers \
+        --forwarded-allow-ips "$TRUSTED_PROXY_SUBNET" \
+        --no-access-log \
+        --reload
+else
+    exec uvicorn app.main:app \
+        --host 0.0.0.0 \
+        --port 8000 \
+        --workers 1 \
+        --proxy-headers \
+        --forwarded-allow-ips "$TRUSTED_PROXY_SUBNET" \
+        --no-access-log
+fi
