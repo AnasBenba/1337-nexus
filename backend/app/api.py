@@ -1,6 +1,8 @@
 from fastapi import APIRouter, FastAPI
 from .oauth import entrypoint
 from fastapi.responses import RedirectResponse
+from fastapi import Request
+
 router = APIRouter()
 
 
@@ -9,14 +11,11 @@ async def auth_login() -> RedirectResponse:
     return await entrypoint.redirect_to_forttytwo()
 
 @router.get("/api/v1/auth/oauth/42/callback", tags=["auth"])
-async def auth_callback(code: str, state: str):
-    print("CODE:", code)
-    print("STATE:", state)
-
-    return {
-        "code": code,
-        "state": state,
-    }
+async def auth_callback(request: Request, code: str, state: str):
+    state_cookie = request.cookies.get("state")
+    code_verifier_cookie = request.cookies.get("code_verifier")
+    if state_cookie != state:
+        return {"error": "Invalid state parameter"}
     
 
 
