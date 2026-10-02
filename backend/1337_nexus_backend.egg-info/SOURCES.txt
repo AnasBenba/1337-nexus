@@ -1,5 +1,7 @@
 pyproject.toml
 ./app/cli/ingest_subjects.py
+./app/models/base.py
+./app/models/curriculum.py
 ./app/shared/ai/client.py
 ./app/shared/ai/config.py
 ./app/shared/ai/provider.py

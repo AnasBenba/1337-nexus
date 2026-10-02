@@ -3,12 +3,13 @@ import re
 import hashlib
 import random
 import os
+from collections.abc import AsyncGenerator
 from typing import Protocol
 
 from app.shared.ai.config import EMBEDDING_DIMENSIONS
 
 class AIProvider(Protocol):
-	async def stream_complete(self, messages: list[dict]) -> asyncio.AsyncGenerator[str, None]:
+	async def stream_complete(self, messages: list[dict]) -> AsyncGenerator[str, None]:
 		...
 	async def embed(self, texts: list[str]) -> list[list[float]]:
 		...
