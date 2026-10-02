@@ -8,7 +8,15 @@ router = APIRouter()
 async def auth_login() -> RedirectResponse: 
     return await entrypoint.redirect_to_forttytwo()
 
-    
+@router.get("/api/v1/auth/oauth/42/callback", tags=["auth"])
+async def auth_callback(code: str, state: str):
+    print("CODE:", code)
+    print("STATE:", state)
+
+    return {
+        "code": code,
+        "state": state,
+    }
     
 
 
