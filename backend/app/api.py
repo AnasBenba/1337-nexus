@@ -12,6 +12,17 @@ router = APIRouter()
 async def auth_login() -> RedirectResponse: 
     return await entrypoint.redirect_to_forttytwo()
 
+
+async def get_user(access_token: str) -> dict:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            "https://api.intra.42.fr/v2/me",
+            headers={
+                "Authorization": f"Bearer {access_token}"
+            }
+        )
+        return response.json()
+
 @router.get("/api/v1/auth/oauth/42/callback", tags=["auth"])
 async def auth_callback(request: Request, code: str, state: str):
     state_cookie = request.cookies.get("state")
@@ -19,7 +30,10 @@ async def auth_callback(request: Request, code: str, state: str):
     if state_cookie != state:
         return {"error": "Invalid state parameter"}
     token = await manager.get_access_token(code, code_verifier_cookie)
-    print(token)
+    #print(token)
+    user = await get_user(token["access_token"])
+
+    print(user["login"])
     # POST https://api.intra.42.fr/oauth/token
 
 #Headers:
