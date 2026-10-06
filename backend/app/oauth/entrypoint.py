@@ -30,6 +30,7 @@ class AuthClient:
             f"&state={self.state}"
             f"&code_challenge={self.code_challenge}"
             f"&code_challenge_method=S256"
+            f"&redirect_uri={self.redirect_uri}"
         )
 
 async def redirect_to_forttytwo():

@@ -30,10 +30,12 @@ async def auth_callback(request: Request, code: str, state: str):
     if state_cookie != state:
         return {"error": "Invalid state parameter"}
     token = await manager.get_access_token(code, code_verifier_cookie)
-    #print(token)
-    user = await get_user(token["access_token"])
+    print(token)
+    # user = await get_user(token["access_token"])
 
-    print(user["login"])
+    # print(user["login"])
+    # print(user["email"])
+    # print(user["full_name"])
     # POST https://api.intra.42.fr/oauth/token
 
 #Headers:
