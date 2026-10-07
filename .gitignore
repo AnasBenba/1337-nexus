@@ -37,6 +37,7 @@ test-results/
 .vscode/
 .antigravity/
 .idea/
+.antigravity/
 *.swp
 *.swo
 
