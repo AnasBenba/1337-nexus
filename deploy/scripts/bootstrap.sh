@@ -120,9 +120,9 @@ sudo docker compose \
 echo "Compose configuration is valid."
 
 
-echo "Starting the stack..."
+# echo "Starting the stack..."
 
-sudo docker compose \
-    --env-file "$ENV_FILE" \
-    -f "$COMPOSE_FILE" \
-    up -d
+# sudo docker compose \
+#     --env-file "$ENV_FILE" \
+#     -f "$COMPOSE_FILE" \
+#     up -d
