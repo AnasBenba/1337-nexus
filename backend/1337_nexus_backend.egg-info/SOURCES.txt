@@ -12,9 +12,12 @@ pyproject.toml
 1337_nexus_backend.egg-info/requires.txt
 1337_nexus_backend.egg-info/top_level.txt
 app/cli/ingest_subjects.py
+app/models/base.py
+app/models/curriculum.py
 app/shared/ai/client.py
 app/shared/ai/config.py
 app/shared/ai/provider.py
 app/shared/ai/stub.py
+tests/test_chunking.py
 tests/test_ingestion.py
 tests/test_stub.py

@@ -1,4 +1,4 @@
-UV := /opt/pyenv/versions/3.13.1/bin/uv
+UV := $(shell command -v uv 2>/dev/null || echo $${HOME}/.local/bin/uv)
 
 UV_CACHE_DIR := /tmp/uv-cache
 UV_PYTHON_INSTALL_DIR := /tmp/uv-python
@@ -10,7 +10,7 @@ export UV_CACHE_DIR
 export UV_PYTHON_INSTALL_DIR
 export UV_PROJECT_ENVIRONMENT
 
-.PHONY: setup sync run clean
+.PHONY: setup sync run test clean
 
 setup:
 	@mkdir -p $(UV_CACHE_DIR) $(UV_PYTHON_INSTALL_DIR)
@@ -22,6 +22,9 @@ sync:
 
 run: setup
 	cd $(BACKEND) && $(UV) run python -m app.cli.ingest_subjects
+
+test:
+	cd $(BACKEND) && $(UV) sync --extra dev && $(UV) run pytest tests/ -v
 
 clean:
 	rm -rf $(UV_CACHE_DIR) $(UV_PYTHON_INSTALL_DIR) $(UV_PROJECT_ENVIRONMENT)
