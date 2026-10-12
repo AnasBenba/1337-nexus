@@ -31,24 +31,6 @@ async def auth_callback(request: Request, code: str, state: str):
         return {"error": "Invalid state parameter"}
     token = await manager.get_access_token(code, code_verifier_cookie)
     print(token)
-    # user = await get_user(token["access_token"])
-
-    # print(user["login"])
-    # print(user["email"])
-    # print(user["full_name"])
-    # POST https://api.intra.42.fr/oauth/token
-
-#Headers:
- #   Content-Type: application/x-www-form-urlencoded
-
-#Body:
-  #  grant_type=authorization_code
-   # client_id=...
-    #client_secret=...
-    #code=...
-    #redirect_uri=...
-    #code_verifier=...
-
 
 @router.get("/health/live", tags=["health"])
 async def health_live() -> dict[str, str]:
