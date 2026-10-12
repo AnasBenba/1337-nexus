@@ -1,7 +1,6 @@
 import asyncio
-import os
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.models.curriculum import CurriculumChunk
+from app.core.db import SessionLocal
 from app.shared.ai.config import EMBEDDING_DIMENSIONS
 from pathlib import Path
 import pymupdf4llm
@@ -15,10 +14,6 @@ async def main():
     md_folder = backend_dir / "content" / "subjects" / "mds"
 
     md_folder.mkdir(parents=True, exist_ok=True)
-    database_url = os.getenv("DATABASE_URL", "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres")
-    engine = create_async_engine(database_url)
-    async_session = async_sessionmaker(engine, expire_on_commit=False)
-
     headers_to_split_on = [
         ("#", "header 1"),
         ("##", "header 2"),
@@ -44,7 +39,7 @@ async def main():
         final_documents = token_splitter.split_documents(chunks)
         text_chunks = [doc.page_content for doc in final_documents]
         embeddings = await ai.embed(text_chunks)
-        async with async_session() as db:
+        async with SessionLocal() as db:
             for chunk, vector in zip(final_documents, embeddings):
                 if len(vector) != EMBEDDING_DIMENSIONS:
                     print(f"Warning: Skipping chunk, expected {EMBEDDING_DIMENSIONS} dims, got {len(vector)}")

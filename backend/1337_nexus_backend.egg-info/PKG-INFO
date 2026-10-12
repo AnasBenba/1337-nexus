@@ -19,6 +19,7 @@ Requires-Dist: pyotp~=2.9.0
 Requires-Dist: cryptography~=46.0.0
 Requires-Dist: httpx~=0.28.0
 Requires-Dist: pycrdt==0.12.34
+Requires-Dist: pycrdt==0.12.34
 Requires-Dist: Pillow~=12.0.0
 Requires-Dist: python-multipart~=0.0.20
 Requires-Dist: python-frontmatter~=1.1.0

@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.shared.ai.config import EMBEDDING_DIMENSIONS
 from app.shared.ai.stub import stub
-from app.models.base import Base
+from app.shared.models import Base
 from app.models.curriculum import CurriculumChunk
 
 

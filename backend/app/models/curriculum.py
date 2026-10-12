@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, JSON
 from pgvector.sqlalchemy import Vector
 from app.shared.ai.config import EMBEDDING_DIMENSIONS
-from .base import Base
+from app.shared.models import Base
 
 
 class	CurriculumChunk(Base):
