@@ -11,6 +11,8 @@ GRANT CONNECT ON DATABASE nexus TO nexus_migrator;
 
 \connect nexus
 
+CREATE EXTENSION IF NOT EXISTS vector;
+
 GRANT USAGE ON SCHEMA public TO nexus_app;
 GRANT USAGE, CREATE ON SCHEMA public TO nexus_migrator;
 

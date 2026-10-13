@@ -5,6 +5,7 @@
 *.pem
 *.key
 *.crt
+*.egg-info/
 
 # Python
 __pycache__/

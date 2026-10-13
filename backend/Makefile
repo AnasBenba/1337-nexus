@@ -58,6 +58,10 @@ fmt: _require-uv
 typecheck: _require-uv
 	$(UV) run mypy app/
 
+.PHONY: lock
+lock: _require-uv
+	$(UV) pip compile pyproject.toml --generate-hashes -o requirements.lock
+
 .PHONY: clean
 clean:
 	rm -rf .venv .pytest_cache .mypy_cache .ruff_cache
