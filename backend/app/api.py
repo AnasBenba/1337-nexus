@@ -4,6 +4,7 @@ from fastapi.responses import RedirectResponse
 from fastapi import Request
 from .oauth import manager
 import httpx
+from .oauth.database import database
 
 router = APIRouter()
 
@@ -31,6 +32,7 @@ async def auth_callback(request: Request, code: str, state: str):
         return {"error": "Invalid state parameter"}
     token = await manager.get_access_token(code, code_verifier_cookie)
     print(token)
+    database.Connect_TO_DB()
 
 @router.get("/health/live", tags=["health"])
 async def health_live() -> dict[str, str]:
