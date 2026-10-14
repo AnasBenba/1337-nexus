@@ -49,10 +49,10 @@ def upgrade() -> None:
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("category", pitch_category, nullable=False),
         sa.Column("status", pitch_status, nullable=False),
-        sa.Column("author_id", sa.String(), nullable=False),
+        # sa.Column("author_id", sa.String(), nullable=False),
     )
     op.create_index("ix_pitches_title", "pitches", ["title"])
-    op.create_index("ix_pitches_author_id", "pitches", ["author_id"])
+    # op.create_index("ix_pitches_author_id", "pitches", ["author_id"])
     op.execute(
         "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE pitches TO nexus_app"
     )

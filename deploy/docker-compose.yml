@@ -83,10 +83,11 @@ services:
 
     restart: unless-stopped
 
-  
-    environment:
-      TLS_CERT_PEM: ${TLS_CERT_PEM}
-      TLS_KEY_PEM: ${TLS_KEY_PEM}
+    env_file:
+      - .env
+    # environment:
+    #   TLS_CERT_PEM: ${TLS_CERT_PEM}
+    #   TLS_KEY_PEM: ${TLS_KEY_PEM}
 
     depends_on:
       backend:

@@ -1,7 +1,10 @@
+import uuid
+
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from .models import Pitch
-from .schemas import PitchCreate, PitchResponse, PitchStatus
+from .schemas import PitchCreate
 
 async def create_pitch(db: AsyncSession, pitch: PitchCreate):
     new_pitch = Pitch(**pitch.model_dump())
@@ -12,64 +15,48 @@ async def create_pitch(db: AsyncSession, pitch: PitchCreate):
     
     return new_pitch
 
-def get_all_pitches(search: str = None, limit: int = 20):
-    # just a placeholder ta ndir meaha database
-    pitches = [
-        PitchResponse(
-            id = 1,
-            title = "Pitch 1",
-            content = "This is the content of pitch 1",
-            category = "Technology",
-            state = "pending",
-            description = "This is the description of pitch 1",
-            author_id = 123
-        ),
-        PitchResponse(
-            id = 2,
-            title = "Pitch 2",
-            content = "This is the content of pitch 2",
-            category = "Health",
-            state = "approved",
-            description = "This is the description of pitch 2",
-            author_id = 456
-        )
-    ]
-    if search:
-        pitches = [pitch for pitch in pitches if search.lower() in pitch.title.lower()]
-    return pitches[:limit]
+async def get_all_pitches(db: AsyncSession):
+    # real data instead of placeholder data should be fetched from the database
+    query = select(Pitch)
 
-def get_one_pitch(pitch_id: int):
-    # just a placeholder ta ndir meaha database
-    if (pitch_id <= 0):
-        raise HTTPException(status_code=404, detail="Pitch not found")
-    return PitchResponse(
-        id = pitch_id,
-        title = f"Pitch {pitch_id}",
-        content = f"This is the content of pitch {pitch_id}",
-        category = "Technology",
-        state = "pending",
-        description = f"This is the description of pitch {pitch_id}",
-        author_id = 123
-    )
+    result = await db.execute(query)
 
-def delete_pitch(pitch_id: int):
-    # just a placeholder ta ndir meaha database
-    # still need to implement the actual deletion logic
-    if (pitch_id <= 0):
-        raise HTTPException(status_code=404, detail="Pitch not found")
-    return {"message": f"Pitch with id {pitch_id} deleted successfully"}
+    return result.scalars().all()[:40]
 
-def update_pitch(pitch_id: int, pitch: PitchCreate):
-    # just a placeholder ta ndir meaha database
-    if (pitch_id <= 0):
+async def get_one_pitch(db: AsyncSession, pitch_id: uuid.UUID):
+    # real data instead of placeholder data should be fetched from the database
+    query = select(Pitch).where(Pitch.id == pitch_id)
+    result = await db.execute(query)
+    pitch = result.scalar_one_or_none()
+    if not pitch:
         raise HTTPException(status_code=404, detail="Pitch not found")
-    return PitchResponse(
-        id = pitch_id,
-        title = pitch.title,
-        content = pitch.content,
-        category = pitch.category,
-        description = pitch.description,
-        state = "pending",
-        author_id = 123
-    )
-    
+    return pitch
+
+async def delete_pitch(db: AsyncSession, pitch_id: uuid.UUID):
+    result = await db.execute(select(Pitch).where(Pitch.id == pitch_id))
+    pitch = result.scalar_one_or_none()
+
+    if pitch is None:
+        raise HTTPException(status_code=404, detail="Pitch not found")
+
+    await db.delete(pitch)
+    await db.commit()
+    return {"message": "Pitch deleted successfully"}
+
+async def update_pitch(
+    db: AsyncSession,
+    pitch_id: uuid.UUID,
+    pitch: PitchCreate,
+) -> Pitch:
+    result = await db.execute(select(Pitch).where(Pitch.id == pitch_id))
+    existing_pitch = result.scalar_one_or_none()
+
+    if existing_pitch is None:
+        raise HTTPException(status_code=404, detail="Pitch not found")
+
+    for field, value in pitch.model_dump().items():
+        setattr(existing_pitch, field, value)
+
+    await db.commit()
+    await db.refresh(existing_pitch)
+    return existing_pitch

@@ -1,10 +1,12 @@
 from enum import Enum
+from uuid import UUID
 from pydantic import BaseModel, Field
 
 class PitchStatus(str, Enum):
     DRAFT = "draft"
     PUBLISHED = "published"
     ARCHIVED = "archived"
+    PENDING = "pending"
 
 class PitchCategory(str, Enum):
     TECH = "Technology"
@@ -19,17 +21,17 @@ class PitchCategory(str, Enum):
     FASHION_DESIGN = "Fashion & Design"
 
 class PitchCreate(BaseModel):
-    title: str = Field(min_length=10, max_length=30)
-    content: str = Field(min_length=50, max_length=400)
+    title: str #= Field(min_length=10, max_length=30)
+    content: str #= Field(min_length=50, max_length=400)
     category: PitchCategory
-    description: str = Field(default=None, max_length=200)
+    description: str # = Field(default=None, max_length=200)
 
 
 class PitchResponse(BaseModel):
-    id: int
+    id: UUID    
     title: str
     content: str
     category: PitchCategory
     state: PitchStatus
     description: str = None
-    author_id: int
+    # author_id: int
