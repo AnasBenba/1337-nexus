@@ -17,3 +17,7 @@ async def get_access_token(code: str, code_verifier: str) -> dict:
             }
         )
         return response.json()
+    
+
+async def manage_user(token : dict) ->None :
+    print(token["email"])
