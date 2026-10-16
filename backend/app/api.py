@@ -1,6 +1,7 @@
 from fastapi import APIRouter, FastAPI
 from .oauth import entrypoint
 from fastapi.responses import RedirectResponse
+from .user.copilot.retrieve_curriculum.router import router as retrieve_curriculum_router
 router = APIRouter()
 
 
@@ -32,3 +33,4 @@ async def health_ready() -> dict[str, object]:
 
 def register_routes(app: FastAPI) -> None:
     app.include_router(router)
+    app.include_router(retrieve_curriculum_router)

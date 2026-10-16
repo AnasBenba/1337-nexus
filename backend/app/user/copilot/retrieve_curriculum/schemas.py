@@ -6,6 +6,7 @@ Response: ChunkResult     - a single ranked chunk with citation metadata
           RetrievalResult - the full ranked list returned by the service
 """
 import uuid
+
 from pydantic import BaseModel, Field
 
 
