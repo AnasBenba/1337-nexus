@@ -3,6 +3,8 @@ import os
 from ..core import db
 from sqlalchemy import inspect 
 import httpx
+from ..core import base
+from . import user
 
 async def get_user(access_token: str) -> dict:
     async with httpx.AsyncClient() as client:
@@ -39,4 +41,4 @@ async def manage_user(token : dict) ->None :
             lambda conn : inspect(conn).has_table("users")
         )
         if not exist :
-            
+            await connection.run_sync(base.Base.metadata.create_all)
