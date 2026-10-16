@@ -42,8 +42,4 @@ async def redirect_to_forttytwo():
     response = RedirectResponse(client.get_FortyTwo_auth_url())
     response.set_cookie(key="state", value=client.state, httponly=True)
     response.set_cookie(key="code_verifier", value=client.code_verifier, httponly=True)
-    print("AUTH URL:", repr(client.authorize_url))
-    print("CLIENT:", repr(client.client))
-    print("REDIRECT URI:", repr(client.redirect_uri))
-    print("FINAL URL:", repr(client.get_FortyTwo_auth_url()))
     return response
