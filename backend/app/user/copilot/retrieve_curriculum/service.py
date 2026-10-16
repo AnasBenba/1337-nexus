@@ -69,6 +69,7 @@ async def retrieve_curriculum(
                 subject_slug=row["subject_slug"],
                 ordinal=row["ordinal"] if row["ordinal"] is not None else 0,
                 snippet=row["snippet"],
+                chunk_metadata=row.get("chunk_metadata") or {},
                 distance=float(row["distance"]),
             )
         )

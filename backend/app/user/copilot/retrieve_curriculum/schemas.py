@@ -6,6 +6,7 @@ Response: ChunkResult     - a single ranked chunk with citation metadata
           RetrievalResult - the full ranked list returned by the service
 """
 import uuid
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -37,6 +38,10 @@ class ChunkResult(BaseModel):
     )
     snippet: str = Field(
         description="The raw text content of the chunk (<= 800 tokens)."
+    )
+    chunk_metadata: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Metadata from markdown headers (e.g. sections).",
     )
     distance: float = Field(
         description="Cosine distance from query vector (lower = more relevant)."

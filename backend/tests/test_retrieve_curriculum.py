@@ -2,6 +2,7 @@
 Tests for retrieve_curriculum module: schemas, service, and HTTP router.
 """
 import uuid
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -9,6 +10,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
+from app.core.db import get_db_session
+from app.shared.ai.client import get_ai_provider
 from app.shared.ai.stub import stub
 from app.user.copilot.retrieve_curriculum.router import router
 from app.user.copilot.retrieve_curriculum.schemas import (
@@ -37,6 +40,18 @@ class TestSchemas:
         with pytest.raises(ValidationError):
             RetrievalQuery(query="hello", k=25)
 
+    def test_chunk_result_has_metadata(self) -> None:
+        chunk = ChunkResult(
+            chunk_id=uuid.uuid4(),
+            document_id=uuid.uuid4(),
+            subject_slug="push_swap",
+            ordinal=1,
+            snippet="Radix sort implementation",
+            chunk_metadata={"header 1": "Mandatory Part"},
+            distance=0.12,
+        )
+        assert chunk.chunk_metadata == {"header 1": "Mandatory Part"}
+
 
 class TestService:
     @pytest.mark.asyncio
@@ -45,6 +60,7 @@ class TestService:
     ) -> None:
         fake_chunk_id = uuid.uuid4()
         fake_doc_id = uuid.uuid4()
+        fake_metadata: dict[str, Any] = {"header 1": "Mandatory Part"}
         mock_rows = [
             {
                 "chunk_id": fake_chunk_id,
@@ -52,7 +68,7 @@ class TestService:
                 "subject_slug": "push_swap",
                 "ordinal": 1,
                 "snippet": "Radix sort implementation",
-                "chunk_metadata": {},
+                "chunk_metadata": fake_metadata,
                 "distance": 0.1234,
             }
         ]
@@ -74,6 +90,7 @@ class TestService:
         assert len(res.chunks) == 1
         assert res.chunks[0].chunk_id == fake_chunk_id
         assert res.chunks[0].subject_slug == "push_swap"
+        assert res.chunks[0].chunk_metadata == fake_metadata
         assert res.chunks[0].distance == pytest.approx(0.1234, rel=1e-3)
         mock_find.assert_awaited_once()
 
@@ -85,6 +102,10 @@ class TestRouter:
         test_app = FastAPI()
         test_app.include_router(router)
 
+        # Bulletproof dependency overrides for CI environments
+        test_app.dependency_overrides[get_db_session] = lambda: AsyncMock()
+        test_app.dependency_overrides[get_ai_provider] = lambda: AsyncMock()
+
         fake_result = RetrievalResult(
             query="test query",
             chunks=[
@@ -94,6 +115,7 @@ class TestRouter:
                     subject_slug="libft",
                     ordinal=0,
                     snippet="Libft string functions",
+                    chunk_metadata={"header 1": "Overview"},
                     distance=0.05,
                 )
             ],
@@ -116,4 +138,5 @@ class TestRouter:
         assert data["query"] == "test query"
         assert len(data["chunks"]) == 1
         assert data["chunks"][0]["subject_slug"] == "libft"
+        assert data["chunks"][0]["chunk_metadata"] == {"header 1": "Overview"}
         assert data["chunks"][0]["distance"] == 0.05
