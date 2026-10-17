@@ -1,5 +1,10 @@
 from fastapi import APIRouter, FastAPI
 
+from app.user.opportunities.browse_opportunities.router import (
+    router as opportunities_router,
+)
+
+
 router = APIRouter()
 
 
@@ -23,3 +28,4 @@ async def health_ready() -> dict[str, object]:
 
 def register_routes(app: FastAPI) -> None:
     app.include_router(router)
+    app.include_router(opportunities_router)
