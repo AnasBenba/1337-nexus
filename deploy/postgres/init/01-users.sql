@@ -13,7 +13,7 @@ GRANT CONNECT ON DATABASE nexus TO nexus_app;
 GRANT CONNECT ON DATABASE nexus TO nexus_migrator;
 
 -- Switch to the nexus database
- connect nexus
+ \connect nexus
 
 -- Schema permissions
 GRANT USAGE ON SCHEMA public TO nexus_app;

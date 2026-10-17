@@ -35,6 +35,25 @@ async def get_access_token(code: str, code_verifier: str) -> dict:
         return response.json()
     
 
+# async def manage_user(user_data: dict) -> None:
+#     async with db.SessionLocal() as session:
+#         result = await session.execute(
+#             select(User).where(User.login == user_data["login"])
+#         )
+#         user = result.scalar_one_or_none()
+
+#         if user is None:
+#             session.add(
+#                 User(
+#                     login=user_data["login"],
+#                     fullname=user_data["displayname"],
+#                 )
+#             )
+#         else:
+#             user.fullname = user_data["displayname"]
+
+#         await session.commit()
+
 async def manage_user(token : dict) ->None :
     async with db.engine.connect() as connection :
         exist = await connection.run_sync(
