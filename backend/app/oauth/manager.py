@@ -54,10 +54,6 @@ async def get_access_token(code: str, code_verifier: str) -> dict:
 
 #         await session.commit()
 
-async def manage_user(token : dict) ->None :
-    async with db.engine.connect() as connection :
-        exist = await connection.run_sync(
-            lambda conn : inspect(conn).has_table("users")
-        )
-        if not exist :
-            await connection.run_sync(base.Base.metadata.create_all)
+async def manage_user(token: dict) -> None:
+    async with db.migration_engine.begin() as connection:   # migrator role + auto-commit
+        await connection.run_sync(base.Base.metadata.create_all)
