@@ -3,11 +3,11 @@
 SHELL := /bin/bash
 
 DOCKER ?= docker
-ENV_FILE := deploy/.env
+# ENV_FILE := deploy/.env
 COMPOSE_FILE := deploy/docker-compose.yml
 DEV_COMPOSE_FILE := deploy/docker-compose.dev.yml
 
-COMPOSE := sudo $(DOCKER) compose --env-file $(ENV_FILE) -f $(COMPOSE_FILE)
+COMPOSE := sudo $(DOCKER) compose -f $(COMPOSE_FILE)
 DEV_COMPOSE := $(COMPOSE) -f $(DEV_COMPOSE_FILE)
 
 BACKUP_SCRIPT := deploy/scripts/backup.sh
@@ -77,10 +77,13 @@ dev:
 	$(DEV_COMPOSE) up
 
 dev-build:
-	$(DEV_COMPOSE) up --build
+	$(DEV_COMPOSE) up --build postgres backend
 
 down:
 	$(DEV_COMPOSE) down
+
+down-volumes:
+	$(DEV_COMPOSE) down -v
 
 ps:
 	$(DEV_COMPOSE) ps
