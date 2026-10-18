@@ -7,4 +7,5 @@ class Users(base.Base):
     id : Mapped[int] = mapped_column(primary_key = True)
     login : Mapped[str] = mapped_column()
     fullname : Mapped[str] = mapped_column()
+    role : Mapped[str] = mapped_column() #either user || admin
     

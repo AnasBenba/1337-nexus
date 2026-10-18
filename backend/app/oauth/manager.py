@@ -5,6 +5,7 @@ from sqlalchemy import inspect
 import httpx
 from ..core import base
 from . import user
+from sqlalchemy import select
 
 async def get_user(access_token: str) -> dict:
     async with httpx.AsyncClient() as client:
@@ -36,6 +37,22 @@ async def get_access_token(code: str, code_verifier: str) -> dict:
         return response.json()
     
 
-async def manage_user(token: dict) -> None:
+async def manage_user(user_data: dict) -> None:
+    print(user_data["id"])
     async with db.migration_engine.begin() as connection:
         await connection.run_sync(base.Base.metadata.create_all)
+    async with db.SessionLocal() as session:
+        result = await session.execute(
+            select(user.Users).where(user.Users.login == user_data["login"])
+        )
+        existing = result.scalar_one_or_none()
+
+        if existing is None:
+            session.add(
+                user.Users(
+                    login=user_data["login"],
+                    fullname=user_data["displayname"],
+                    role="user",
+                )
+            )
+            await session.commit()
