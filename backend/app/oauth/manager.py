@@ -20,6 +20,7 @@ async def get_user(access_token: str) -> dict:
 async def get_access_token(code: str, code_verifier: str) -> dict:
     client_id = os.getenv("UID")
     client_secret = os.getenv("SECRET")
+    redirect_url = os.getenv("REDIRECT_URL")
     async with httpx.AsyncClient() as client:
         response = await client.post(
             "https://api.intra.42.fr/oauth/token",
@@ -28,32 +29,13 @@ async def get_access_token(code: str, code_verifier: str) -> dict:
                 "client_id": client_id,
                 "client_secret": client_secret,
                 "code": code,
-                "redirect_uri": "http://localhost:8000/api/v1/auth/oauth/42/callback",
+                "redirect_uri": redirect_url,
                 "code_verifier": code_verifier
             }
         )
         return response.json()
     
 
-# async def manage_user(user_data: dict) -> None:
-#     async with db.SessionLocal() as session:
-#         result = await session.execute(
-#             select(User).where(User.login == user_data["login"])
-#         )
-#         user = result.scalar_one_or_none()
-
-#         if user is None:
-#             session.add(
-#                 User(
-#                     login=user_data["login"],
-#                     fullname=user_data["displayname"],
-#                 )
-#             )
-#         else:
-#             user.fullname = user_data["displayname"]
-
-#         await session.commit()
-
 async def manage_user(token: dict) -> None:
-    async with db.migration_engine.begin() as connection:   # migrator role + auto-commit
+    async with db.migration_engine.begin() as connection:
         await connection.run_sync(base.Base.metadata.create_all)
