@@ -53,7 +53,7 @@ async def find_nearest_chunks(
 
     Args:
         db:           Async SQLAlchemy session (injected by the service).
-        query_vector: Dense embedding of the user query (must be 1536-dim).
+        query_vector: Dense embedding of the user query (must match EMBEDDING_DIMENSIONS).
         k:            Number of nearest neighbours to return.
 
     Returns:
