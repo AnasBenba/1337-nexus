@@ -39,6 +39,7 @@ dependencies = [
     "tiktoken~=0.12.0",
     "pymupdf4llm~=1.28.2",
 	"langchain-text-splitters~=1.1.2",
+    "google-genai>=1.0.0",
 
     # -------------------------------------------------------------------------
     # Markdown sanitization / rendering
