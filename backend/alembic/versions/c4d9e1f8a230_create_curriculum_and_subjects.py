@@ -11,6 +11,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 from pgvector.sqlalchemy import Vector
+from app.shared.ai.config import EMBEDDING_DIMENSIONS
 
 revision: str = "c4d9e1f8a230"
 down_revision: Union[str, Sequence[str], None] = "b7a721fc05b8"
@@ -51,7 +52,7 @@ def upgrade() -> None:
         sa.Column("chunk_index", sa.Integer(), nullable=True),
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column("chunk_metadata", postgresql.JSONB(), nullable=True),
-        sa.Column("embedding", Vector(1536), nullable=False),
+        sa.Column("embedding", Vector(EMBEDDING_DIMENSIONS), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.ForeignKeyConstraint(["document_id"], ["subject_documents.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
