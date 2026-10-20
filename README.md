@@ -27,7 +27,7 @@ The monorepo is developed by a dedicated team with full-stack vertical slice own
 
 | Member | Focus Area | Responsibilities |
 | :--- | :--- | :--- |
-| **Zoubair** | **AI Co-Pilot & Whiteboard** | Curriculum RAG pipeline, pgvector search, streaming copilot, collaborative canvas |
+| **Zoubair** | **AI Co-Pilot & RAG** | Curriculum RAG pipeline, pgvector vector search, LLM integrations, streaming copilot |
 | **Anas** | **DevOps & Infrastructure** | Docker orchestration, CI/CD pipelines, reverse proxy, deployment reliability |
 | **Sfy** | **Auth & Campus Admin** | 42 OAuth login flow, JWT security, campus management & user administration |
 | **Yassin** | **Pitches, Chat & Gamification** | Pitch explorer, upvoting, direct & team messaging, user XP/badges |
@@ -50,7 +50,7 @@ We are currently completing the foundational backend services, vector retrieval 
 ### 🔄 In Progress
 - **Phase 2 & 3 of Copilot Ask**: Real-time SSE token streaming (`POST /api/v1/copilot/ask`) with grounded citation chips.
 - **Frontend Flow Integration**: React + TypeScript client applications for Pitches, Copilot chat, and Kanban.
-- **Yjs CRDT Integration**: Real-time collaborative whiteboard state synchronization over WebSockets.
+- **Collaboration Tools**: Real-time canvas documents and Kanban board integration.
 
 ---
 
@@ -191,5 +191,5 @@ mypy -p app.user.copilot.ask -m app.models.copilot
 - [ ] SSE token streaming generator and completed response finalizer (`copilot/ask` Phase 2 & 3)
 - [ ] React UI Copilot chat component with streaming markdown & source citations
 - [ ] Pitches, Teams, and Kanban flow completion
-- [ ] Real-time canvas whiteboard with Yjs CRDT over WebSockets
+- [ ] Real-time canvas documents with CRDT synchronization
 - [ ] Comprehensive End-to-End User Documentation & Deployment Guide
