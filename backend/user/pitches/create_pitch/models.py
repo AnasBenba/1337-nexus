@@ -10,6 +10,7 @@ class Pitch(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
     title = Column(String, index=True)
     content = Column(Text)  
+    rendered_content = Column(Text)
     description = Column(Text)
     category = Column(Enum(PitchCategory))
     status = Column(Enum(PitchStatus), default=PitchStatus.DRAFT)

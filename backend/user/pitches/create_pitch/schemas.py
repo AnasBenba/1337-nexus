@@ -31,6 +31,7 @@ class PitchResponse(BaseModel):
     id: UUID    
     title: str
     content: str
+    rendered_content: str | None = None
     category: PitchCategory
     state: PitchStatus
     description: str = None

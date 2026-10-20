@@ -7,6 +7,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 from app.core.config import get_settings
 from app.shared.models import Base
+from user.pitches.create_pitch.models import Pitch
+
+target_metadata = Base.metadata
 
 config = context.config
 
