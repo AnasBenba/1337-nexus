@@ -5,72 +5,71 @@
 ---
 
 > [!NOTE]
-> **Active Development Notice**: This repository is currently in active development. This document serves as the interim technical guide and development manual. A polished, user-facing production README will be published upon full release and end-to-end frontend integration.
+> **Active Development Notice**: This repository is currently in an active 30-day development cycle. This document serves as the interim engineering guide and milestone tracker. A polished, user-facing production manual will be published upon full release and end-to-end frontend integration.
 
 ---
 
 ## 📌 Project Overview
 
-1337 Nexus bridges curriculum learning, team formation, and real-time project collaboration in a single unified platform. The architecture follows a **flow-oriented, use-case-sliced monorepo** structure designed for modular scalability and clean team ownership.
-
-### Core Pillars
-1. **AI Copilot & Curriculum RAG**: Context-aware AI assistant grounded in 42 curriculum project guides and documentation using pgvector semantic retrieval and real-time token streaming.
-2. **Pitches & Peer Incubator**: A platform for students to pitch software ideas, recruit teammates, and launch projects.
-3. **Collaborative Workspaces**: Real-time collaborative canvas (Yjs CRDT) and Kanban project management boards.
-4. **Campus & Network Identity**: 42 Intra OAuth integration with campus-specific contexts.
+1337 Nexus bridges curriculum learning, team formation, and real-time project collaboration in a single unified platform. The architecture follows a **flow-oriented, use-case-sliced monorepo** structure designed for modular scalability and clean team ownership across 6 core technical domains.
 
 ---
 
-## 👥 Team Ownership
+## 👥 Team Ownership & Technical Domains
 
-The monorepo is developed by a dedicated team with full-stack vertical slice ownership:
+Work is organized around 6 domain prefixes managed on the GitHub Project Board:
 
-| Member | Focus Area | Responsibilities |
-| :--- | :--- | :--- |
-| **Zoubair** | **AI Co-Pilot & RAG** | Curriculum RAG pipeline, pgvector vector search, LLM integrations, streaming copilot |
-| **Anas** | **DevOps & Infrastructure** | Docker orchestration, CI/CD pipelines, reverse proxy, deployment reliability |
-| **Sfy** | **Auth & Campus Admin** | 42 OAuth login flow, JWT security, campus management & user administration |
-| **Yassin** | **Pitches, Chat & Gamification** | Pitch explorer, upvoting, direct & team messaging, user XP/badges |
-| **Ayoub** | **Teams, Kanban & Opportunities** | Recruitment, application workflows, Kanban board columns and cards |
+| Domain | Focus Area | Owner | GitHub Handle | Key Responsibilities |
+| :--- | :--- | :--- | :--- | :--- |
+| **`AI`** | **AI Copilot & Knowledge Engine** | **Zoubair** | `@zombie00Y` | Subject corpus ingestion, Gemini embeddings, pgvector retrieval, streaming copilot |
+| **`CV`** | **Collaborative Canvas** | **Zoubair** | `@zombie00Y` | Socket.IO binary CRDT relay, canvas compaction engine, collaborative whiteboard UI |
+| **`INFRA`**| **DevOps & Infrastructure** | **Anas** | `@AnasBenba` | Multi-container Docker topology, Nginx proxy, memory tuning, CI/CD pipelines |
+| **`IDNT`** | **Identity, Auth & Admin** | **Soufiane** | `@souf-bo` | 42 Intra OAuth2 PKCE, dual-token JWT rotation, campus hierarchy, admin moderation |
+| **`RTK`** | **Recruitment, Teams & Kanban** | **Ayoub** | `@aykaouf` | Recruitment postings, matching, Lexorank Kanban drag-and-drop, GitHub polling |
+| **`SDG`** | **Social, Discovery & Gamification**| **Yassine** | `@Yassine-Atmouioud` | Pitch CRUD, markdown sanitization, team/DM chat, XP ledger, leaderboards |
 
 ---
 
-## 🚀 Current Milestone & Status
+## 🚀 Current Milestone & Sprint Status
 
-We are currently completing the foundational backend services, vector retrieval pipeline, and real-time streaming infrastructure.
+The project is tracking 30 core tickets on the unified board:
+- **Completed**: 9 tickets (~30%)
+- **In Progress**: 5 tickets (~17%)
+- **Backlog**: 16 tickets (~53%)
 
 ### ✅ What is Working Right Now
-- **Containerized Infrastructure**: Docker Compose setup orchestrating PostgreSQL 17 (with `pgvector`), FastAPI, and Nginx.
-- **Curriculum Ingestion Pipeline**: CLI tool (`app.cli.ingest_subjects`) parsing markdown and PDF subject briefs, chunking text using recursive token splitting with header metadata preservation, and generating 1536-dimensional embeddings.
-- **Semantic Curriculum Retrieval**: Fully tested semantic search service (`POST /api/v1/copilot/retrieve-curriculum`) querying nearest chunks via cosine distance.
-- **Copilot Ask Phase 1 (AI-202)**: High-speed pre-stream retrieval and database transaction (`copilot_threads`, `copilot_messages`) committing state in $< 50\text{ms}$ to eliminate DB connection pool starvation during inference.
-- **Provider Abstraction**: Dual-mode AI provider supporting Google Gemini (`gemini-2.5-flash`, `gemini-embedding-001`) and deterministic in-memory stubs for offline testing.
-- **Test Suite**: 100% passing test suite across chunking, AI providers, retrieval, and copilot services.
+- **Infrastructure (`INFRA-001..003, 005`)**: PostgreSQL 17 + `pgvector` container with tuned 512MB memory limit, Nginx reverse proxy, and operational bootstrap/backup scripts.
+- **Authentication (`IDNT-001`)**: 42 Intra OAuth2 authorization code flow with PKCE/state verification.
+- **RAG & Embeddings (`AI-101, 102, 201`)**: Subject corpus parsing, recursive token splitting with markdown header preservation, Google Gemini 1536-d embeddings, and pgvector cosine distance retrieval (`POST /api/v1/copilot/retrieve-curriculum`).
+- **Copilot Pre-Stream Engine (`AI-202` Phase 1)**: Short-transaction ($< 50\text{ms}$) pre-stream engine recording `copilot_threads` and `copilot_messages` without connection pool holding.
+- **Recruitment Core (`RTK-001`)**: Opportunity listings, applicant match scoring, and review lifecycle merged into main.
 
-### 🔄 In Progress
-- **Phase 2 & 3 of Copilot Ask**: Real-time SSE token streaming (`POST /api/v1/copilot/ask`) with grounded citation chips.
-- **Frontend Flow Integration**: React + TypeScript client applications for Pitches, Copilot chat, and Kanban.
-- **Collaboration Tools**: Real-time canvas documents and Kanban board integration.
+### 🔄 Active In-Flight Work
+- **`[AI-202]` / `[AI-203]`**: Token-by-token Server-Sent Events (SSE) streaming endpoint and frontend reader.
+- **`[INFRA-004]`**: GitHub Actions CI/CD pipeline with automated Ruff, Mypy, and Vitest gates.
+- **`[IDNT-002]`**: Dual-token JWT HttpOnly cookie lifecycle with automated refresh token rotation.
+- **`[SDG-001]`**: Pitch CRUD workflows with markdown sanitization and search indexing.
 
 ---
 
 ## 🛠️ Tech Stack
 
 - **Backend**: Python 3.12, FastAPI, SQLAlchemy 2.0 (AsyncIO), Alembic, Pydantic v2
-- **Vector Database**: PostgreSQL 17 with `pgvector`
-- **AI & Embeddings**: Google Gemini API (`google-genai`), LangChain text splitters, tiktoken
+- **Vector Database**: PostgreSQL 17 with `pgvector` (HNSW indexing)
+- **AI & Embeddings**: Google Gemini (`gemini-2.5-flash`, `gemini-embedding-001`), LangChain splitters, tiktoken
+- **Realtime & CRDT**: Socket.IO, `pycrdt` (Yjs Rust binding)
 - **Frontend**: React, TypeScript, Vite, Tailwind CSS (in development)
-- **DevOps & Tooling**: Docker, Docker Compose, `uv`, Ruff, Mypy, Pytest
+- **DevOps**: Docker, Docker Compose, Nginx, `uv`, Ruff, Mypy, Pytest
 
 ---
 
 ## 💻 How to Run the Project Right Now
 
 ### 1. Prerequisites
-- **Linux or WSL2 (Ubuntu recommended)**
+- **Linux or WSL2 (Ubuntu 22.04 / 24.04)**
 - **Docker & Docker Compose**
-- **Python 3.12+** (managed via `uv` or system virtualenv)
-- **Node.js 20+** (for frontend)
+- **Python 3.12+** (managed via `uv`)
+- **Node.js 20+**
 
 ---
 
@@ -80,7 +79,7 @@ To spin up the PostgreSQL vector database and backend container:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/1337-nexus.git
+git clone https://github.com/AnasBenba/1337-nexus.git
 cd 1337-nexus
 
 # Launch backend and postgres containers
@@ -91,20 +90,18 @@ docker compose \
   up --build -d
 ```
 
-- API Documentation: [http://localhost:8000/docs](http://localhost:8000/docs)
-- Health Check: [http://localhost:8000/health/live](http://localhost:8000/health/live)
+- Interactive OpenAPI Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Health Probe: [http://localhost:8000/health/live](http://localhost:8000/health/live)
 
 ---
 
-### 3. Local Backend Development (Recommended for Testing & CLI)
+### 3. Local Backend Development (Recommended for Development & Pytest)
 
 #### A. Set up Python Virtual Environment
-We recommend using [uv](https://github.com/astral-sh/uv) for fast package management:
-
 ```bash
 cd backend
 
-# Install all dependencies (production + development)
+# Sync all production and development dependencies via uv
 ~/.local/bin/uv sync --extra dev
 
 # Activate virtual environment
@@ -139,7 +136,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ## 🧪 Testing & Code Quality
 
-All code in this repository adheres to strict type safety and linting standards:
+All pull requests must pass tests, linting, and strict type-checking before merging:
 
 ```bash
 cd backend
@@ -170,7 +167,7 @@ mypy -p app.user.copilot.ask -m app.models.copilot
 │   │   ├── models/             # SQLAlchemy ORM models (curriculum, copilot)
 │   │   ├── shared/             # Shared AI client, providers (Gemini & Stub)
 │   │   └── user/               # Use-case sliced user features:
-│   │       ├── copilot/        # AI Copilot: ask, retrieve_curriculum
+│   │       ├── copilot/        # AI Copilot: ask (SSE), retrieve_curriculum
 │   │       ├── opportunities/  # Recruitment & application flows
 │   │       └── pitches/        # Student project pitches
 │   └── tests/                  # Pytest test suite
@@ -182,14 +179,46 @@ mypy -p app.user.copilot.ask -m app.models.copilot
 
 ---
 
-## 📝 Roadmap & Final Release Checklist
+## 📋 Ticket Tracking & Sprint Roadmap
 
-- [x] Vector database schema with pgvector & HNSW indexes
-- [x] Automated subject document ingestion & embedding pipeline
-- [x] Semantic vector similarity search service (`retrieve-curriculum`)
-- [x] Fast pre-stream retrieval and short DB transaction (`copilot/ask` Phase 1)
-- [ ] SSE token streaming generator and completed response finalizer (`copilot/ask` Phase 2 & 3)
-- [ ] React UI Copilot chat component with streaming markdown & source citations
-- [ ] Pitches, Teams, and Kanban flow completion
-- [ ] Real-time canvas documents with CRDT synchronization
-- [ ] Comprehensive End-to-End User Documentation & Deployment Guide
+### Infrastructure (`INFRA`)
+- [x] `[INFRA-001]` 3-container topology over dedicated Docker bridge network
+- [x] `[INFRA-002]` Nginx HTTPS termination, SPA serving, and proxy routing
+- [x] `[INFRA-003]` Tune PostgreSQL config for 0.5 GB memory limit
+- [ ] `[INFRA-004]` GitHub Actions CI/CD pipeline with Ruff, mypy, and Vitest
+- [x] `[INFRA-005]` Bootstrap and backup operational scripts
+
+### Identity & Security (`IDNT`)
+- [x] `[IDNT-001]` 42 Intra OAuth2 Authorization Code flow with PKCE/state
+- [ ] `[IDNT-002]` Dual-token JWT HttpOnly lifecycle with refresh rotation
+- [ ] `[IDNT-003]` PostgreSQL tree campus hierarchy for subtree scope resolution
+- [ ] `[IDNT-004]` Campus Admin moderation dashboard with queue and immutability
+- [ ] `[IDNT-005]` Frontend 42 Intra SSO sign-in and profile onboarding
+
+### AI Copilot & Knowledge Engine (`AI`)
+- [x] `[AI-101]` Provider Abstraction & Deterministic Stub
+- [x] `[AI-102]` Subject Corpus & CLI Ingestion Pipeline
+- [x] `[AI-201]` Vector Distance Retrieval Query (pgvector cosine search)
+- [ ] `[AI-202]` Server-Sent Events (SSE) Streaming Endpoint
+- [ ] `[AI-203]` Frontend SSE Stream Reader & Co-Pilot UI
+- [ ] `[AI-101]` Transactional Database Task Queue (`ai_jobs`)
+- [ ] `[AI-102]` Pitch Refiner Workflow
+
+### Collaborative Canvas (`CV`)
+- [ ] `[CV-401]` Socket.IO Binary CRDT Relay
+- [ ] `[CV-402]` Canvas Snapshot Compaction Engine
+- [ ] `[CV-403]` Collaborative Whiteboard UI
+
+### Recruitment, Teams & Kanban (`RTK`)
+- [x] `[RTK-001]` Recruitment postings, match scoring, and review lifecycle
+- [ ] `[RTK-002]` Atomic workspace provisioning on founder acceptance
+- [ ] `[RTK-003]` Frontend Kanban drag-and-drop UI and recruitment review queue
+- [ ] `[RTK-004]` GitHub polling engine with X-Poll-Interval compliance
+- [ ] `[RTK-005]` Kanban backend with Lexorank ordering and board revision guards
+
+### Social, Discovery & Gamification (`SDG`)
+- [ ] `[SDG-001]` Pitch CRUD with Markdown, sanitization, and pgvector search
+- [ ] `[SDG-002]` Realtime chat backend for team and DM namespaces
+- [ ] `[SDG-003]` Immutable `xp_events` ledger and automated badge evaluation
+- [ ] `[SDG-004]` In-app notifications persistence and notify push namespace
+- [ ] `[SDG-005]` Pitch Explorer feed, live Chat UI, and Campus Leaderboards
