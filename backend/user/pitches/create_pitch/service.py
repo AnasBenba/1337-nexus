@@ -19,17 +19,14 @@ async def create_pitch(db: AsyncSession, pitch: PitchCreate):
     return new_pitch
 
 async def get_all_pitches(db: AsyncSession):
-    # real data instead of placeholder data should be fetched from the database
-    query = select(Pitch)
+    query = select(Pitch) .order_by(Pitch.created_at.desc()) .limit(40)
 
     result = await db.execute(query)
 
-    return result.scalars().all()[:40]
+    return result.scalars().all()
 
 async def get_one_pitch(db: AsyncSession, pitch_id: uuid.UUID):
-    # real data instead of placeholder data should be fetched from the database
-    query = select(Pitch).where(Pitch.id == pitch_id)
-    result = await db.execute(query)
+    result = await db.execute(select(Pitch).where(Pitch.id == pitch_id))
     pitch = result.scalar_one_or_none()
     if not pitch:
         raise HTTPException(status_code=404, detail="Pitch not found")

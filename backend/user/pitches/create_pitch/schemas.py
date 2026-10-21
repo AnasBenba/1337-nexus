@@ -24,7 +24,7 @@ class PitchCreate(BaseModel):
     title: str #= Field(min_length=10, max_length=30)
     content: str #= Field(min_length=50, max_length=400)
     category: PitchCategory
-    description: str # = Field(default=None, max_length=200)
+    description: str | None = None
 
 
 class PitchResponse(BaseModel):
@@ -34,5 +34,5 @@ class PitchResponse(BaseModel):
     rendered_content: str | None = None
     category: PitchCategory
     state: PitchStatus
-    description: str = None
+    description: str | None = None
     # author_id: int
