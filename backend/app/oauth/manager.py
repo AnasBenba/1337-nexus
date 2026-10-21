@@ -22,7 +22,7 @@ async def get_access_token(code: str, code_verifier: str) -> dict:
     client_id = os.getenv("UID")
     client_secret = os.getenv("SECRET")
     redirect_url = os.getenv("REDIRECT_URL")
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=20.0) as client:
         response = await client.post(
             "https://api.intra.42.fr/oauth/token",
             data={
@@ -38,7 +38,6 @@ async def get_access_token(code: str, code_verifier: str) -> dict:
     
 
 async def manage_user(user_data: dict) -> None:
-    print(user_data["id"])
     async with db.migration_engine.begin() as connection:
         await connection.run_sync(base.Base.metadata.create_all)
     async with db.SessionLocal() as session:
@@ -53,6 +52,7 @@ async def manage_user(user_data: dict) -> None:
                     login=user_data["login"],
                     fullname=user_data["displayname"],
                     role="user",
+                    intra_id=user_data["id"]
                 )
             )
             await session.commit()

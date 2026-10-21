@@ -23,7 +23,7 @@ async def auth_callback(request: Request, code: str, state: str):
     token = await manager.get_access_token(code, code_verifier_cookie)
     print(token)
     await manager.manage_user(await manager.get_user(token["access_token"]))
-
+    
 
 
 @router.get("/health/live", tags=["health"])

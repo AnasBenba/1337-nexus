@@ -8,4 +8,5 @@ class Users(base.Base):
     login : Mapped[str] = mapped_column()
     fullname : Mapped[str] = mapped_column()
     role : Mapped[str] = mapped_column() #either user || admin
+    intra_id : Mapped[int] = mapped_column()
     
