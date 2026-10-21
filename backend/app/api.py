@@ -18,7 +18,7 @@ async def auth_login() -> RedirectResponse:
 HOME_PAGE = Path(__file__).parent  / "index.html"
 
 
-@router.get("/home", tags=["pages"])
+@router.get("/home", tags=["auth"])
 async def home() -> FileResponse:
     return FileResponse(HOME_PAGE, media_type="text/html")
 
