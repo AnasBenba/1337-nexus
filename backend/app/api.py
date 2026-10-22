@@ -1,5 +1,6 @@
 from fastapi import APIRouter, FastAPI
 
+from app.user.opportunities.apply.router import router as apply_router
 from app.user.opportunities.browse_opportunities.router import (
     router as opportunities_router,
 )
@@ -43,3 +44,4 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(router)
     app.include_router(opportunities_router)
     app.include_router(view_opportunity_router)
+    app.include_router(apply_router)
