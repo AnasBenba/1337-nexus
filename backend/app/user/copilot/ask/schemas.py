@@ -22,10 +22,10 @@ class AskRequest(BaseModel):
         description="The user's question to the AI copilot.",
     )
     k: int = Field(
-        default=5,
+        default=8,
         ge=1,
         le=20,
-        description="Number of curriculum chunks to retrieve for context.",
+        description="Number of curriculum chunks to retrieve for context (default 8, max 20).",
     )
     thread_id: uuid.UUID | None = Field(
         default=None,

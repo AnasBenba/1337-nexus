@@ -61,16 +61,28 @@ class GeminiAIProvider(AIProvider):
     ) -> AsyncGenerator[str, None]:
         """
         Stream chat completions for conversational agents using Gemini.
+        Includes automatic retry for temporary 503 high-demand spikes.
         """
+        import asyncio
         chat_model = os.getenv("CHAT_MODEL", "gemini-2.5-flash")
         contents = [msg.get("content", "") for msg in messages] if messages else [""]
-        response = await self.client.aio.models.generate_content_stream(
-            model=chat_model,
-            contents=contents,
-        )
-        async for chunk in response:
-            if chunk.text:
-                yield chunk.text
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                response = await self.client.aio.models.generate_content_stream(
+                    model=chat_model,
+                    contents=contents,
+                )
+                async for chunk in response:
+                    if chunk.text:
+                        yield chunk.text
+                return
+            except Exception as e:
+                err_str = str(e)
+                if ("503" in err_str or "high demand" in err_str.lower()) and attempt < max_attempts - 1:
+                    await asyncio.sleep(1.0 * (attempt + 1))
+                    continue
+                raise
 
     stream_chat = stream_complete
 

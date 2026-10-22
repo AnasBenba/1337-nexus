@@ -42,7 +42,8 @@ logger = logging.getLogger(__name__)
 
 AsyncSessionFactory = Callable[[], AsyncSession]
 
-_CONTEXT_WINDOW = 6000  # max chars of snippet context injected into the prompt
+_DEFAULT_RETRIEVAL_K = 8
+_CONTEXT_WINDOW = 12000  # max chars of snippet context injected into the prompt
 
 
 # ---------------------------------------------------------------------------
@@ -63,6 +64,7 @@ def _build_citations(chunks: list[ChunkResult]) -> list[dict[str, Any]]:
             "subject_slug": c.subject_slug,
             "ordinal": c.ordinal,
             "distance": round(c.distance, 4),
+            "snippet": c.snippet[:400] if getattr(c, "snippet", None) else "",
         }
         for c in chunks
     ]
@@ -74,29 +76,43 @@ def _build_grounded_prompt(
     """
     Assemble the LLM messages list with curriculum context injected.
 
-    The system message instructs the model to answer strictly from
-    the provided 1337 curriculum excerpts and never hallucinate.
+    Formats retrieved chunks as numbered source blocks [1], [2], ...
+    and equips the model with a sharp, peer-mentor persona that leads
+    with direct answers and uses natural inline citations.
     """
     context_parts: list[str] = []
     remaining = _CONTEXT_WINDOW
-    for chunk in chunks:
+    for idx, chunk in enumerate(chunks, start=1):
         snippet = chunk.snippet.strip()
-        label = f"[{chunk.subject_slug} -- excerpt {chunk.ordinal}]"
-        block = f"{label}\n{snippet}"
+        header = f"[{idx}] (Subject: {chunk.subject_slug}, Section #{chunk.ordinal})"
+        block = f"{header}\n{snippet}"
         if len(block) > remaining:
             context_parts.append(block[:remaining])
             break
         context_parts.append(block)
         remaining -= len(block) + 2  # account for separator newlines
 
-    curriculum_context = "\n\n---\n\n".join(context_parts)
+    curriculum_context = (
+        "\n\n---\n\n".join(context_parts)
+        if context_parts
+        else "No curriculum excerpts found for this query."
+    )
 
     system_message = (
-        "You are the 1337 / 42 Network AI Copilot. "
-        "You MUST answer the student's question using ONLY the curriculum excerpts "
-        "provided below. Do NOT invent information or draw on outside knowledge. "
-        "If the answer is not contained in the excerpts, say so clearly.\n\n"
-        f"## Curriculum Context\n\n{curriculum_context}"
+        "You are the 1337 / 42 Network AI Co-Pilot, an experienced, sharp, and friendly peer mentor. "
+        "Your mission is to guide 42 students through official project subjects, constraints, and peer-evaluation traps.\n\n"
+        "### Core Instructions & Persona:\n"
+        "1. **Answer-First Rule:** If the student asks for a count, list, or direct question (e.g., 'how many functions', 'what are the rules', 'is X allowed'), "
+        "you MUST state the direct answer or count in the very first sentence. Never bury the lead or start with filler.\n"
+        "2. **Strictly Ban Robotic Meta-Language:** NEVER use robotic disclaimers like 'Based on the provided curriculum excerpts', "
+        "'According to the context', 'From libft -- excerpt 13', or 'As an AI'. Speak naturally and authoritatively like a knowledgeable 42 peer on campus.\n"
+        "3. **Inline Numbered Citations:** Cite your sources naturally using numbered brackets (e.g., [1], [2]) that correspond directly to the source blocks provided below. "
+        "Include these citations alongside specific function names, rules, or constraints.\n"
+        "4. **Partial Window & Scope Awareness:** Ground all answers in the verified source blocks below. "
+        "If a list or count appears to span across chunks or cut off (for instance, mandatory Part 1/2 vs. bonus functions), "
+        "report the exact count visible in the excerpts and casually note that the full document covers additional parts or bonuses.\n"
+        "5. **Crisp Formatting:** Use clean Markdown with bullet points, bold highlights, and code backticks for functions, types, and files.\n\n"
+        f"### Verified Curriculum Source Blocks:\n\n{curriculum_context}"
     )
 
     return [
@@ -162,8 +178,10 @@ async def pre_stream_transaction(
             )
             db.add(thread)
 
-        # 2. Retrieve top-K curriculum chunks via pgvector
-        retrieval_query = RetrievalQuery(query=body.question, k=body.k)
+        # 2. Retrieve top-K curriculum chunks via pgvector (default bumped to 8 for full coverage)
+        requested_k = body.k
+        retrieval_k = _DEFAULT_RETRIEVAL_K if (requested_k is None or requested_k == 5) else requested_k
+        retrieval_query = RetrievalQuery(query=body.question, k=retrieval_k)
         retrieval_result = await retrieve_curriculum(retrieval_query, db, ai)
         context_chunks = retrieval_result.chunks
 
