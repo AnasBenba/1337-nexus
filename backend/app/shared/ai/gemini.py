@@ -72,6 +72,8 @@ class GeminiAIProvider(AIProvider):
             if chunk.text:
                 yield chunk.text
 
+    stream_chat = stream_complete
+
 
 # Alias for backward-compatibility with remote provider naming
 RemoteAIProvider = GeminiAIProvider
