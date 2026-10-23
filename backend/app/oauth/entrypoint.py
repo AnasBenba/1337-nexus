@@ -26,7 +26,6 @@ class AuthClient:
         finale_hash = base64.urlsafe_b64encode(hash_obj.digest())
         return finale_hash.rstrip(b"=").decode()
     def get_FortyTwo_auth_url(self) -> str:
-        print("DKHLT W MAKHREJTCH")
         return (
             f"{self.authorize_url}"
             f"&client_id={self.client}"

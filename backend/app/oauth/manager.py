@@ -1,8 +1,6 @@
 import httpx
 import os
 from ..core import db
-from sqlalchemy import inspect 
-import httpx
 from ..core import base
 from . import user
 from sqlalchemy import select

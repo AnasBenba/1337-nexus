@@ -16,7 +16,6 @@ from fastapi.responses import RedirectResponse
 from fastapi import Request
 from fastapi.responses import FileResponse
 from .oauth import manager
-import httpx
 from pathlib import Path
 
 router = APIRouter()
@@ -41,7 +40,6 @@ async def auth_callback(request: Request, code: str, state: str) -> RedirectResp
     if state_cookie != state:
         return {"error": "Invalid state parameter"}
     token = await manager.get_access_token(code, code_verifier_cookie)
-    print(token)
     await manager.manage_user(await manager.get_user(token["access_token"]))
     response = RedirectResponse(url="/home", status_code=303)
     response.delete_cookie("state", path="/")
