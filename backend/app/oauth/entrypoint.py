@@ -7,6 +7,8 @@ import os
 
 class AuthClient:
     def __init__(self, redirect_uri: str):
+        self.authorize_url = os.getenv("AUTH_URL")
+        self.client = os.getenv("UID")
         self.redirect_uri = redirect_uri
         self.state = self.generate_state()
         self.code_verifier = self.generate_code_verifier()
@@ -24,7 +26,20 @@ class AuthClient:
         finale_hash = base64.urlsafe_b64encode(hash_obj.digest())
         return finale_hash.rstrip(b"=").decode()
     def get_FortyTwo_auth_url(self) -> str:
-        pass
+        print("DKHLT W MAKHREJTCH")
+        return (
+            f"{self.authorize_url}"
+            f"&client_id={self.client}"
+            f"&state={self.state}"
+            f"&code_challenge={self.code_challenge}"
+            f"&code_challenge_method=S256"
+            f"&redirect_uri={self.redirect_uri}"
+            f"&response_type=code"
+        )
 
 async def redirect_to_forttytwo():
     client = AuthClient(redirect_uri="http://localhost:8000/api/v1/auth/oauth/42/callback")
+    response = RedirectResponse(client.get_FortyTwo_auth_url())
+    response.set_cookie(key="state", value=client.state, httponly=True)
+    response.set_cookie(key="code_verifier", value=client.code_verifier, httponly=True)
+    return response
