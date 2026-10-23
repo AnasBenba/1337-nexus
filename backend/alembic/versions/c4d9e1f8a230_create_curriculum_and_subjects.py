@@ -25,7 +25,7 @@ depends_on: Union[str, Sequence[str], None] = None
 #     # Existing table creation code follows...
 
 def upgrade() -> None:
-    # op.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
 
     # Existing table creation code follows...
     op.create_table(
