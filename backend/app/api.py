@@ -47,7 +47,6 @@ async def health_live() -> dict[str, str]:
         "service": "api",
     }
 
-
 @router.get("/health/ready", tags=["health"])
 async def health_ready() -> dict[str, object]:
     return {
@@ -57,6 +56,8 @@ async def health_ready() -> dict[str, object]:
         },
     }
 
-
 def register_routes(app: FastAPI) -> None:
     app.include_router(router)
+    app.include_router(retrieve_curriculum_router)
+    app.include_router(opportunities_router)
+    app.include_router(view_opportunity_router)

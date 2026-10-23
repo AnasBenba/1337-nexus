@@ -24,6 +24,7 @@ COPY backend/app ./app
 COPY backend/alembic ./alembic
 COPY backend/alembic.ini ./alembic.ini
 COPY backend/entrypoint.sh ./entrypoint.sh
+COPY backend/content ./content
 
 RUN chmod +x /app/entrypoint.sh \
     && chown -R app:app /app

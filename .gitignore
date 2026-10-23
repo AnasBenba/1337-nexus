@@ -5,6 +5,7 @@
 *.pem
 *.key
 *.crt
+*.egg-info/
 
 # Python
 __pycache__/
@@ -35,7 +36,9 @@ test-results/
 
 # IDE / editor files
 .vscode/
+.antigravity/
 .idea/
+.antigravity/
 *.swp
 *.swo
 
