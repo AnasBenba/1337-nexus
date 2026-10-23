@@ -1,5 +1,7 @@
 
-from fastapi import APIRouter, Depends, HTTPException, Path
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
@@ -16,7 +18,7 @@ router = APIRouter(tags=["opportunities"])
     response_model=OpportunityResponse,
 )
 async def view_opportunity(
-    opportunity_id: int = Path(ge=1),
+    opportunity_id: UUID,
     db: AsyncSession = Depends(get_db_session),
 ):
     opportunity = await service.view_opportunity(

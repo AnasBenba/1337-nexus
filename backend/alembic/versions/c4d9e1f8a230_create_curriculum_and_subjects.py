@@ -18,7 +18,6 @@ down_revision: Union[str, Sequence[str], None] = "7c1c9f5e2a14"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-
 def upgrade() -> None:
     op.create_table(
         "subjects",
