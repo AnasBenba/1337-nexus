@@ -5,6 +5,11 @@ from app.user.opportunities.browse_opportunities.router import (
 from app.user.opportunities.view_opportunity.router import (
     router as view_opportunity_router,
 )
+from app.user.opportunities.apply.router import router as apply_router
+from app.user.opportunities.withdraw_application.router import (
+    router as withdraw_application_router,
+)
+
 from fastapi import APIRouter, FastAPI
 from .oauth import entrypoint
 from fastapi.responses import RedirectResponse
