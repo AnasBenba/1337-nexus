@@ -1,5 +1,5 @@
 from datetime import datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
@@ -16,6 +16,7 @@ class Opportunity(Base):
         PostgreSQLUUID(as_uuid=True),
         primary_key=True,
         index=True,
+        default=uuid4,
     )
 
     project_id: Mapped[UUID] = mapped_column(
