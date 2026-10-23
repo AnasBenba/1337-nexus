@@ -9,6 +9,12 @@
 
 ---
 
+> [!IMPORTANT]
+> **Team Reminder: Keep This README Updated!**  
+> Every time you merge a new feature branch or workstream into `main`, please update your progress section below and keep the team status current.
+
+---
+
 ## 📌 Project Overview
 
 1337 Nexus bridges curriculum learning, team formation, and real-time project collaboration in a single unified platform. The architecture follows a **flow-oriented, use-case-sliced monorepo** structure designed for modular scalability and clean team ownership across 6 core technical domains.
@@ -33,8 +39,8 @@ Work is organized around 6 domain prefixes managed on the GitHub Project Board:
 ## 🚀 Current Milestone & Sprint Status
 
 The project is tracking 30 core tickets on the unified board:
-- **Completed**: 9 tickets (~30%)
-- **In Progress**: 5 tickets (~17%)
+- **Completed**: 11 tickets (~37%)
+- **In Progress**: 3 tickets (~10%)
 - **Backlog**: 16 tickets (~53%)
 
 ### ✅ What is Working Right Now
@@ -43,9 +49,9 @@ The project is tracking 30 core tickets on the unified board:
 - **RAG & Embeddings (`AI-101, 102, 201`)**: Subject corpus parsing, recursive token splitting with markdown header preservation, Google Gemini 1536-d embeddings, and pgvector cosine distance retrieval (`POST /api/v1/copilot/retrieve-curriculum`).
 - **Copilot Pre-Stream Engine (`AI-202` Phase 1)**: Short-transaction ($< 50\text{ms}$) pre-stream engine recording `copilot_threads` and `copilot_messages` without connection pool holding.
 - **Recruitment Core (`RTK-001`)**: Opportunity listings, applicant match scoring, and review lifecycle merged into main.
+- **Copilot Streaming & UI (`AI-202`, `AI-203`)**: Real-time token-by-token SSE streaming endpoint (`/api/v1/copilot/ask`), answer-first persona prompt, verified Intra URL citations, and React SSE stream reader with grounded source cards.
 
 ### 🔄 Active In-Flight Work
-- **`[AI-202]` / `[AI-203]`**: Token-by-token Server-Sent Events (SSE) streaming endpoint and frontend reader.
 - **`[INFRA-004]`**: GitHub Actions CI/CD pipeline with automated Ruff, Mypy, and Vitest gates.
 - **`[IDNT-002]`**: Dual-token JWT HttpOnly cookie lifecycle with automated refresh token rotation.
 - **`[SDG-001]`**: Pitch CRUD workflows with markdown sanitization and search indexing.
@@ -199,8 +205,8 @@ mypy -p app.user.copilot.ask -m app.models.copilot
 - [x] `[AI-101]` Provider Abstraction & Deterministic Stub
 - [x] `[AI-102]` Subject Corpus & CLI Ingestion Pipeline
 - [x] `[AI-201]` Vector Distance Retrieval Query (pgvector cosine search)
-- [ ] `[AI-202]` Server-Sent Events (SSE) Streaming Endpoint
-- [ ] `[AI-203]` Frontend SSE Stream Reader & Co-Pilot UI
+- [x] `[AI-202]` Server-Sent Events (SSE) Streaming Endpoint
+- [x] `[AI-203]` Frontend SSE Stream Reader & Co-Pilot UI
 - [ ] `[AI-101]` Transactional Database Task Queue (`ai_jobs`)
 - [ ] `[AI-102]` Pitch Refiner Workflow
 
