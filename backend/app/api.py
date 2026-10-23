@@ -48,5 +48,6 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(router)
     app.include_router(opportunities_router)
     app.include_router(view_opportunity_router)
+    app.include_router(retrieve_curriculum_router)
     app.include_router(apply_router)
     app.include_router(withdraw_application_router)
