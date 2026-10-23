@@ -23,14 +23,9 @@ from fastapi.responses import RedirectResponse
 
 router = APIRouter()
 
-
 @router.get("/auth/login", tags=["auth"])
 async def auth_login() -> RedirectResponse: 
     return await entrypoint.redirect_to_forttytwo()
-
-    
-    
-
 
 @router.get("/health/live", tags=["health"])
 async def health_live() -> dict[str, str]:
@@ -38,7 +33,6 @@ async def health_live() -> dict[str, str]:
         "status": "ok",
         "service": "api",
     }
-
 
 @router.get("/health/ready", tags=["health"])
 async def health_ready() -> dict[str, object]:
