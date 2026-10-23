@@ -1,3 +1,10 @@
+from .user.copilot.retrieve_curriculum.router import router as retrieve_curriculum_router
+from app.user.opportunities.browse_opportunities.router import (
+    router as opportunities_router,
+)
+from app.user.opportunities.view_opportunity.router import (
+    router as view_opportunity_router,
+)
 from fastapi import APIRouter, FastAPI
 from .oauth import entrypoint
 from fastapi.responses import RedirectResponse

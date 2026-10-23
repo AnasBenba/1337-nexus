@@ -2,7 +2,7 @@
 
 SHELL := /bin/bash
 
-DOCKER ?= docker
+DOCKER ?= sudo docker
 # ENV_FILE := deploy/.env
 COMPOSE_FILE := deploy/docker-compose.yml
 DEV_COMPOSE_FILE := deploy/docker-compose.dev.yml
