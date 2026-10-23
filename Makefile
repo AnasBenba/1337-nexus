@@ -128,7 +128,7 @@ seed:
 	$(DEV_COMPOSE) exec backend python -m app.cli.seed
 
 ingest:
-	$(DEV_COMPOSE) exec backend python -m app.cli.ingest_subjects
+	$(DEV_COMPOSE) exec -u 0 backend python -m app.cli.ingest_subjects
 
 gen-api:
 	$(DEV_COMPOSE) exec backend python -m app.cli.export_openapi

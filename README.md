@@ -1,7 +1,11 @@
 # 1337 Nexus
 
-> **High-Performance Collaborative Platform for 1337 School (42 Network)**  
-> Empowering students to build projects, discover opportunities, collaborate seamlessly, and navigate the curriculum using an AI-powered Copilot.
+> An integrated collaborative workspace, peer-to-peer project incubator, and AI-powered curriculum copilot built for the 1337 / 42 Network student community.
+
+---
+
+> [!NOTE]
+> **Active Development Notice**: This repository is currently in an active 30-day development cycle. This document serves as the interim engineering guide and milestone tracker. A polished, user-facing production manual will be published upon full release and end-to-end frontend integration.
 
 ---
 
@@ -11,116 +15,216 @@
 
 ---
 
-## Architecture & Technology Stack
+## 📌 Project Overview
 
-1337 Nexus follows a **use-case-sliced, flow-oriented architecture** where each feature domain is self-contained with its own routes, schemas, and services.
-
-- **Backend**: FastAPI (Python 3.12, `uv`), SQLAlchemy (async), Alembic
-- **Database & Search**: PostgreSQL with `pgvector` for semantic embeddings
-- **Reverse Proxy & Gateway**: Nginx with TLS termination, security headers, and SSE streaming buffer bypass
-- **AI Engine**: Google Gemini API (`text-embedding-004` / `gemini-embedding-exp-03-07` embeddings, Gemini 2.5 Flash / Flash Lite for RAG)
-- **Containerization**: Docker Compose with dedicated development and production configurations
+1337 Nexus bridges curriculum learning, team formation, and real-time project collaboration in a single unified platform. The architecture follows a **flow-oriented, use-case-sliced monorepo** structure designed for modular scalability and clean team ownership across 6 core technical domains.
 
 ---
 
-## Team Workstreams & Current Progress
+## 👥 Team Ownership & Technical Domains
 
-| Team Member | Workstream Domain | Current Status | Key Deliverables & Merged Milestones |
-| :--- | :--- | :---: | :--- |
-| **Anas** | **DevOps & Infrastructure** | 🟢 **Done / Active** | • Docker Compose stack (`deploy/docker-compose.yml` & `docker-compose.dev.yml`)<br>• PostgreSQL 16 + `pgvector` container initialization (`01-users.sql`)<br>• Nginx reverse proxy with TLS, rate limits, and SSE buffering controls<br>• Root `Makefile` automation and DevOps operational documentation<br>• Performance smoke test suite (`deploy/scripts/perf-smoke.sh`) |
-| **Zoubair** | **AI & Curriculum Copilot** | 🟡 **In Progress / PR Ready** | • **Subject Corpus Ingestion**: CLI (`ingest_subjects.py`) converting 42 subject PDFs to markdown and generating vector embeddings<br>• **Alembic Vector Migration**: Subjects, documents, and curriculum chunks schema with 768-dim vector embeddings (`c4d9e1f8a230`)<br>• **Curriculum Semantic Retrieval (AI-201)**: L2 vector distance search and curriculum matching endpoint (`merged` to `main`)<br>• **Copilot SSE Stream & Grounding (AI-203)**: Real-time server-sent events, strict answer-first prompt persona, and campus-verified Intra URL citations (`feature/AI-203` ready) |
-| **Ayoub** | **Opportunities & Recruitment** | 🟢 **Merged to Main** | • **Browse Opportunities**: Listing active opportunities with pagination and filters<br>• **View Opportunity**: Detailed opportunity inspection endpoint<br>• **Apply to Opportunity**: Application submission with applicant validation<br>• **Withdraw Application**: Application lifecycle and status management |
-| **Soufiane** | **Authentication & User Management** | 🟢 **Merged to Main** | • **42 Intra OAuth**: PKCE authorization flow (`AuthClient` with state and code verifiers)<br>• **Token & User Management**: Token exchange and automated user profile sync with Intra API<br>• **Auth Routes**: `/auth/login` and `/api/v1/auth/oauth/42/callback` endpoints<br>• **Database User Model**: User persistence on successful OAuth login |
-| **Yassin** | **Pitches, Collaboration & Chat** | 🔵 **In Progress** | • **Pitches Management**: Pitch drafting, publishing, upvoting, and team creation models<br>• **Real-Time Communication**: Team and direct messaging infrastructure (WebSockets / Socket.io) |
+Work is organized around 6 domain prefixes managed on the GitHub Project Board:
+
+| Domain | Focus Area | Owner | GitHub Handle | Key Responsibilities |
+| :--- | :--- | :--- | :--- | :--- |
+| **`AI`** | **AI Copilot & Knowledge Engine** | **Zoubair** | `@zombie00Y` | Subject corpus ingestion, Gemini embeddings, pgvector retrieval, streaming copilot |
+| **`CV`** | **Collaborative Canvas** | **Zoubair** | `@zombie00Y` | Socket.IO binary CRDT relay, canvas compaction engine, collaborative whiteboard UI |
+| **`INFRA`**| **DevOps & Infrastructure** | **Anas** | `@AnasBenba` | Multi-container Docker topology, Nginx proxy, memory tuning, CI/CD pipelines |
+| **`IDNT`** | **Identity, Auth & Admin** | **Soufiane** | `@souf-bo` | 42 Intra OAuth2 PKCE, dual-token JWT rotation, campus hierarchy, admin moderation |
+| **`RTK`** | **Recruitment, Teams & Kanban** | **Ayoub** | `@aykaouf` | Recruitment postings, matching, Lexorank Kanban drag-and-drop, GitHub polling |
+| **`SDG`** | **Social, Discovery & Gamification**| **Yassine** | `@Yassine-Atmouioud` | Pitch CRUD, markdown sanitization, team/DM chat, XP ledger, leaderboards |
 
 ---
 
-## Project Structure Overview
+## 🚀 Current Milestone & Sprint Status
+
+The project is tracking 30 core tickets on the unified board:
+- **Completed**: 11 tickets (~37%)
+- **In Progress**: 3 tickets (~10%)
+- **Backlog**: 16 tickets (~53%)
+
+### ✅ What is Working Right Now
+- **Infrastructure (`INFRA-001..003, 005`)**: PostgreSQL 17 + `pgvector` container with tuned 512MB memory limit, Nginx reverse proxy, and operational bootstrap/backup scripts.
+- **Authentication (`IDNT-001`)**: 42 Intra OAuth2 authorization code flow with PKCE/state verification.
+- **RAG & Embeddings (`AI-101, 102, 201`)**: Subject corpus parsing, recursive token splitting with markdown header preservation, Google Gemini 1536-d embeddings, and pgvector cosine distance retrieval (`POST /api/v1/copilot/retrieve-curriculum`).
+- **Copilot Pre-Stream Engine (`AI-202` Phase 1)**: Short-transaction ($< 50\text{ms}$) pre-stream engine recording `copilot_threads` and `copilot_messages` without connection pool holding.
+- **Recruitment Core (`RTK-001`)**: Opportunity listings, applicant match scoring, and review lifecycle merged into main.
+- **Copilot Streaming & UI (`AI-202`, `AI-203`)**: Real-time token-by-token SSE streaming endpoint (`/api/v1/copilot/ask`), answer-first persona prompt, verified Intra URL citations, and React SSE stream reader with grounded source cards.
+
+### 🔄 Active In-Flight Work
+- **`[INFRA-004]`**: GitHub Actions CI/CD pipeline with automated Ruff, Mypy, and Vitest gates.
+- **`[IDNT-002]`**: Dual-token JWT HttpOnly cookie lifecycle with automated refresh token rotation.
+- **`[SDG-001]`**: Pitch CRUD workflows with markdown sanitization and search indexing.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Backend**: Python 3.12, FastAPI, SQLAlchemy 2.0 (AsyncIO), Alembic, Pydantic v2
+- **Vector Database**: PostgreSQL 17 with `pgvector` (HNSW indexing)
+- **AI & Embeddings**: Google Gemini (`gemini-2.5-flash`, `gemini-embedding-001`), LangChain splitters, tiktoken
+- **Realtime & CRDT**: Socket.IO, `pycrdt` (Yjs Rust binding)
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS (in development)
+- **DevOps**: Docker, Docker Compose, Nginx, `uv`, Ruff, Mypy, Pytest
+
+---
+
+## 💻 How to Run the Project Right Now
+
+### 1. Prerequisites
+- **Linux or WSL2 (Ubuntu 22.04 / 24.04)**
+- **Docker & Docker Compose**
+- **Python 3.12+** (managed via `uv`)
+- **Node.js 20+**
+
+---
+
+### 2. Docker Compose (Quickest Full-Stack Setup)
+
+To spin up the PostgreSQL vector database and backend container:
+
+```bash
+# Clone the repository
+git clone https://github.com/AnasBenba/1337-nexus.git
+cd 1337-nexus
+
+# Launch backend and postgres containers
+docker compose \
+  --env-file deploy/.env \
+  -f deploy/docker-compose.yml \
+  -f deploy/docker-compose.dev.yml \
+  up --build -d
+```
+
+- Interactive OpenAPI Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Health Probe: [http://localhost:8000/health/live](http://localhost:8000/health/live)
+
+---
+
+### 3. Local Backend Development (Recommended for Development & Pytest)
+
+#### A. Set up Python Virtual Environment
+```bash
+cd backend
+
+# Sync all production and development dependencies via uv
+~/.local/bin/uv sync --extra dev
+
+# Activate virtual environment
+source .venv/bin/activate
+```
+
+#### B. Configure Environment Variables
+Ensure `backend/.env` contains your database and AI keys:
+```env
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/nexus
+AI_PROVIDER=stub         # or 'remote' / 'gemini'
+GEMINI_API_KEY=your_key  # required if AI_PROVIDER=remote
+```
+
+#### C. Run Database Migrations
+```bash
+alembic upgrade head
+```
+
+#### D. Ingest Curriculum Subjects
+To index 42 subjects into pgvector for the copilot:
+```bash
+python -m app.cli.ingest_subjects --content-dir content/subjects/
+```
+
+#### E. Start the FastAPI Dev Server
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+---
+
+## 🧪 Testing & Code Quality
+
+All pull requests must pass tests, linting, and strict type-checking before merging:
+
+```bash
+cd backend
+source .venv/bin/activate
+
+# 1. Run all unit & integration tests
+pytest -v
+
+# 2. Run Ruff linter and formatter checks
+ruff check .
+ruff format --check .
+
+# 3. Run strict Mypy type-checking
+mypy -p app.user.copilot.ask -m app.models.copilot
+```
+
+---
+
+## 📁 Repository Structure
 
 ```text
 1337-nexus/
 ├── backend/
-│   ├── alembic/              # Database schema migrations
+│   ├── alembic/                # Database migrations (PostgreSQL + pgvector)
 │   ├── app/
-│   │   ├── api.py            # Central route aggregator
-│   │   ├── main.py           # FastAPI application factory
-│   │   ├── core/             # Database connection, settings, Base model
-│   │   ├── models/           # Shared SQLAlchemy domain models
-│   │   ├── oauth/            # 42 Intra OAuth implementation
-│   │   ├── shared/ai/        # Gemini provider, AI client & embedding configs
-│   │   ├── cli/              # Management CLIs (subject ingestion, seeds)
-│   │   └── user/
-│   │       ├── copilot/      # Curriculum retrieval & AI Copilot flows
-│   │       └── opportunities/# Browse, view, apply, and withdraw flows
-│   ├── content/subjects/     # 42 curriculum corpus (PDFs & extracted MDs)
-│   ├── tests/                # Unit and integration test suite
-│   └── pyproject.toml        # Dependencies and build configuration
-├── deploy/
-│   ├── docker-compose.yml    # Base production compose
-│   ├── docker-compose.dev.yml# Development overrides (hot reload, volume mounts)
-│   ├── postgres/             # Database configuration and init scripts
-│   └── scripts/              # Backup, bootstrap, and performance smoke tests
-├── docs/                     # Architecture, DevOps, and workflow guides
-├── nginx/                    # Reverse proxy configs, SSL certs, and entrypoints
-├── Makefile                  # Project automation commands
-└── README.md                 # Project guide and team progress tracker
+│   │   ├── cli/                # Management commands (e.g. subject ingestion)
+│   │   ├── core/               # App configuration, DB session management
+│   │   ├── models/             # SQLAlchemy ORM models (curriculum, copilot)
+│   │   ├── shared/             # Shared AI client, providers (Gemini & Stub)
+│   │   └── user/               # Use-case sliced user features:
+│   │       ├── copilot/        # AI Copilot: ask (SSE), retrieve_curriculum
+│   │       ├── opportunities/  # Recruitment & application flows
+│   │       └── pitches/        # Student project pitches
+│   └── tests/                  # Pytest test suite
+├── content/                    # Markdown & PDF subject files for ingestion
+├── deploy/                     # Docker Compose configurations & env templates
+├── docs/                       # Architecture guides, workstream definitions
+└── frontend/                   # React frontend application
 ```
 
 ---
 
-## Development Quickstart
+## 📋 Ticket Tracking & Sprint Roadmap
 
-### 1. Prerequisites
-- Docker & Docker Compose
-- Python 3.12+ (or `uv` package manager)
-- Make
+### Infrastructure (`INFRA`)
+- [x] `[INFRA-001]` 3-container topology over dedicated Docker bridge network
+- [x] `[INFRA-002]` Nginx HTTPS termination, SPA serving, and proxy routing
+- [x] `[INFRA-003]` Tune PostgreSQL config for 0.5 GB memory limit
+- [ ] `[INFRA-004]` GitHub Actions CI/CD pipeline with Ruff, mypy, and Vitest
+- [x] `[INFRA-005]` Bootstrap and backup operational scripts
 
-### 2. Environment Configuration
-Copy the template and configure your secrets (including 42 OAuth UID/SECRET and Gemini API keys):
-```bash
-cp deploy/.env.example deploy/.env
-```
+### Identity & Security (`IDNT`)
+- [x] `[IDNT-001]` 42 Intra OAuth2 Authorization Code flow with PKCE/state
+- [ ] `[IDNT-002]` Dual-token JWT HttpOnly lifecycle with refresh rotation
+- [ ] `[IDNT-003]` PostgreSQL tree campus hierarchy for subtree scope resolution
+- [ ] `[IDNT-004]` Campus Admin moderation dashboard with queue and immutability
+- [ ] `[IDNT-005]` Frontend 42 Intra SSO sign-in and profile onboarding
 
-### 3. Start the Development Stack
-Build and launch PostgreSQL and the backend API container:
-```bash
-make dev-build
-```
-To start without rebuilding:
-```bash
-make dev
-```
+### AI Copilot & Knowledge Engine (`AI`)
+- [x] `[AI-101]` Provider Abstraction & Deterministic Stub
+- [x] `[AI-102]` Subject Corpus & CLI Ingestion Pipeline
+- [x] `[AI-201]` Vector Distance Retrieval Query (pgvector cosine search)
+- [x] `[AI-202]` Server-Sent Events (SSE) Streaming Endpoint
+- [x] `[AI-203]` Frontend SSE Stream Reader & Co-Pilot UI
+- [ ] `[AI-101]` Transactional Database Task Queue (`ai_jobs`)
+- [ ] `[AI-102]` Pitch Refiner Workflow
 
-### 4. Database Migrations & Curriculum Ingestion
-Run database migrations:
-```bash
-make migrate
-```
-Ingest 42 curriculum subject PDFs and compute embeddings:
-```bash
-make ingest
-```
+### Collaborative Canvas (`CV`)
+- [ ] `[CV-401]` Socket.IO Binary CRDT Relay
+- [ ] `[CV-402]` Canvas Snapshot Compaction Engine
+- [ ] `[CV-403]` Collaborative Whiteboard UI
 
-### 5. Running Tests
-Run the test suite inside the backend:
-```bash
-make test
-# Or directly via uv:
-cd backend && uv run --extra dev pytest
-```
+### Recruitment, Teams & Kanban (`RTK`)
+- [x] `[RTK-001]` Recruitment postings, match scoring, and review lifecycle
+- [ ] `[RTK-002]` Atomic workspace provisioning on founder acceptance
+- [ ] `[RTK-003]` Frontend Kanban drag-and-drop UI and recruitment review queue
+- [ ] `[RTK-004]` GitHub polling engine with X-Poll-Interval compliance
+- [ ] `[RTK-005]` Kanban backend with Lexorank ordering and board revision guards
 
-### 6. Resetting the Environment
-If you need a clean reset of database volumes:
-```bash
-make down-volumes
-make dev-build
-```
-
----
-
-> [!TIP]
-> **Before Opening a PR**:
-> 1. Ensure all tests pass (`make test`).
-> 2. Run Ruff formatting and linting (`make lint`).
-> 3. Verify that your branch is rebased on latest `origin/main`.
-> 4. Update the **Team Workstreams & Current Progress** section in this `README.md`.
+### Social, Discovery & Gamification (`SDG`)
+- [ ] `[SDG-001]` Pitch CRUD with Markdown, sanitization, and pgvector search
+- [ ] `[SDG-002]` Realtime chat backend for team and DM namespaces
+- [ ] `[SDG-003]` Immutable `xp_events` ledger and automated badge evaluation
+- [ ] `[SDG-004]` In-app notifications persistence and notify push namespace
+- [ ] `[SDG-005]` Pitch Explorer feed, live Chat UI, and Campus Leaderboards
