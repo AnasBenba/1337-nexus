@@ -1,6 +1,6 @@
 from enum import Enum
 from uuid import UUID
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict
 
 class PitchStatus(str, Enum):
     DRAFT = "draft"
@@ -28,6 +28,8 @@ class PitchCreate(BaseModel):
 
 
 class PitchResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID    
     title: str
     content: str

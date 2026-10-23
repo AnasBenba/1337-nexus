@@ -1,12 +1,24 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 import uuid
 from app.core.db import get_db_session as get_db
-from .schemas import PitchCreate, PitchResponse
-from .service import create_pitch, get_all_pitches, delete_pitch, update_pitch, get_one_pitch
-from app.core.db import get_db_session as get_db
+from .schemas import PitchCategory, PitchCreate, PitchResponse
+from .service import (
+    create_pitch,
+    get_all_pitches,
+    delete_pitch,
+    update_pitch,
+    get_one_pitch,
+    search_pitches,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter()
+
+
+@router.get("/search", response_model=list[PitchResponse])
+@router.get("/pitches/search", response_model=list[PitchResponse])
+async def search_pitches_endpoint(query: str = Query(...),limit: int = Query(default=10, le=50),category: PitchCategory | None = None, db: AsyncSession = Depends(get_db)):
+    return await search_pitches(db=db, query=query, limit=limit, category=category)
 
 @router.post("/pitches", response_model=PitchResponse)
 async def create_pitch_endpoint(pitch: PitchCreate, db: AsyncSession = Depends(get_db)):

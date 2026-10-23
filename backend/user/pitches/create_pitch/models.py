@@ -1,8 +1,10 @@
 import uuid
-from sqlalchemy import Column, Integer, String, Text, Enum
+from sqlalchemy import Column, DateTime, String, Text, Enum, func
 from sqlalchemy.dialects.postgresql import UUID
 from app.shared.models import Base
 from .schemas import PitchCategory, PitchStatus
+from pgvector.sqlalchemy import Vector
+from app.shared.ai.config import EMBEDDING_DIMENSIONS
 
 class Pitch(Base):
     __tablename__ = "pitches" 
@@ -14,6 +16,8 @@ class Pitch(Base):
     description = Column(Text)
     category = Column(Enum(PitchCategory))
     status = Column(Enum(PitchStatus), default=PitchStatus.DRAFT)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    embedding = Column(Vector(EMBEDDING_DIMENSIONS))
     # author_id = Column(Integer, index=True)
 
     @property

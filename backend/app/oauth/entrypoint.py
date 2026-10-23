@@ -1,20 +1,30 @@
 from fastapi.responses import RedirectResponse
 import secrets
+import hashlib
+import base64
+import os
 
-def generate_state() -> str:
-    return secrets.token_urlsafe(16)
 
-def generate_url(state: str) -> str:
-    authorization_url = (
-    "https://api.intra.42.fr/oauth/authorize"
-    "?client_id=u-s4t2ud-a2e145baf8d905d3d8f1eb9eeb2044e8ad85a03118051a2407dbd97632e4348f"
-    "&redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fapi%2Fv1%2Fauth%2Foauth%2F42%2Fcallback"
-    "&response_type=code"
-    f"&state={state}"
-)
-    return authorization_url
+class AuthClient:
+    def __init__(self, redirect_uri: str):
+        self.redirect_uri = redirect_uri
+        self.state = self.generate_state()
+        self.code_verifier = self.generate_code_verifier()
+        self.code_challenge = self.generate_code_challenge()
+
+    def generate_state(self) -> str:
+        return secrets.token_urlsafe(16)
+
+    def generate_code_verifier(self) -> str:
+        return secrets.token_urlsafe(32)
+
+    def generate_code_challenge(self) -> str:
+        hash = self.code_verifier.encode()
+        hash_obj = hashlib.sha256(hash)
+        finale_hash = base64.urlsafe_b64encode(hash_obj.digest())
+        return finale_hash.rstrip(b"=").decode()
+    def get_FortyTwo_auth_url(self) -> str:
+        pass
 
 async def redirect_to_forttytwo():
-    state = generate_state()
-    authorization_url = generate_url(state)
-    return RedirectResponse(url=authorization_url)
+    client = AuthClient(redirect_uri="http://localhost:8000/api/v1/auth/oauth/42/callback")
