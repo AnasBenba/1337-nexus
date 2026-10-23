@@ -10,6 +10,7 @@ from app.user.opportunities.view_opportunity.router import (
 from app.user.opportunities.withdraw_application.router import (
     router as withdraw_application_router,
 )
+from .user.copilot.retrieve_curriculum.router import router as retrieve_curriculum_router
 from .oauth import entrypoint
 from fastapi.responses import RedirectResponse
 
