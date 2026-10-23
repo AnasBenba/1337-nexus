@@ -23,6 +23,10 @@ SessionLocal = async_sessionmaker(
     expire_on_commit=False,
 )
 
+migration_engine: AsyncEngine = create_async_engine(
+    settings.async_migration_database_url,
+)
+
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     async with SessionLocal() as session:

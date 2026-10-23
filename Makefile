@@ -2,12 +2,12 @@
 
 SHELL := /bin/bash
 
-DOCKER ?= docker
+DOCKER ?=  docker
 # ENV_FILE := deploy/.env
 COMPOSE_FILE := deploy/docker-compose.yml
 DEV_COMPOSE_FILE := deploy/docker-compose.dev.yml
 
-COMPOSE := sudo $(DOCKER) compose -f $(COMPOSE_FILE)
+COMPOSE := $(DOCKER) compose -f $(COMPOSE_FILE)
 DEV_COMPOSE := $(COMPOSE) -f $(DEV_COMPOSE_FILE)
 
 BACKUP_SCRIPT := deploy/scripts/backup.sh
