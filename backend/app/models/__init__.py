@@ -5,8 +5,10 @@ from app.models.curriculum import (
     Subject,
     SubjectDocument,
 )
+from app.models.job import AIJob
 
 __all__ = [
+    "AIJob",
     "CopilotMessage",
     "CopilotThread",
     "CurriculumChunk",
