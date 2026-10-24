@@ -32,7 +32,11 @@ async def auth_callback(request: Request, code: str, state: str) -> RedirectResp
     if state_cookie != state:
         return {"error": "Invalid state parameter"}
     token = await manager.get_access_token(code, code_verifier_cookie)
-    await manager.manage_user(await manager.get_user(token["access_token"]))
+    # await manager.manage_user(await manager.get_user(token["access_token"]))
+    nexus_user = await manager.manage_user(
+    await manager.get_user(token["access_token"])
+    )
+    print("User managed:", nexus_user.fullname)
     response = RedirectResponse(url="/home", status_code=303)
     response.delete_cookie("state", path="/")
     response.delete_cookie("code_verifier", path="/")
