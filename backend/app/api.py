@@ -1,3 +1,5 @@
+from http.client import HTTPException
+from urllib import response
 from .user.copilot.retrieve_curriculum.router import router as retrieve_curriculum_router
 from .user.copilot.ask.router import router as ask_router
 from app.user.opportunities.browse_opportunities.router import router as opportunities_router
@@ -11,6 +13,7 @@ from fastapi import Request
 from fastapi.responses import FileResponse
 from .oauth import manager
 from pathlib import Path
+from .oauth import jwt
 
 router = APIRouter()
 
@@ -21,7 +24,14 @@ async def auth_login() -> RedirectResponse:
 HOME_PAGE = Path(__file__).parent  / "index.html"
 
 @router.get("/home", tags=["pages"])
-async def home() -> FileResponse:
+async def home(request: Request) -> FileResponse:
+    token = request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(
+            status_code=401,
+            detail="Not authenticated",
+        )
+    payload = jwt.verify_access_token(token)
     return FileResponse(HOME_PAGE, media_type="text/html")
 
 
@@ -32,12 +42,20 @@ async def auth_callback(request: Request, code: str, state: str) -> RedirectResp
     if state_cookie != state:
         return {"error": "Invalid state parameter"}
     token = await manager.get_access_token(code, code_verifier_cookie)
-    # await manager.manage_user(await manager.get_user(token["access_token"]))
     nexus_user = await manager.manage_user(
     await manager.get_user(token["access_token"])
     )
-    print("User managed:", nexus_user.fullname)
+    jwt_token = jwt.create_access_token(nexus_user.intra_id)
     response = RedirectResponse(url="/home", status_code=303)
+    response.set_cookie(
+        key="access_token",
+        value=jwt_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=15 * 60,
+        path="/",
+    )
     response.delete_cookie("state", path="/")
     response.delete_cookie("code_verifier", path="/")
     return response
