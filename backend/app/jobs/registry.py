@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
@@ -64,3 +65,9 @@ async def echo_executor(payload: dict[str, Any]) -> dict[str, Any]:
 async def noop_executor(payload: dict[str, Any]) -> dict[str, Any]:
     """No-op executor that succeeds immediately."""
     return {"status": "ok"}
+
+
+with contextlib.suppress(ImportError):
+    from app.user.projects.refine_project.executor import (
+        refine_pitch_executor,  # noqa: F401
+    )

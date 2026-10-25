@@ -6,7 +6,7 @@ import logging
 import os
 import signal
 import uuid
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Iterator, Mapping
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -22,12 +22,23 @@ from app.models.job import AIJob
 logger = logging.getLogger("1337nexus.jobs.worker")
 
 
-class JobWorker:
+class JobWorker(Mapping[str, Any]):
     """
     Transactional background job worker using PostgreSQL `FOR UPDATE SKIP LOCKED`.
     Supports concurrency limits, atomic claiming, lease heartbeat renewal,
     retries with backoff, and graceful shutdown.
     """
+
+    def __getitem__(self, key: str) -> Any:
+        if key == "job_worker":
+            return self
+        raise KeyError(key)
+
+    def __iter__(self) -> Iterator[str]:
+        yield "job_worker"
+
+    def __len__(self) -> int:
+        return 1
 
     def __init__(
         self,
@@ -41,30 +52,56 @@ class JobWorker:
     ) -> None:
         self.session_factory = session_factory or SessionLocal
         self.worker_id = worker_id or os.getenv("JOB_WORKER_ID") or f"worker-{uuid.uuid4().hex[:8]}"
+        settings = None
+        with contextlib.suppress(Exception):
+            from app.core.config import get_settings
+
+            settings = get_settings()
+
         self.max_concurrency = (
             max_concurrency
             if max_concurrency is not None
-            else int(os.getenv("JOB_WORKER_CONCURRENCY", "5"))
+            else (
+                settings.job_worker_concurrency
+                if settings
+                else int(os.getenv("JOB_WORKER_CONCURRENCY", "5"))
+            )
         )
         self.poll_interval = (
             poll_interval
             if poll_interval is not None
-            else float(os.getenv("JOB_WORKER_POLL_INTERVAL", "1.0"))
+            else (
+                settings.job_worker_poll_interval
+                if settings
+                else float(os.getenv("JOB_WORKER_POLL_INTERVAL", "1.0"))
+            )
         )
         self.lease_duration = (
             lease_duration
             if lease_duration is not None
-            else float(os.getenv("JOB_WORKER_LEASE_SECONDS", "30.0"))
+            else (
+                settings.job_worker_lease_seconds
+                if settings
+                else float(os.getenv("JOB_WORKER_LEASE_SECONDS", "30.0"))
+            )
         )
         self.heartbeat_interval = (
             heartbeat_interval
             if heartbeat_interval is not None
-            else float(os.getenv("JOB_WORKER_HEARTBEAT_SECONDS", "10.0"))
+            else (
+                settings.job_worker_heartbeat_seconds
+                if settings
+                else float(os.getenv("JOB_WORKER_HEARTBEAT_SECONDS", "10.0"))
+            )
         )
         self.shutdown_timeout = (
             shutdown_timeout
             if shutdown_timeout is not None
-            else float(os.getenv("JOB_WORKER_SHUTDOWN_TIMEOUT", "15.0"))
+            else (
+                settings.job_worker_shutdown_timeout
+                if settings
+                else float(os.getenv("JOB_WORKER_SHUTDOWN_TIMEOUT", "15.0"))
+            )
         )
 
         self._running = False

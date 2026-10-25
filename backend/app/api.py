@@ -1,14 +1,7 @@
-
 from pathlib import Path
 
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.responses import FileResponse, RedirectResponse
-
-from .oauth import entrypoint, manager
-from .user.copilot.ask.router import router as ask_router
-from .user.copilot.retrieve_curriculum.router import (
-    router as retrieve_curriculum_router,
-)
 
 from app.user.opportunities.apply.router import router as apply_router
 from app.user.opportunities.browse_opportunities.router import (
@@ -25,6 +18,15 @@ from app.user.opportunities.view_opportunity.router import (
 )
 from app.user.opportunities.withdraw_application.router import (
     router as withdraw_application_router,
+)
+from app.user.projects.refine_project.router import (
+    router as refine_project_router,
+)
+
+from .oauth import entrypoint, manager
+from .user.copilot.ask.router import router as ask_router
+from .user.copilot.retrieve_curriculum.router import (
+    router as retrieve_curriculum_router,
 )
 
 router = APIRouter()
@@ -44,9 +46,7 @@ async def home() -> FileResponse:
 
 
 @router.get("/api/v1/auth/oauth/42/callback", tags=["auth"])
-async def auth_callback(
-    request: Request, code: str, state: str
-) -> RedirectResponse:
+async def auth_callback(request: Request, code: str, state: str) -> RedirectResponse:
     state_cookie = request.cookies.get("state")
     code_verifier_cookie = request.cookies.get("code_verifier")
 
@@ -90,3 +90,4 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(ask_router)
     app.include_router(apply_router)
     app.include_router(withdraw_application_router)
+    app.include_router(refine_project_router)

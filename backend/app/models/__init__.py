@@ -6,6 +6,7 @@ from app.models.curriculum import (
     SubjectDocument,
 )
 from app.models.job import AIJob
+from app.models.suggestion import PitchCritique, PitchSuggestion
 
 __all__ = [
     "AIJob",
@@ -13,6 +14,8 @@ __all__ = [
     "CopilotThread",
     "CurriculumChunk",
     "IngestionRun",
+    "PitchCritique",
+    "PitchSuggestion",
     "Subject",
     "SubjectDocument",
 ]
