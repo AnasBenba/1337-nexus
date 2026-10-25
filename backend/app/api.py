@@ -20,6 +20,9 @@ from app.user.opportunities.create_opportunity.router import (
 from app.user.opportunities.update_opportunity.router import (
     router as update_opportunity_router,
 )
+from app.user.opportunities.publish_opportunity.router import (
+    router as publish_opportunity_router,
+)
 from app.user.opportunities.view_opportunity.router import (
     router as view_opportunity_router,
 )
@@ -85,6 +88,7 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(opportunities_router)
     app.include_router(create_opportunity_router)
     app.include_router(update_opportunity_router)
+    app.include_router(publish_opportunity_router)
     app.include_router(view_opportunity_router)
     app.include_router(retrieve_curriculum_router)
     app.include_router(ask_router)

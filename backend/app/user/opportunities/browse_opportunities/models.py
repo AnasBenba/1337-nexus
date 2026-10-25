@@ -39,7 +39,7 @@ class Opportunity(Base):
     status: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        default="open",
+        default="draft",
         index=True,
     )
 
