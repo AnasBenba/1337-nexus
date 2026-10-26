@@ -12,7 +12,7 @@ router = APIRouter(tags=["opportunities"])
 
 
 @router.delete(
-    "/opportunities/{opportunity_id}/apply",
+    "/opportunities/{opportunity_id}/withdraw",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def withdraw(

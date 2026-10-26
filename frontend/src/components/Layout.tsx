@@ -174,6 +174,27 @@ export const Layout: React.FC = () => {
             </span>
           </NavLink>
 
+          <NavLink
+            to="/refine-project"
+            className={({ isActive }) =>
+              `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all group ${
+                isActive
+                  ? 'bg-primary-fixed text-on-primary-fixed font-bold'
+                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+              }`
+            }
+          >
+            <div className="flex items-center gap-space-sm">
+              <span className="material-symbols-outlined text-[20px] text-primary-container">
+                auto_awesome
+              </span>
+              <span className="font-label-md text-label-md">Pitch Refiner</span>
+            </div>
+            <span className="px-2 py-0.5 rounded-full bg-brand/10 text-brand font-label-code-tag text-[10px] font-bold">
+              AI
+            </span>
+          </NavLink>
+
           <div className="my-space-sm h-[1px] bg-surface-container-high" />
 
           {/* AI Copilot Route */}
