@@ -22,7 +22,7 @@ async def list_applications(
     db: AsyncSession = Depends(get_db_session),
 ) -> list[ReviewedApplicationResponse]:
     try:
-        applications = await review_applications(
+        applications = await score_opportunity_applications(
             db=db,
             opportunity_id=opportunity_id,
         )
