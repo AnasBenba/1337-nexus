@@ -1,4 +1,3 @@
-
 from pathlib import Path
 
 from fastapi import APIRouter, FastAPI, Request
@@ -34,6 +33,9 @@ from app.user.opportunities.view_opportunity.router import (
 )
 from app.user.opportunities.withdraw_application.router import (
     router as withdraw_application_router,
+)
+from app.user.projects.refine_project.router import (
+    router as refine_project_router,
 )
 
 router = APIRouter()
@@ -102,3 +104,4 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(ask_router)
     app.include_router(apply_router)
     app.include_router(withdraw_application_router)
+    app.include_router(refine_project_router)
