@@ -5,10 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
 from app.user.opportunities.browse_opportunities.models import Opportunity
-from app.user.opportunities.match_scoring.service import calculate_match_score
+from app.user.opportunities.match_scoring.service import (
+    calculate_match_score,
+    score_opportunity_applications,
+)
 
 from .schemas import ReviewedApplicationResponse, UpdateApplicationStatusRequest
-from .service import review_applications, update_application_status
+from .service import update_application_status
 
 router = APIRouter(tags=["opportunities"])
 
