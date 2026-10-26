@@ -30,7 +30,7 @@ class Opportunity(Base):
 
     description: Mapped[str] = mapped_column(Text, nullable=False)
 
-    required_skills: Mapped[list] = mapped_column(
+    required_skills: Mapped[list[str]] = mapped_column(
         JSONB,
         nullable=False,
         default=list,
@@ -39,7 +39,7 @@ class Opportunity(Base):
     status: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        default="open",
+        default="draft",
         index=True,
     )
 

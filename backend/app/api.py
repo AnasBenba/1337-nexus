@@ -3,6 +3,12 @@ from pathlib import Path
 from fastapi import APIRouter, FastAPI, Request
 from fastapi.responses import FileResponse, RedirectResponse
 
+from .oauth import entrypoint, manager
+from .user.copilot.ask.router import router as ask_router
+from .user.copilot.retrieve_curriculum.router import (
+    router as retrieve_curriculum_router,
+)
+
 from app.user.opportunities.apply.router import router as apply_router
 from app.user.opportunities.browse_opportunities.router import (
     router as opportunities_router,
@@ -13,6 +19,15 @@ from app.user.opportunities.create_opportunity.router import (
 from app.user.opportunities.update_opportunity.router import (
     router as update_opportunity_router,
 )
+from app.user.opportunities.publish_opportunity.router import (
+    router as publish_opportunity_router,
+)
+from app.user.opportunities.match_scoring.router import (
+    router as match_scoring_router,
+)
+from app.user.opportunities.review_applications.router import (
+    router as review_applications_router,
+)
 from app.user.opportunities.view_opportunity.router import (
     router as view_opportunity_router,
 )
@@ -21,12 +36,6 @@ from app.user.opportunities.withdraw_application.router import (
 )
 from app.user.projects.refine_project.router import (
     router as refine_project_router,
-)
-
-from .oauth import entrypoint, manager
-from .user.copilot.ask.router import router as ask_router
-from .user.copilot.retrieve_curriculum.router import (
-    router as retrieve_curriculum_router,
 )
 
 router = APIRouter()
@@ -46,7 +55,9 @@ async def home() -> FileResponse:
 
 
 @router.get("/api/v1/auth/oauth/42/callback", tags=["auth"])
-async def auth_callback(request: Request, code: str, state: str) -> RedirectResponse:
+async def auth_callback(
+    request: Request, code: str, state: str
+) -> RedirectResponse:
     state_cookie = request.cookies.get("state")
     code_verifier_cookie = request.cookies.get("code_verifier")
 
@@ -85,6 +96,9 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(opportunities_router)
     app.include_router(create_opportunity_router)
     app.include_router(update_opportunity_router)
+    app.include_router(publish_opportunity_router)
+    app.include_router(match_scoring_router)
+    app.include_router(review_applications_router)
     app.include_router(view_opportunity_router)
     app.include_router(retrieve_curriculum_router)
     app.include_router(ask_router)
