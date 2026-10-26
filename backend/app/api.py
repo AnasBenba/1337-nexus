@@ -1,31 +1,50 @@
-from http.client import HTTPException
-from urllib import response
-from .user.copilot.retrieve_curriculum.router import router as retrieve_curriculum_router
+from pathlib import Path
+
+from fastapi import APIRouter, FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, RedirectResponse
+
+from app.user.opportunities.apply.router import router as apply_router
+from app.user.opportunities.browse_opportunities.router import (
+    router as opportunities_router,
+)
+from app.user.opportunities.create_opportunity.router import (
+    router as create_opportunity_router,
+)
+from app.user.opportunities.match_scoring.router import (
+    router as match_scoring_router,
+)
+from app.user.opportunities.publish_opportunity.router import (
+    router as publish_opportunity_router,
+)
+from app.user.opportunities.review_applications.router import (
+    router as review_applications_router,
+)
+from app.user.opportunities.update_opportunity.router import (
+    router as update_opportunity_router,
+)
+from app.user.opportunities.view_opportunity.router import (
+    router as view_opportunity_router,
+)
+from app.user.opportunities.withdraw_application.router import (
+    router as withdraw_application_router,
+)
+from app.user.projects.refine_project.router import (
+    router as refine_project_router,
+)
+
+from .oauth import entrypoint, jwt, manager
 from .user.copilot.ask.router import router as ask_router
 from .user.copilot.retrieve_curriculum.router import (
     router as retrieve_curriculum_router,
 )
 
-from app.user.opportunities.apply.router import router as apply_router
-from app.user.opportunities.withdraw_application.router import router as withdraw_application_router
-from fastapi import APIRouter, FastAPI
-from .oauth import entrypoint
-from fastapi.responses import RedirectResponse
-from fastapi import Request
-from fastapi.responses import FileResponse
-from .oauth import manager
-from pathlib import Path
-from .oauth import jwt
-
 router = APIRouter()
+HOME_PAGE = Path(__file__).parent / "index.html"
 
 
 @router.get("/auth/login", tags=["auth"])
 async def auth_login() -> RedirectResponse:
     return await entrypoint.redirect_to_forttytwo()
-
-
-HOME_PAGE = Path(__file__).parent / "index.html"
 
 
 @router.get("/home", tags=["pages"])
@@ -36,7 +55,8 @@ async def home(request: Request) -> FileResponse:
             status_code=401,
             detail="Not authenticated",
         )
-    payload = jwt.verify_access_token(token)
+
+    jwt.verify_access_token(token)
     return FileResponse(HOME_PAGE, media_type="text/html")
 
 
@@ -48,13 +68,23 @@ async def auth_callback(
     code_verifier_cookie = request.cookies.get("code_verifier")
 
     if state_cookie != state:
-        return {"error": "Invalid state parameter"}
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid state parameter",
+        )
+
+    if not code_verifier_cookie:
+        raise HTTPException(
+            status_code=400,
+            detail="Missing code verifier",
+        )
 
     token = await manager.get_access_token(code, code_verifier_cookie)
-    nexus_user = await manager.manage_user(
-    await manager.get_user(token["access_token"])
-    )
+    intra_user = await manager.get_user(token["access_token"])
+    nexus_user = await manager.manage_user(intra_user)
+
     jwt_token = jwt.create_access_token(nexus_user.intra_id)
+
     response = RedirectResponse(url="/home", status_code=303)
     response.set_cookie(
         key="access_token",
@@ -67,6 +97,7 @@ async def auth_callback(
     )
     response.delete_cookie("state", path="/")
     response.delete_cookie("code_verifier", path="/")
+
     return response
 
 
