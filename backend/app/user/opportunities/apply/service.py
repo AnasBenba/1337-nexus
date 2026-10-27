@@ -13,6 +13,7 @@ async def apply_to_opportunity(
     opportunity_id: UUID,
     user_id: UUID,
     message: str | None = None,
+    candidate_skills: list[str] | None = None,
 ) -> Application:
     opportunity = await db.get(Opportunity, opportunity_id)
 
@@ -35,6 +36,7 @@ async def apply_to_opportunity(
         user_id=user_id,
         opportunity_id=opportunity_id,
         message=message,
+        candidate_skills=candidate_skills or [],
     )
     db.add(application)
     await db.commit()

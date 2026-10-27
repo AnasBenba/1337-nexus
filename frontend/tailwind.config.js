@@ -8,6 +8,12 @@ export default {
   theme: {
     extend: {
       colors: {
+        "brand": {
+          DEFAULT: "#0099ff",
+          hover: "#0084dc",
+          light: "#e0f2fe",
+          subtle: "#f0f9ff",
+        },
         "on-background": "#131b2e",
         "on-error-container": "#93000a",
         "background": "#faf8ff",

@@ -11,6 +11,7 @@ async def browse_opportunities(
 ):
     statement = (
         select(Opportunity)
+        .where(Opportunity.status == "open")
         .order_by(Opportunity.id)
         .offset(skip)
         .limit(limit)

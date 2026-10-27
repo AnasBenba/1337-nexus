@@ -9,6 +9,13 @@ class Settings(BaseSettings):
     migration_database_url: SecretStr
     trusted_proxy_subnet: str
 
+    # Background task worker (ai_jobs)
+    job_worker_concurrency: int = 5
+    job_worker_poll_interval: float = 1.0
+    job_worker_lease_seconds: float = 30.0
+    job_worker_heartbeat_seconds: float = 10.0
+    job_worker_shutdown_timeout: float = 15.0
+
     model_config = SettingsConfigDict(
         case_sensitive=False,
         extra="ignore",
@@ -25,21 +32,16 @@ class Settings(BaseSettings):
             return "postgresql+asyncpg://" + url[len("postgresql://") :]
 
         raise ValueError(
-            "PostgreSQL URL must use either "
-            "'postgresql://' or 'postgresql+asyncpg://'."
+            "PostgreSQL URL must use either 'postgresql://' or 'postgresql+asyncpg://'."
         )
 
     @property
     def async_database_url(self) -> str:
-        return self._to_async_postgresql_url(
-            self.database_url.get_secret_value()
-        )
+        return self._to_async_postgresql_url(self.database_url.get_secret_value())
 
     @property
     def async_migration_database_url(self) -> str:
-        return self._to_async_postgresql_url(
-            self.migration_database_url.get_secret_value()
-        )
+        return self._to_async_postgresql_url(self.migration_database_url.get_secret_value())
 
 
 @lru_cache

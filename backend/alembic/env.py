@@ -10,6 +10,7 @@ from app.shared.models import Base
 import app.models.curriculum
 from user.pitches.create_pitch.models import Pitch
 import app.models.copilot
+import app.models.job
 from app.oauth import user  # noqa: F401
 
 config = context.config

@@ -26,6 +26,7 @@ async def apply(
             opportunity_id=opportunity_id,
             user_id=request.user_id,
             message=request.message,
+            candidate_skills=request.candidate_skills,
         )
     except ValueError as error:
         detail = str(error)

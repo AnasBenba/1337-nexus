@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { CopilotPage } from '@/flows/user/copilot/ask';
+import { RefineProjectDemoPage } from '@/flows/user/projects/refine_project';
 
 export const App: React.FC = () => {
   return (
@@ -11,6 +12,8 @@ export const App: React.FC = () => {
           <Route index element={<Navigate to="/copilot" replace />} />
           <Route path="copilot" element={<CopilotPage />} />
           <Route path="user/copilot/ask" element={<CopilotPage />} />
+          <Route path="refine-project" element={<RefineProjectDemoPage />} />
+          <Route path="projects/refine-project" element={<RefineProjectDemoPage />} />
           <Route path="*" element={<Navigate to="/copilot" replace />} />
         </Route>
       </Routes>
