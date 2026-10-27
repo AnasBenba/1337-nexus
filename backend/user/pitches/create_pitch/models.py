@@ -1,7 +1,7 @@
 import uuid
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Column, DateTime, Enum, String, Text, func
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.shared.ai.config import EMBEDDING_DIMENSIONS
@@ -21,8 +21,6 @@ class Pitch(Base):
     status = Column(Enum(PitchStatus), default=PitchStatus.DRAFT)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     embedding = Column(Vector(EMBEDDING_DIMENSIONS))
-    author_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
-
     @property
     def state(self) -> PitchStatus:
         return self.status
