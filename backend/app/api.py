@@ -28,6 +28,7 @@ from app.user.opportunities.view_opportunity.router import (
 from app.user.opportunities.withdraw_application.router import (
     router as withdraw_application_router,
 )
+from app.user.pitches.router import router as pitches_router
 from app.user.projects.refine_project.router import (
     router as refine_project_router,
 )
@@ -61,9 +62,7 @@ async def home(request: Request) -> FileResponse:
 
 
 @router.get("/api/v1/auth/oauth/42/callback", tags=["auth"])
-async def auth_callback(
-    request: Request, code: str, state: str
-) -> RedirectResponse:
+async def auth_callback(request: Request, code: str, state: str) -> RedirectResponse:
     state_cookie = request.cookies.get("state")
     code_verifier_cookie = request.cookies.get("code_verifier")
 
@@ -133,3 +132,4 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(apply_router)
     app.include_router(withdraw_application_router)
     app.include_router(refine_project_router)
+    app.include_router(pitches_router)

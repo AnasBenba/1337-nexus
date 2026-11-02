@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import uuid
 from typing import Annotated
 
@@ -23,7 +21,7 @@ from app.user.projects.refine_project.service import (
     request_pitch_refinement,
 )
 
-router = APIRouter(prefix="/api/v1/user/projects", tags=["pitch-refine"])
+router = APIRouter(tags=["pitch-refine"])
 
 
 async def get_current_user_dep(
@@ -72,11 +70,18 @@ async def get_current_user_dep(
     return dev_user
 
 
+# Supports both canonical /api/v1/user/projects and frontend flow /api/user/projects/refine-project
 @router.post(
-    "/{pitch_id}/refine",
+    "/api/v1/user/projects/{pitch_id}/refine",
     response_model=RefineResponse,
     status_code=status.HTTP_202_ACCEPTED,
     summary="Request asynchronous AI critique for a pitch",
+)
+@router.post(
+    "/api/user/projects/refine-project/{pitch_id}/refine",
+    response_model=RefineResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    include_in_schema=False,
 )
 async def refine_pitch_endpoint(
     pitch_id: uuid.UUID,
@@ -91,10 +96,16 @@ async def refine_pitch_endpoint(
 
 
 @router.get(
-    "/{pitch_id}/refine/status",
+    "/api/v1/user/projects/{pitch_id}/refine/status",
     response_model=RefineStatusResponse,
     status_code=status.HTTP_200_OK,
     summary="Get status and suggestions of the pitch critique",
+)
+@router.get(
+    "/api/user/projects/refine-project/{pitch_id}/status",
+    response_model=RefineStatusResponse,
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
 )
 async def get_refine_status_endpoint(
     pitch_id: uuid.UUID,
@@ -109,10 +120,16 @@ async def get_refine_status_endpoint(
 
 
 @router.post(
-    "/{pitch_id}/refine/suggestions/{suggestion_id}/apply",
+    "/api/v1/user/projects/{pitch_id}/refine/suggestions/{suggestion_id}/apply",
     response_model=ApplySuggestionResponse,
     status_code=status.HTTP_200_OK,
     summary="Version-guarded apply of an AI suggestion to the pitch",
+)
+@router.post(
+    "/api/user/projects/refine-project/{pitch_id}/suggestions/{suggestion_id}/apply",
+    response_model=ApplySuggestionResponse,
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
 )
 async def apply_suggestion_endpoint(
     pitch_id: uuid.UUID,
@@ -131,10 +148,16 @@ async def apply_suggestion_endpoint(
 
 
 @router.post(
-    "/{pitch_id}/refine/suggestions/{suggestion_id}/dismiss",
+    "/api/v1/user/projects/{pitch_id}/refine/suggestions/{suggestion_id}/dismiss",
     response_model=DismissSuggestionResponse,
     status_code=status.HTTP_200_OK,
     summary="Dismiss an AI suggestion",
+)
+@router.post(
+    "/api/user/projects/refine-project/{pitch_id}/suggestions/{suggestion_id}/dismiss",
+    response_model=DismissSuggestionResponse,
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
 )
 async def dismiss_suggestion_endpoint(
     pitch_id: uuid.UUID,
