@@ -28,10 +28,11 @@ from app.user.opportunities.view_opportunity.router import (
 from app.user.opportunities.withdraw_application.router import (
     router as withdraw_application_router,
 )
+from app.user.pitches.router import router as pitches_router
 from app.user.projects.refine_project.router import (
     router as refine_project_router,
 )
-from user.pitches.create_pitch.router import router as pitches_router
+from user.pitches.create_pitch.router import router as legacy_pitches_router
 
 from .collaboration.chat.send_direct_message.router import (
     router as send_direct_message_router,
@@ -65,9 +66,7 @@ async def home(request: Request) -> FileResponse:
 
 
 @router.get("/api/v1/auth/oauth/42/callback", tags=["auth"])
-async def auth_callback(
-    request: Request, code: str, state: str
-) -> RedirectResponse:
+async def auth_callback(request: Request, code: str, state: str) -> RedirectResponse:
     state_cookie = request.cookies.get("state")
     code_verifier_cookie = request.cookies.get("code_verifier")
 
@@ -117,6 +116,7 @@ async def health_ready() -> dict[str, object]:
 def register_routes(app: FastAPI) -> None:
     app.include_router(router)
     app.include_router(pitches_router, prefix="/api/v1", tags=["Pitches"])
+    app.include_router(legacy_pitches_router, prefix="/api/v1", tags=["Pitches"])
     app.include_router(opportunities_router)
     app.include_router(create_opportunity_router)
     app.include_router(update_opportunity_router)
