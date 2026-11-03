@@ -4,6 +4,7 @@ Router for POST /api/v1/copilot/ask.
 Wraps the stream_copilot_answer generator in a StreamingResponse with
 anti-buffering headers so neither Uvicorn nor Nginx/Docker buffers SSE chunks.
 """
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends

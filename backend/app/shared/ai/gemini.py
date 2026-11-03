@@ -26,9 +26,7 @@ class GeminiAIProvider(AIProvider):
         client: genai.Client | None = None,
     ) -> None:
         self.api_key = api_key or get_api_key() or AI_API_KEY
-        self.embedding_model = (
-            embedding_model or os.getenv("EMBEDDING_MODEL") or EMBEDDING_MODEL
-        )
+        self.embedding_model = embedding_model or os.getenv("EMBEDDING_MODEL") or EMBEDDING_MODEL
         if client is not None:
             self.client = client
         else:
@@ -56,14 +54,13 @@ class GeminiAIProvider(AIProvider):
 
         return [list(emb.values) for emb in response.embeddings]
 
-    async def stream_complete(
-        self, messages: list[dict[str, Any]]
-    ) -> AsyncGenerator[str, None]:
+    async def stream_complete(self, messages: list[dict[str, Any]]) -> AsyncGenerator[str, None]:
         """
         Stream chat completions for conversational agents using Gemini.
         Includes automatic retry for temporary 503 high-demand spikes.
         """
         import asyncio
+
         chat_model = os.getenv("CHAT_MODEL", "gemini-2.5-flash")
         contents = [msg.get("content", "") for msg in messages] if messages else [""]
         max_attempts = 3
@@ -79,7 +76,9 @@ class GeminiAIProvider(AIProvider):
                 return
             except Exception as e:
                 err_str = str(e)
-                if ("503" in err_str or "high demand" in err_str.lower()) and attempt < max_attempts - 1:
+                if (
+                    "503" in err_str or "high demand" in err_str.lower()
+                ) and attempt < max_attempts - 1:
                     await asyncio.sleep(1.0 * (attempt + 1))
                     continue
                 raise

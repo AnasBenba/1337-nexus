@@ -82,7 +82,7 @@ select = [
     "E", "F", "W", "I", "UP",
     "B", "SIM", "C4", "DTZ", "ASYNC", "S",
 ]
-ignore = ["S101"]
+ignore = ["S101", "B008", "E501"]
 
 [tool.ruff.format]
 quote-style = "double"

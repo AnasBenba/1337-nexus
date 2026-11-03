@@ -9,6 +9,7 @@ Responsibility chain:
 
 This module is the entry point declared in the ticket description.
 """
+
 from __future__ import annotations
 
 import logging
