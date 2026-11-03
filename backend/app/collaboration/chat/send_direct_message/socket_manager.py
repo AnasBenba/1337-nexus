@@ -2,22 +2,39 @@ from fastapi import WebSocket
 from uuid import UUID  
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: dict[UUID, WebSocket] = {}
-    
-    async def connect(self, user_id: UUID, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections[user_id] = websocket
+        self.active_dms: dict[int, WebSocket] = {}
+        self.active_teams: dict[int, dict[int, WebSocket]] = {}
 
-    def disconnect(self, user_id: UUID):
-        if user_id in self.active_connections:
-            del self.active_connections[user_id]
-    
-    async def send_personal_message(self, message: str, receiver_id: UUID):
-        if receiver_id in self.active_connections:
-            websocket = self.active_connections.get(receiver_id)
-        else:
-            websocket = None
-        if websocket:
-            await websocket.send_text(message)
+    async def connect_dm(self, user_id: int, websocket: WebSocket):
+        await websocket.accept()
+        self.active_dms[user_id] = websocket
+
+    def disconnect_dm(self, user_id: int):
+        self.active_dms.pop(user_id, None)
+
+    async def send_dm(self, message: str, user_id: int) -> bool:
+        ws = self.active_dms.get(user_id)
+        if ws:
+            await ws.send_text(message)
+            return True
+        return False
+
+    async def connect_team(self, team_id: int, user_id: int, websocket: WebSocket):
+        await websocket.accept()
+        if team_id not in self.active_teams:
+            self.active_teams[team_id] = {}
+        self.active_teams[team_id][user_id] = websocket
+
+    def disconnect_team(self, team_id: int, user_id: int):
+        if team_id in self.active_teams:
+            self.active_teams[team_id].pop(user_id, None)
+            if not self.active_teams[team_id]:
+                del self.active_teams[team_id]
+
+    async def broadcast_to_team(self, team_id: int, sender_id: int, message: str):
+        if team_id in self.active_teams:
+            for member_id, ws in self.active_teams[team_id].items():
+                if member_id != sender_id:  # Don't echo back to sender
+                    await ws.send_text(message)
 
 manager = ConnectionManager()
