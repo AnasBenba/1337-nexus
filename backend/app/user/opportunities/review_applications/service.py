@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.teams.provision_workspace.service import provision_workspace_for_application
 from app.user.opportunities.apply.models import Application
 
 ALLOWED_STATUSES = frozenset({"pending", "under_review", "accepted", "rejected"})
@@ -32,6 +33,13 @@ async def update_application_status(
         )
 
     application.status = new_status
-    await db.commit()
-    await db.refresh(application)
+    try:
+        if new_status == "accepted":
+            await provision_workspace_for_application(db, application)
+        await db.commit()
+        await db.refresh(application)
+    except Exception:
+        await db.rollback()
+        raise
+
     return application

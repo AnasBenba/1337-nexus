@@ -11,6 +11,7 @@ import app.models.curriculum
 import app.models.copilot
 import app.models.job
 from app.oauth import user  # noqa: F401
+import app.teams.models  # noqa: F401
 
 config = context.config
 
