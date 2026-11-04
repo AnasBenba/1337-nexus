@@ -8,20 +8,18 @@ Covers:
 - Full pipeline: PDF → MD → chunks → embeddings → DB rows (in-memory SQLite)
 """
 
-import asyncio
-import pytest
-import tiktoken
 from pathlib import Path
 
+import pytest
+import tiktoken
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
-from sqlalchemy import create_engine, text as sa_text
+from sqlalchemy import create_engine
+from sqlalchemy import text as sa_text
 from sqlalchemy.orm import Session
 
+from app.models.curriculum import CurriculumChunk
 from app.shared.ai.config import EMBEDDING_DIMENSIONS
 from app.shared.ai.stub import stub
-from app.shared.models import Base 
-from app.models.curriculum import CurriculumChunk
-
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -42,6 +40,7 @@ PDF_FOLDER = BACKEND_DIR / "content" / "subjects" / "pdfs"
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture(scope="module")
 def in_memory_engine():
     """
@@ -51,8 +50,6 @@ def in_memory_engine():
     """
     # We monkey-patch Vector so SQLAlchemy does not try to use the
     # pgvector dialect type against SQLite.
-    from pgvector.sqlalchemy import Vector
-    from sqlalchemy import String
     import sqlalchemy.types as types
 
     # Override Vector to use JSON string storage in SQLite
@@ -64,12 +61,14 @@ def in_memory_engine():
             if value is None:
                 return None
             import json
+
             return json.dumps(value)
 
         def process_result_value(self, value, dialect):
             if value is None:
                 return None
             import json
+
             return json.loads(value)
 
     # Patch the column type on the model for this test session
@@ -84,15 +83,18 @@ def in_memory_engine():
 
     # Create tables – the FK on subject_document_id will be skipped in SQLite
     with engine.connect() as conn:
-        conn.execute(sa_text(
-            """
+        conn.execute(
+            sa_text(
+                """
             CREATE TABLE IF NOT EXISTS subject_documents (
                 id TEXT PRIMARY KEY
             )
             """
-        ))
-        conn.execute(sa_text(
-            """
+            )
+        )
+        conn.execute(
+            sa_text(
+                """
             CREATE TABLE IF NOT EXISTS curriculum_chunks (
                 id        TEXT PRIMARY KEY,
                 document_id TEXT NOT NULL,
@@ -102,7 +104,8 @@ def in_memory_engine():
                 embedding TEXT
             )
             """
-        ))
+            )
+        )
         conn.commit()
 
     yield engine
@@ -132,6 +135,7 @@ def sample_md_text():
 # Unit tests: Markdown chunking
 # ---------------------------------------------------------------------------
 
+
 class TestMarkdownChunking:
     """Verify the two-stage chunking strategy."""
 
@@ -146,10 +150,14 @@ class TestMarkdownChunking:
         splitter = MarkdownHeaderTextSplitter(headers_to_split_on=HEADERS_TO_SPLIT_ON)
         header_chunks = splitter.split_text(text)
 
-        token_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=800, chunk_overlap=100, encoding_name="cl100k_base")
+        token_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+            chunk_size=800, chunk_overlap=100, encoding_name="cl100k_base"
+        )
         final_documents = token_splitter.split_documents(header_chunks)
 
-        assert len(final_documents) > 0, f"RecursiveCharacterTextSplitter produced 0 docs for {name}"
+        assert len(final_documents) > 0, (
+            f"RecursiveCharacterTextSplitter produced 0 docs for {name}"
+        )
 
     def test_each_chunk_respects_size_limit(self, sample_md_text):
         """No chunk should exceed chunk_size tokens by more than the overlap buffer."""
@@ -169,12 +177,13 @@ class TestMarkdownChunking:
                 f"Chunk is too large: {token_count} tokens"
             )
 
-
     def test_chunk_page_content_is_non_empty_string(self, sample_md_text):
         text, _ = sample_md_text
         splitter = MarkdownHeaderTextSplitter(headers_to_split_on=HEADERS_TO_SPLIT_ON)
         header_chunks = splitter.split_text(text)
-        token_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=800, chunk_overlap=100, encoding_name="cl100k_base")
+        token_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+            chunk_size=800, chunk_overlap=100, encoding_name="cl100k_base"
+        )
         final_documents = token_splitter.split_documents(header_chunks)
 
         for doc in final_documents:
@@ -185,7 +194,9 @@ class TestMarkdownChunking:
         text, _ = sample_md_text
         splitter = MarkdownHeaderTextSplitter(headers_to_split_on=HEADERS_TO_SPLIT_ON)
         header_chunks = splitter.split_text(text)
-        token_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=800, chunk_overlap=100, encoding_name="cl100k_base")
+        token_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+            chunk_size=800, chunk_overlap=100, encoding_name="cl100k_base"
+        )
         final_documents = token_splitter.split_documents(header_chunks)
 
         for doc in final_documents:
@@ -195,6 +206,7 @@ class TestMarkdownChunking:
 # ---------------------------------------------------------------------------
 # Unit tests: Stub embedder
 # ---------------------------------------------------------------------------
+
 
 class TestStubEmbedder:
     """Verify the stub AI provider returns sane embeddings."""
@@ -244,6 +256,7 @@ class TestStubEmbedder:
 # Integration test: Full pipeline → DB
 # ---------------------------------------------------------------------------
 
+
 class TestChunkingAndDBPersistence:
     """
     End-to-end: chunk a Markdown file, embed with the stub, and persist
@@ -251,15 +264,20 @@ class TestChunkingAndDBPersistence:
     """
 
     @pytest.mark.asyncio
-    async def test_pipeline_inserts_rows(self, sample_md_text, ai_stub, db_session, in_memory_engine):
+    async def test_pipeline_inserts_rows(
+        self, sample_md_text, ai_stub, db_session, in_memory_engine
+    ):
         text, name = sample_md_text
         import uuid
+
         document_id = str(uuid.uuid4())
 
         # ── 1. Chunk ────────────────────────────────────────────────────────
         splitter = MarkdownHeaderTextSplitter(headers_to_split_on=HEADERS_TO_SPLIT_ON)
         header_chunks = splitter.split_text(text)
-        token_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=800, chunk_overlap=100, encoding_name="cl100k_base")
+        token_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+            chunk_size=800, chunk_overlap=100, encoding_name="cl100k_base"
+        )
         final_documents = token_splitter.split_documents(header_chunks)
         assert len(final_documents) > 0
 
@@ -271,29 +289,34 @@ class TestChunkingAndDBPersistence:
 
         # ── 3. Insert into DB ────────────────────────────────────────────────
         import json
+
         with in_memory_engine.connect() as conn:
             # Insert a parent subject_document row to satisfy FK semantics
-            conn.execute(sa_text(
-                "INSERT OR IGNORE INTO subject_documents (id) VALUES (:id)"
-            ), {"id": document_id})
+            conn.execute(
+                sa_text("INSERT OR IGNORE INTO subject_documents (id) VALUES (:id)"),
+                {"id": document_id},
+            )
             conn.commit()
 
-            for idx, (doc, vector) in enumerate(zip(final_documents, embeddings)):
-                conn.execute(sa_text(
-                    """
+            for idx, (doc, vector) in enumerate(zip(final_documents, embeddings, strict=False)):
+                conn.execute(
+                    sa_text(
+                        """
                     INSERT INTO curriculum_chunks
                         (id, document_id, chunk_index, content, chunk_metadata, embedding)
                     VALUES
                         (:id, :document_id, :chunk_index, :content, :chunk_metadata, :embedding)
                     """
-                ), {
-                    "id": str(uuid.uuid4()),
-                    "document_id": document_id,
-                    "chunk_index": idx,
-                    "content": doc.page_content,
-                    "chunk_metadata": json.dumps(doc.metadata),
-                    "embedding": json.dumps(vector),
-                })
+                    ),
+                    {
+                        "id": str(uuid.uuid4()),
+                        "document_id": document_id,
+                        "chunk_index": idx,
+                        "content": doc.page_content,
+                        "chunk_metadata": json.dumps(doc.metadata),
+                        "embedding": json.dumps(vector),
+                    },
+                )
             conn.commit()
 
             # ── 4. Verify row count matches chunk count ──────────────────────
@@ -311,37 +334,45 @@ class TestChunkingAndDBPersistence:
         """Verify the stored content matches the original chunk content."""
         text, _ = sample_md_text
         import uuid
+
         document_id = str(uuid.uuid4())
 
         splitter = MarkdownHeaderTextSplitter(headers_to_split_on=HEADERS_TO_SPLIT_ON)
         header_chunks = splitter.split_text(text)
-        token_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=800, chunk_overlap=100, encoding_name="cl100k_base")
+        token_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+            chunk_size=800, chunk_overlap=100, encoding_name="cl100k_base"
+        )
         final_documents = token_splitter.split_documents(header_chunks)
         text_chunks = [doc.page_content for doc in final_documents]
         embeddings = await ai_stub.embed(text_chunks)
 
         import json
-        with in_memory_engine.connect() as conn:
-            conn.execute(sa_text(
-                "INSERT OR IGNORE INTO subject_documents (id) VALUES (:id)"
-            ), {"id": document_id})
 
-            for idx, (doc, vector) in enumerate(zip(final_documents, embeddings)):
-                conn.execute(sa_text(
-                    """
+        with in_memory_engine.connect() as conn:
+            conn.execute(
+                sa_text("INSERT OR IGNORE INTO subject_documents (id) VALUES (:id)"),
+                {"id": document_id},
+            )
+
+            for idx, (doc, vector) in enumerate(zip(final_documents, embeddings, strict=False)):
+                conn.execute(
+                    sa_text(
+                        """
                     INSERT INTO curriculum_chunks
                         (id, document_id, chunk_index, content, chunk_metadata, embedding)
                     VALUES
                         (:id, :document_id, :chunk_index, :content, :chunk_metadata, :embedding)
                     """
-                ), {
-                    "id": str(uuid.uuid4()),
-                    "document_id": document_id,
-                    "chunk_index": idx,
-                    "content": doc.page_content,
-                    "chunk_metadata": json.dumps(doc.metadata),
-                    "embedding": json.dumps(vector),
-                })
+                    ),
+                    {
+                        "id": str(uuid.uuid4()),
+                        "document_id": document_id,
+                        "chunk_index": idx,
+                        "content": doc.page_content,
+                        "chunk_metadata": json.dumps(doc.metadata),
+                        "embedding": json.dumps(vector),
+                    },
+                )
             conn.commit()
 
             rows = conn.execute(
@@ -354,41 +385,51 @@ class TestChunkingAndDBPersistence:
         assert stored_contents == original_contents
 
     @pytest.mark.asyncio
-    async def test_pipeline_embeddings_have_correct_dimension(self, sample_md_text, ai_stub, in_memory_engine):
+    async def test_pipeline_embeddings_have_correct_dimension(
+        self, sample_md_text, ai_stub, in_memory_engine
+    ):
         """Stored embedding vectors should round-trip with correct length."""
         text, _ = sample_md_text
         import uuid
+
         document_id = str(uuid.uuid4())
 
         splitter = MarkdownHeaderTextSplitter(headers_to_split_on=HEADERS_TO_SPLIT_ON)
         header_chunks = splitter.split_text(text)
-        token_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(chunk_size=800, chunk_overlap=100, encoding_name="cl100k_base")
+        token_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+            chunk_size=800, chunk_overlap=100, encoding_name="cl100k_base"
+        )
         final_documents = token_splitter.split_documents(header_chunks)
         text_chunks = [doc.page_content for doc in final_documents]
         embeddings = await ai_stub.embed(text_chunks)
 
         import json
-        with in_memory_engine.connect() as conn:
-            conn.execute(sa_text(
-                "INSERT OR IGNORE INTO subject_documents (id) VALUES (:id)"
-            ), {"id": document_id})
 
-            for idx, (doc, vector) in enumerate(zip(final_documents, embeddings)):
-                conn.execute(sa_text(
-                    """
+        with in_memory_engine.connect() as conn:
+            conn.execute(
+                sa_text("INSERT OR IGNORE INTO subject_documents (id) VALUES (:id)"),
+                {"id": document_id},
+            )
+
+            for idx, (doc, vector) in enumerate(zip(final_documents, embeddings, strict=False)):
+                conn.execute(
+                    sa_text(
+                        """
                     INSERT INTO curriculum_chunks
                         (id, document_id, chunk_index, content, chunk_metadata, embedding)
                     VALUES
                         (:id, :document_id, :chunk_index, :content, :chunk_metadata, :embedding)
                     """
-                ), {
-                    "id": str(uuid.uuid4()),
-                    "document_id": document_id,
-                    "chunk_index": idx,
-                    "content": doc.page_content,
-                    "chunk_metadata": json.dumps(doc.metadata),
-                    "embedding": json.dumps(vector),
-                })
+                    ),
+                    {
+                        "id": str(uuid.uuid4()),
+                        "document_id": document_id,
+                        "chunk_index": idx,
+                        "content": doc.page_content,
+                        "chunk_metadata": json.dumps(doc.metadata),
+                        "embedding": json.dumps(vector),
+                    },
+                )
             conn.commit()
 
             rows = conn.execute(
@@ -404,6 +445,7 @@ class TestChunkingAndDBPersistence:
 # ---------------------------------------------------------------------------
 # Unit tests: CurriculumChunk ORM model structure
 # ---------------------------------------------------------------------------
+
 
 class TestCurriculumChunkModel:
     """Validate the SQLAlchemy model has the expected columns."""

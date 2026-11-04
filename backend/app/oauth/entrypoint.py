@@ -1,8 +1,9 @@
-from fastapi.responses import RedirectResponse
-import secrets
-import hashlib
 import base64
+import hashlib
 import os
+import secrets
+
+from fastapi.responses import RedirectResponse
 
 
 class AuthClient:
@@ -25,6 +26,7 @@ class AuthClient:
         hash_obj = hashlib.sha256(hash)
         finale_hash = base64.urlsafe_b64encode(hash_obj.digest())
         return finale_hash.rstrip(b"=").decode()
+
     def get_FortyTwo_auth_url(self) -> str:
         return (
             f"{self.authorize_url}"
@@ -35,6 +37,7 @@ class AuthClient:
             f"&redirect_uri={self.redirect_uri}"
             f"&response_type=code"
         )
+
 
 async def redirect_to_forttytwo():
     client = AuthClient(redirect_uri="http://localhost:8000/api/v1/auth/oauth/42/callback")

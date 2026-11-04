@@ -11,6 +11,7 @@ Dependency injection:
   - db  : async SQLAlchemy session via get_db_session()
   - ai  : AIProvider via get_ai_provider() (stub by default, real LLM later)
 """
+
 from __future__ import annotations
 
 from typing import Annotated

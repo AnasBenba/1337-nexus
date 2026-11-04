@@ -5,6 +5,7 @@ Request:  RetrievalQuery  - the user question + optional k override
 Response: ChunkResult     - a single ranked chunk with citation metadata
           RetrievalResult - the full ranked list returned by the service
 """
+
 import uuid
 from typing import Any
 
@@ -33,12 +34,8 @@ class ChunkResult(BaseModel):
     chunk_id: uuid.UUID
     document_id: uuid.UUID
     subject_slug: str
-    ordinal: int = Field(
-        description="chunk_index - position within the source document."
-    )
-    snippet: str = Field(
-        description="The raw text content of the chunk (<= 800 tokens)."
-    )
+    ordinal: int = Field(description="chunk_index - position within the source document.")
+    snippet: str = Field(description="The raw text content of the chunk (<= 800 tokens).")
     chunk_metadata: dict[str, Any] = Field(
         default_factory=dict,
         description="Metadata from markdown headers (e.g. sections).",
