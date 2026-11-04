@@ -43,7 +43,7 @@ class CanvasNamespace(socketio.AsyncNamespace):  # type: ignore[misc]
         logger.info("Canvas client connected: %s", sid)
         return True
 
-    async def on_disconnect(self, sid: str) -> None:
+    async def on_disconnect(self, sid: str, *args: Any, **kwargs: Any) -> None:
         """Handle client disconnection."""
         session = await self.get_session(sid)
         if session and "document_id" in session:
