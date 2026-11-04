@@ -20,6 +20,7 @@ Phase 3: Post-Stream Transaction (< 20ms)
   and status (completed or failed).
 - Commits and yields the final done SSE frame.
 """
+
 from __future__ import annotations
 
 import json
@@ -70,9 +71,7 @@ def _build_citations(chunks: list[ChunkResult]) -> list[dict[str, Any]]:
     ]
 
 
-def _build_grounded_prompt(
-    question: str, chunks: list[ChunkResult]
-) -> list[dict[str, str]]:
+def _build_grounded_prompt(question: str, chunks: list[ChunkResult]) -> list[dict[str, str]]:
     """
     Assemble the LLM messages list with curriculum context injected.
 
@@ -180,7 +179,9 @@ async def pre_stream_transaction(
 
         # 2. Retrieve top-K curriculum chunks via pgvector (default bumped to 8 for full coverage)
         requested_k = body.k
-        retrieval_k = _DEFAULT_RETRIEVAL_K if (requested_k is None or requested_k == 5) else requested_k
+        retrieval_k = (
+            _DEFAULT_RETRIEVAL_K if (requested_k is None or requested_k == 5) else requested_k
+        )
         retrieval_query = RetrievalQuery(query=body.question, k=retrieval_k)
         retrieval_result = await retrieve_curriculum(retrieval_query, db, ai)
         context_chunks = retrieval_result.chunks

@@ -7,10 +7,13 @@ import pytest
 from pydantic import ValidationError
 
 from app.user.opportunities.apply.service import apply_to_opportunity
+from app.user.opportunities.apply.models import Application
+from app.user.opportunities.browse_opportunities.models import Opportunity
 from app.user.opportunities.browse_opportunities.service import browse_opportunities
 from app.user.opportunities.create_opportunity.schemas import CreateOpportunityRequest
 from app.user.opportunities.create_opportunity.service import create_opportunity
 from app.user.opportunities.match_scoring.service import (
+    calculate_match_score,
     score_opportunity_applications,
 )
 from app.user.opportunities.publish_opportunity.service import publish_opportunity
@@ -291,3 +294,57 @@ def test_update_opportunity_request_requires_a_field():
         match="At least one opportunity field must be provided",
     ):
         UpdateOpportunityRequest()
+
+
+def test_calculate_match_score_full_match() -> None:
+    required = ["Python", "FastAPI", "Docker"]
+    candidate = ["python", "docker", "fastapi", "react"]
+    score = calculate_match_score(required, candidate)
+    assert score == 100.0
+
+
+def test_calculate_match_score_partial_match() -> None:
+    required = ["Python", "FastAPI", "Docker", "Kubernetes"]
+    candidate = ["python", "docker", "c++"]
+    score = calculate_match_score(required, candidate)
+    assert score == 50.0
+
+
+def test_calculate_match_score_no_match() -> None:
+    required = ["Rust", "Wasm"]
+    candidate = ["Python", "Django"]
+    score = calculate_match_score(required, candidate)
+    assert score == 0.0
+
+
+def test_calculate_match_score_empty_required_skills() -> None:
+    score = calculate_match_score([], ["Python"])
+    assert score == 0.0
+
+
+def test_opportunity_model_instantiation() -> None:
+    opp = Opportunity(
+        id=uuid4(),
+        project_id=uuid4(),
+        title="Lead Frontend",
+        description="React and Tailwind specialist",
+        required_skills=["React", "TypeScript"],
+        status="open",
+    )
+    assert opp.title == "Lead Frontend"
+    assert opp.status == "open"
+    assert opp.required_skills == ["React", "TypeScript"]
+
+
+def test_application_model_instantiation() -> None:
+    new_application = Application(
+        id=uuid4(),
+        opportunity_id=uuid4(),
+        user_id=uuid4(),
+        candidate_skills=["Python", "PostgreSQL"],
+        status="pending",
+        message="I'd love to join this team!",
+    )
+    assert new_application.status == "pending"
+    assert new_application.candidate_skills == ["Python", "PostgreSQL"]
+    assert new_application.message == "I'd love to join this team!"

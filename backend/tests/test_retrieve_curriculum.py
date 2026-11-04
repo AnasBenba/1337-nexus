@@ -1,6 +1,7 @@
 """
 Tests for retrieve_curriculum module: schemas, service, and HTTP router.
 """
+
 import uuid
 from typing import Any
 from unittest.mock import AsyncMock
@@ -96,9 +97,7 @@ class TestService:
 
 
 class TestRouter:
-    def test_endpoint_with_test_client(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_endpoint_with_test_client(self, monkeypatch: pytest.MonkeyPatch) -> None:
         test_app = FastAPI()
         test_app.include_router(router)
 

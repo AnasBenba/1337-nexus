@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
+
 from .schemas import ApplyRequest, ApplyResponse
 from .service import apply_to_opportunity
 

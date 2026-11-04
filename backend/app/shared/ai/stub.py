@@ -13,9 +13,7 @@ class stub(AIProvider):
     def __init__(self) -> None:
         self.response = "This is a stub response."
 
-    async def stream_complete(
-        self, messages: list[dict[str, Any]]
-    ) -> AsyncGenerator[str, None]:
+    async def stream_complete(self, messages: list[dict[str, Any]]) -> AsyncGenerator[str, None]:
         for chunk in re.split(r"(\s+)", self.response):
             yield chunk
             await asyncio.sleep(0.05)
@@ -28,6 +26,6 @@ class stub(AIProvider):
             digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
             seed = int(digest[:16], 16)
             random.seed(seed)
-            vector = [random.uniform(-1, 1) for _ in range(EMBEDDING_DIMENSIONS)]
+            vector = [random.uniform(-1, 1) for _ in range(EMBEDDING_DIMENSIONS)]  # noqa: S311
             embeddings.append(vector)
         return embeddings

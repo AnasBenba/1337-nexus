@@ -2,6 +2,7 @@
 Unit tests for Copilot Ask Service (Phase 1: Pre-Stream Transaction & Retrieval).
 Aligned with schema: Table copilot_threads & Table copilot_messages.
 """
+
 import uuid
 from collections.abc import AsyncGenerator
 from typing import Any
@@ -83,9 +84,7 @@ def _create_fake_chunks(count: int = 2) -> list[ChunkResult]:
 
 class TestPreStreamTransaction:
     @pytest.mark.asyncio
-    async def test_pre_stream_transaction_success(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_pre_stream_transaction_success(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """
         Verify Phase 1:
         1. Opens short session
@@ -235,9 +234,11 @@ class TestPreStreamTransaction:
     def test_alias_exports(self) -> None:
         assert prepare_copilot_stream is pre_stream_transaction
 
+
 class TestFormatSSE:
     def test_format_sse_structure(self) -> None:
         import json
+
         frame = format_sse("delta", {"content": "Hello"})
         assert frame.startswith("event: delta\n")
         assert "data: " in frame
@@ -247,6 +248,7 @@ class TestFormatSSE:
 
     def test_format_sse_meta(self) -> None:
         import json
+
         frame = format_sse("meta", {"thread_id": "abc", "citations": []})
         payload = json.loads(frame.split("data: ", 1)[1].strip())
         assert payload["thread_id"] == "abc"
@@ -255,9 +257,7 @@ class TestFormatSSE:
 
 class TestStreamCopilotAnswer:
     @pytest.mark.asyncio
-    async def test_yields_meta_then_deltas_then_done(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_yields_meta_then_deltas_then_done(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """
         Full integration test for the Phase 2+3 generator:
         checks SSE event ordering, meta payload, delta tokens, and done frame.
@@ -267,9 +267,7 @@ class TestStreamCopilotAnswer:
         fake_chunks = _create_fake_chunks(1)
         monkeypatch.setattr(
             "app.user.copilot.ask.service.retrieve_curriculum",
-            AsyncMock(
-                return_value=RetrievalResult(query="test", chunks=fake_chunks)
-            ),
+            AsyncMock(return_value=RetrievalResult(query="test", chunks=fake_chunks)),
         )
 
         # Fake AI provider that yields two tokens
@@ -298,8 +296,8 @@ class TestStreamCopilotAnswer:
         # Parse event types in order
         events = []
         for frame in frames:
-            event_line = [l for l in frame.splitlines() if l.startswith("event:")][0]
-            data_line = [l for l in frame.splitlines() if l.startswith("data:")][0]
+            event_line = [line for line in frame.splitlines() if line.startswith("event:")][0]
+            data_line = [line for line in frame.splitlines() if line.startswith("data:")][0]
             event_type = event_line.split("event: ", 1)[1]
             data = json.loads(data_line.split("data: ", 1)[1])
             events.append((event_type, data))
@@ -326,9 +324,7 @@ class TestStreamCopilotAnswer:
 
         monkeypatch.setattr(
             "app.user.copilot.ask.service.retrieve_curriculum",
-            AsyncMock(
-                return_value=RetrievalResult(query="fail", chunks=[])
-            ),
+            AsyncMock(return_value=RetrievalResult(query="fail", chunks=[])),
         )
 
         async def failing_stream(messages: list) -> AsyncGenerator[str, None]:
@@ -354,7 +350,7 @@ class TestStreamCopilotAnswer:
             frames.append(frame)
 
         done_frame = [f for f in frames if "event: done" in f][-1]
-        data_line = [l for l in done_frame.splitlines() if l.startswith("data:")][0]
+        data_line = [line for line in done_frame.splitlines() if line.startswith("data:")][0]
         done_data = json.loads(data_line.split("data: ", 1)[1])
         assert done_data["status"] == "failed"
 
@@ -371,11 +367,11 @@ class TestAskRouter:
         - Validates anti-buffering headers (Cache-Control, Connection, X-Accel-Buffering)
         - Parses SSE chunks (meta -> delta -> done)
         """
-        import json
         from fastapi import FastAPI
         from httpx import ASGITransport, AsyncClient
-        from app.user.copilot.ask.router import router as ask_router
+
         from app.shared.ai.client import get_ai_provider
+        from app.user.copilot.ask.router import router as ask_router
 
         app = FastAPI()
         app.include_router(ask_router)
@@ -383,9 +379,7 @@ class TestAskRouter:
         fake_chunks = _create_fake_chunks(1)
         monkeypatch.setattr(
             "app.user.copilot.ask.service.retrieve_curriculum",
-            AsyncMock(
-                return_value=RetrievalResult(query="test", chunks=fake_chunks)
-            ),
+            AsyncMock(return_value=RetrievalResult(query="test", chunks=fake_chunks)),
         )
 
         class StubStreamAI:
@@ -423,18 +417,17 @@ class TestAskRouter:
             assert "completed" in body_text
 
     @pytest.mark.asyncio
-    async def test_ask_endpoint_with_stub_provider(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_ask_endpoint_with_stub_provider(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """
         Validate POST /api/v1/copilot/ask with the standard stub() provider:
         Ensures CI tests run deterministically and fast without live Gemini API.
         """
         from fastapi import FastAPI
         from httpx import ASGITransport, AsyncClient
-        from app.user.copilot.ask.router import router as ask_router
+
         from app.shared.ai.client import get_ai_provider
         from app.shared.ai.stub import stub
+        from app.user.copilot.ask.router import router as ask_router
 
         app = FastAPI()
         app.include_router(ask_router)
@@ -442,9 +435,7 @@ class TestAskRouter:
         fake_chunks = _create_fake_chunks(2)
         monkeypatch.setattr(
             "app.user.copilot.ask.service.retrieve_curriculum",
-            AsyncMock(
-                return_value=RetrievalResult(query="stub question", chunks=fake_chunks)
-            ),
+            AsyncMock(return_value=RetrievalResult(query="stub question", chunks=fake_chunks)),
         )
 
         session = MockAsyncSession()
@@ -467,5 +458,7 @@ class TestAskRouter:
             assert "event: meta" in body
             assert "event: delta" in body
             assert "event: done" in body
-            assert "This is a stub response." in body.replace("event: delta\ndata: {\"content\": \"", "").replace("\"}\n\n", "")
+            assert "This is a stub response." in body.replace(
+                'event: delta\ndata: {"content": "', ""
+            ).replace('"}\n\n', "")
             assert '"status": "completed"' in body
