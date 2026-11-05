@@ -45,7 +45,7 @@ async def get_current_user_dep(
 @router.get(
     "/api/v1/pitches/search",
     response_model=list[PitchResponse],
-    summary="Search project pitches by semantic similarity (alias)",
+    include_in_schema=False,
 )
 @router.get(
     "/api/v1/search",
@@ -72,7 +72,7 @@ async def search_pitches_endpoint(
     "/api/v1/pitches",
     response_model=PitchResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Create a new project pitch (alias)",
+    include_in_schema=False,
 )
 async def create_pitch_endpoint(
     pitch: PitchCreate,
@@ -91,7 +91,7 @@ async def create_pitch_endpoint(
 @router.get(
     "/api/v1/pitches",
     response_model=list[PitchResponse],
-    summary="List all project pitches (alias)",
+    include_in_schema=False,
 )
 async def list_pitches_endpoint(
     db: Annotated[AsyncSession, Depends(get_db_session)],
@@ -108,7 +108,7 @@ async def list_pitches_endpoint(
 @router.get(
     "/api/v1/pitches/{pitch_id}",
     response_model=PitchResponse,
-    summary="Get details of a specific pitch (alias)",
+    include_in_schema=False,
 )
 async def get_pitch_endpoint(
     pitch_id: uuid.UUID,
@@ -125,7 +125,7 @@ async def get_pitch_endpoint(
 @router.put(
     "/api/v1/pitches/{pitch_id}",
     response_model=PitchResponse,
-    summary="Update details of a specific pitch (alias)",
+    include_in_schema=False,
 )
 async def update_pitch_endpoint(
     pitch_id: uuid.UUID,
@@ -141,7 +141,7 @@ async def update_pitch_endpoint(
 )
 @router.delete(
     "/api/v1/pitches/{pitch_id}",
-    summary="Delete a pitch (alias)",
+    include_in_schema=False,
 )
 async def delete_pitch_endpoint(
     pitch_id: uuid.UUID,
