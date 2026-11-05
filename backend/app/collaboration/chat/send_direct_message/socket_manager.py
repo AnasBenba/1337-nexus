@@ -45,4 +45,5 @@ class ConnectionManager:
             for member_id in disconnected_members:
                 self.disconnect_team(team_id, member_id)
 
+
 manager = ConnectionManager()

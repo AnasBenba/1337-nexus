@@ -43,9 +43,7 @@ async def provision_workspace(
             )
         )
         channel = await db.scalar(
-            select(WorkspaceChannel).where(
-                WorkspaceChannel.team_id == existing_team.id
-            )
+            select(WorkspaceChannel).where(WorkspaceChannel.team_id == existing_team.id)
         )
         if board is None or canvas is None or channel is None:
             raise ValueError("Workspace is incomplete")

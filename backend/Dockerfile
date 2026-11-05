@@ -21,7 +21,6 @@ RUN pip install --require-hashes --no-cache-dir -r /tmp/requirements.lock \
     && rm /tmp/requirements.lock
 
 COPY backend/app ./app
-COPY backend/user ./user
 COPY backend/alembic ./alembic
 COPY backend/alembic.ini ./alembic.ini
 COPY backend/entrypoint.sh ./entrypoint.sh

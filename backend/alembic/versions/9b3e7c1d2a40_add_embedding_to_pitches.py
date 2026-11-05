@@ -21,6 +21,13 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    if "pitches" in inspector.get_table_names():
+        columns = [c["name"] for c in inspector.get_columns("pitches")]
+        if "embedding" in columns:
+            return
+
     op.add_column(
         "pitches",
         sa.Column("embedding", Vector(EMBEDDING_DIMENSIONS), nullable=True),
