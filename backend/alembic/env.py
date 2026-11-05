@@ -8,6 +8,11 @@ from alembic import context
 from app.core.config import get_settings
 from app.shared.models import Base
 import app.models.curriculum
+from user.pitches.create_pitch.models import Pitch
+import app.models.copilot
+import app.models.job
+from app.oauth import user  # noqa: F401
+from app.collaboration.chat import models as chat_models  # noqa: F401
 
 config = context.config
 

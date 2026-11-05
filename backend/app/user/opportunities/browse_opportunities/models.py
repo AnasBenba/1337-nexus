@@ -1,7 +1,9 @@
 from datetime import datetime
+from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PostgreSQLUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.shared.models import Base
@@ -10,9 +12,15 @@ from app.shared.models import Base
 class Opportunity(Base):
     __tablename__ = "opportunities"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        primary_key=True,
+        index=True,
+        default=uuid4,
+    )
 
-    project_id: Mapped[int] = mapped_column(
+    project_id: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
         ForeignKey("projects.id"),
         nullable=False,
         index=True,
@@ -22,7 +30,7 @@ class Opportunity(Base):
 
     description: Mapped[str] = mapped_column(Text, nullable=False)
 
-    required_skills: Mapped[list] = mapped_column(
+    required_skills: Mapped[list[str]] = mapped_column(
         JSONB,
         nullable=False,
         default=list,
@@ -31,7 +39,7 @@ class Opportunity(Base):
     status: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
-        default="open",
+        default="draft",
         index=True,
     )
 

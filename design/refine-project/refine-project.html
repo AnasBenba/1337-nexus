@@ -1,0 +1,1181 @@
+<!DOCTYPE html><html lang="en" class="h-full" style=""><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>1337.Nexus - Pitch Refiner AI Critique</title>
+  <!-- Google Fonts: Plus Jakarta Sans, Space Grotesk, Inter, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Plus+Jakarta+Sans:wght@500;600;700;800&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Material Symbols -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: '#0099ff',
+              hover: '#0084dc',
+              light: '#e0f2fe',
+              subtle: '#f0f9ff'
+            },
+            surface: {
+              DEFAULT: '#faf8ff',
+              card: '#ffffff',
+              subtle: '#f4f4fa',
+              border: '#e2e4ef',
+              dark: '#0f172a'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+            display: ['Space Grotesk', 'Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-outlined.fill {
+      font-variation-settings: 'FILL' 1;
+    }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f2f8;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd1e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #9aa3be;
+    }
+    @keyframes subtle-pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.05); }
+    }
+    .animate-subtle-pulse {
+      animation: subtle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    .diff-del {
+      background-color: #fee2e2;
+      color: #991b1b;
+      text-decoration: line-through;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    .diff-add {
+      background-color: #dcfce7;
+      color: #166534;
+      padding: 1px 4px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="h-full bg-[#f8f9fc] text-slate-800 font-sans antialiased flex flex-col overflow-hidden">
+
+  <!-- Interactive States Dev Toolbar (Top Bar for state switching) -->
+  <header class="bg-white border-b border-slate-200 px-4 py-2 flex items-center justify-between text-xs z-50 flex-shrink-0 shadow-sm">
+    <div class="flex items-center gap-2">
+      <span class="inline-flex items-center gap-1 font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+        <span class="w-2 h-2 rounded-full bg-brand animate-pulse"></span>
+        PitchRefiner
+      </span>
+      <span class="text-slate-400">|</span>
+      <span class="font-medium text-slate-500">Preview States:</span>
+    </div>
+
+    <!-- State Buttons Container -->
+    <div class="flex items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar max-w-[70vw]">
+      <button onclick="switchState('none')" id="btn-none" class="state-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+        Entry Page
+      </button>
+      <button onclick="switchState('A')" id="btn-A" class="state-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+        A. Start
+      </button>
+      <button onclick="switchState('B')" id="btn-B" class="state-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+        B. Submitting
+      </button>
+      <button onclick="switchState('C')" id="btn-C" class="state-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+        C. Queued
+      </button>
+      <button onclick="switchState('D')" id="btn-D" class="state-tab px-2.5 py-1 rounded-md font-medium transition-colors active bg-brand text-white shadow-sm">
+        D. Results
+      </button>
+      <button onclick="switchState('E')" id="btn-E" class="state-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+        E. Applying
+      </button>
+      <button onclick="switchState('F')" id="btn-F" class="state-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+        F. Applied
+      </button>
+      <button onclick="switchState('G')" id="btn-G" class="state-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+        G. Stale
+      </button>
+      <button onclick="switchState('H')" id="btn-H" class="state-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+        H. Conflict
+      </button>
+      <button onclick="switchState('I')" id="btn-I" class="state-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+        I. Failed
+      </button>
+      <button onclick="switchState('J')" id="btn-J" class="state-tab px-2.5 py-1 rounded-md font-medium text-slate-600 hover:bg-slate-100 transition-colors">
+        J. Empty
+      </button>
+      <button onclick="switchState('K-mobile')" id="btn-K-mobile" class="state-tab px-2.5 py-1 rounded-md font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors border border-emerald-200 text-slate-600">
+        K. Mobile (375px)
+      </button>
+    </div>
+
+    <!-- Current State Indicator -->
+    <div class="hidden lg:flex items-center gap-2 text-slate-400">
+      <span class="text-[11px] font-mono">React Mockup Specs</span>
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+    </div>
+  </header>
+
+  <!-- App Layout Frame (Persistent 1337.Nexus Shell: Topbar + Sidebar + Main) -->
+  <div class="flex-1 flex overflow-hidden">
+    
+    <!-- Left Sidebar (EXACT 1337.Nexus App Shell) -->
+    <aside class="w-64 bg-white border-r border-slate-200 flex flex-col justify-between hidden md:flex flex-shrink-0 z-20">
+      <div>
+        <!-- Brand Header in Shell -->
+        <div class="h-16 px-6 flex items-center gap-3 border-b border-slate-100">
+          <div class="w-8 h-8 rounded-lg bg-brand flex items-center justify-center text-white font-mono font-bold text-sm shadow-sm">
+            <span class="material-symbols-outlined text-lg">hub</span>
+          </div>
+          <div class="flex items-center">
+            <span class="font-display font-bold text-lg text-slate-900 tracking-tight">1337</span>
+            <span class="text-brand font-bold text-lg">.Nexus</span>
+          </div>
+        </div>
+
+        <!-- Student Quick Profile Profile Pill -->
+        <div class="p-4 mx-4 my-4 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-brand text-white font-display font-bold flex items-center justify-center text-sm shadow-sm flex-shrink-0">
+            SE
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="text-sm font-semibold text-slate-900 truncate">Soufiane El B.</div>
+            <div class="flex items-center gap-1.5 text-xs text-slate-500 font-mono">
+              <span class="text-brand font-bold">Lvl 9.42</span>
+              <span class="">•</span>
+              <span class="truncate">Circle 05</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="px-3 space-y-1">
+          <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium text-sm transition-colors">
+            <span class="material-symbols-outlined text-slate-400">grid_view</span>
+            Home
+          </a>
+          <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium text-sm transition-colors">
+            <span class="material-symbols-outlined text-slate-400">explore</span>
+            Discover
+          </a>
+          <a href="#" class="flex items-center justify-between px-3 py-2.5 rounded-lg bg-brand/10 text-brand font-semibold text-sm">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined fill">folder_open</span>
+              My Projects
+            </div>
+            <span class="text-xs bg-brand text-white px-2 py-0.5 rounded-full font-mono">2</span>
+          </a>
+          <a href="#" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium text-sm transition-colors">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-slate-400">chat_bubble</span>
+              Messages
+            </div>
+            <span class="text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full font-mono">4</span>
+          </a>
+          <a href="#" class="flex items-center justify-between px-3 py-2.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-medium text-sm transition-colors">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-brand">auto_awesome</span>
+              AI-Copilot
+            </div>
+            <span class="text-[10px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded font-mono font-medium">PROMPT</span>
+          </a>
+        </nav>
+      </div>
+
+      <!-- Footer intra status -->
+      <div class="p-4 border-t border-slate-100">
+        <div class="flex items-center justify-between text-xs text-slate-500 font-mono bg-slate-50 p-2.5 rounded-lg border border-slate-100">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span class="">Intra Connected</span>
+          </div>
+          <span class="material-symbols-outlined text-slate-400 text-base">verified</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area with Top Navigation Header -->
+    <div class="flex-1 flex flex-col overflow-hidden relative">
+      
+      <!-- Top Navigation Header (Exact 1337.Nexus Shell) -->
+      <header class="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between flex-shrink-0 z-10">
+        <!-- Search bar -->
+        <div class="relative w-96 max-w-full">
+          <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+          <input type="text" placeholder="Search projects, people, stack, or campus..." class="w-full pl-9 pr-12 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition-all">
+          <kbd class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] bg-white px-1.5 py-0.5 rounded border border-slate-200 text-slate-400 font-mono">⌘K</kbd>
+        </div>
+
+        <!-- Campus Switcher & Controls -->
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-700">
+            <span class="w-2 h-2 rounded-full bg-brand"></span>
+            <span class="font-semibold">1337 Benguerir</span>
+            <span class="material-symbols-outlined text-slate-400 text-sm">unfold_more</span>
+          </div>
+          <button class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors" title="Notifications">
+            <span class="material-symbols-outlined">notifications</span>
+          </button>
+          <button class="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors" title="Settings">
+            <span class="material-symbols-outlined">settings</span>
+          </button>
+          <div class="w-8 h-8 rounded-full bg-brand text-white font-display font-bold flex items-center justify-center text-xs ml-1 shadow-sm">
+            SE
+          </div>
+        </div>
+      </header>
+
+      <!-- Scrollable Subpage Content: Project / Pitch Detail View (Screen 1 Entry Point Context) -->
+      <main class="flex-1 overflow-y-auto p-6 lg:p-8 space-y-6">
+        
+        <!-- Breadcrumb & Top Project Header with Entry Button -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+          <div>
+            <div class="flex items-center gap-2 text-xs font-mono text-slate-500 mb-2">
+              <a href="#" class="hover:text-brand">My Projects</a>
+              <span class="">/</span>
+              <span class="text-slate-900 font-medium">StudySync</span>
+              <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full text-[11px] font-sans font-medium">Circle 04 Capstone</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <h1 class="text-2xl lg:text-3xl font-display font-bold text-slate-900 tracking-tight">StudySync — Peer Tutoring &amp; Code Review</h1>
+              <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-medium">Draft Pitch</span>
+            </div>
+            <p class="text-sm text-slate-600 mt-1">Smart peer-tutoring and evaluation matchmaking for 1337 coding school peers.</p>
+          </div>
+
+          <!-- PITCH ACTIONS TOOLBAR (Featuring Entry Point: RefineEntryButton) -->
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <button class="px-3.5 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1.5 shadow-sm">
+              <span class="material-symbols-outlined text-sm">edit</span>
+              Edit Pitch
+            </button>
+            <button class="px-3.5 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1.5 shadow-sm">
+              <span class="material-symbols-outlined text-sm">share</span>
+              Share
+            </button>
+            
+            <!-- REQUIRED ENTRY POINT 1: "Refine with AI" Sparkle Button -->
+            <button id="RefineEntryButton" onclick="openRefineModal()" class="px-4 py-2 text-xs font-semibold text-white bg-brand hover:bg-brand-hover active:scale-[0.99] rounded-lg transition-all flex items-center gap-2 shadow-sm shadow-brand/20 ring-4 ring-brand/10 hover:ring-brand/20">
+              <span class="material-symbols-outlined text-base animate-subtle-pulse">auto_awesome</span>
+              <span class="">Refine with AI</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Project Pitch Details Context Card -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Main Pitch Text (Editable sections) -->
+          <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Pitch Section: Problem -->
+            <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-mono font-bold uppercase tracking-wider text-slate-500">1. Problem Statement</span>
+                <span class="text-[11px] font-mono text-slate-400">Section 1 of 5</span>
+              </div>
+              <div id="live-pitch-problem" class="text-slate-800 text-sm leading-relaxed p-3.5 bg-slate-50/70 rounded-lg border border-slate-100 font-sans">
+                Students struggle to find help. Peer evaluation slots get booked with mismatched skill levels, leading to repeated failed defenses on tough graphics projects.
+              </div>
+            </div>
+
+            <!-- Pitch Section: Solution -->
+            <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-mono font-bold uppercase tracking-wider text-slate-500">2. Solution</span>
+                <span class="text-[11px] font-mono text-slate-400">Section 2 of 5</span>
+              </div>
+              <div class="text-slate-800 text-sm leading-relaxed p-3.5 bg-slate-50/70 rounded-lg border border-slate-100 font-sans">
+                An algorithm-driven peer matching bot on top of 42 Intra API that pairs senior students who scored 100+ on cub3D or miniRT with students currently preparing for their first evaluation.
+              </div>
+            </div>
+
+            <!-- Pitch Section: Target Users -->
+            <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-mono font-bold uppercase tracking-wider text-slate-500">3. Target Users</span>
+                <span class="text-[11px] font-mono text-slate-400">Section 3 of 5</span>
+              </div>
+              <div class="text-slate-800 text-sm leading-relaxed p-3.5 bg-slate-50/70 rounded-lg border border-slate-100 font-sans">
+                Everyone across all 42 network campuses worldwide who needs help with projects.
+              </div>
+            </div>
+
+            <!-- Pitch Section: Impact -->
+            <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-mono font-bold uppercase tracking-wider text-slate-500">4. Expected Impact</span>
+                <span class="text-[11px] font-mono text-slate-400">Section 4 of 5</span>
+              </div>
+              <div class="text-slate-800 text-sm leading-relaxed p-3.5 bg-slate-50/70 rounded-lg border border-slate-100 font-sans">
+                Help students succeed faster and build a stronger collaborative culture on campus.
+              </div>
+            </div>
+          </div>
+
+          <!-- Sidebar Metadata (Reviewers & Cohort info) -->
+          <div class="space-y-6">
+            <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+              <h3 class="font-display font-bold text-slate-900 text-sm mb-3">Project Metadata</h3>
+              <dl class="space-y-3 text-xs">
+                <div class="flex justify-between py-1.5 border-b border-slate-100">
+                  <dt class="text-slate-500">Lead Author</dt>
+                  <dd class="font-medium text-slate-800">Soufiane El B. (@sel-bou)</dd>
+                </div>
+                <div class="flex justify-between py-1.5 border-b border-slate-100">
+                  <dt class="text-slate-500">Campus</dt>
+                  <dd class="font-medium text-slate-800">1337 Benguerir</dd>
+                </div>
+                <div class="flex justify-between py-1.5 border-b border-slate-100">
+                  <dt class="text-slate-500">Target Defense</dt>
+                  <dd class="font-medium text-slate-800">November 2024</dd>
+                </div>
+                <div class="flex justify-between py-1.5">
+                  <dt class="text-slate-500">Last Pitch Edit</dt>
+                  <dd class="font-medium text-slate-800 font-mono">Today, 13:45</dd>
+                </div>
+              </dl>
+            </div>
+
+            <div class="bg-sky-50/80 border border-sky-100 rounded-xl p-4 text-xs">
+              <div class="flex items-center gap-2 font-semibold text-sky-900 mb-1">
+                <span class="material-symbols-outlined text-brand text-base">psychology</span>
+                <span class="">AI Pitch Critique Assistant</span>
+              </div>
+              <p class="text-sky-800/80 leading-relaxed mb-3">
+                Have the AI review your problem statement, target audience, and quantitative metrics against 1337 peer evaluation standards.
+              </p>
+              <button onclick="openRefineModal()" class="w-full py-2 bg-brand text-white font-medium rounded-lg text-center hover:bg-brand-hover transition-colors shadow-sm">
+                Open Pitch Refiner
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL OVERLAY & CONTAINER (RefineProjectModal)                            -->
+  <!-- Centered dialog on desktop (max width ~720px), full-screen on mobile     -->
+  <!-- ========================================================================= -->
+  <div id="RefineProjectModalBackdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-0 md:p-4 transition-opacity duration-200">
+    
+    <!-- Dialog Window (aria-modal role=dialog) -->
+    <div id="RefineProjectModal" role="dialog" aria-modal="true" aria-labelledby="refine-modal-title" class="bg-white w-full h-full md:h-auto md:max-h-[90vh] md:max-w-[720px] md:rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden transition-all duration-300">
+      
+      <!-- ================= MODAL HEADER ================= -->
+      <header class="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-white flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-sky-50 text-brand flex items-center justify-center border border-sky-100">
+            <span class="material-symbols-outlined text-lg">auto_awesome</span>
+          </div>
+          <div>
+            <h2 id="refine-modal-title" class="font-display font-bold text-slate-900 text-base md:text-lg tracking-tight">
+              Refine your pitch
+            </h2>
+            <!-- CritiqueBadge: Exact string without version numbers -->
+            <div id="CritiqueBadge" class="flex items-center gap-1.5 text-xs text-slate-500 font-mono">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span class="">Critique from Oct 25, 14:02</span>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="closeRefineModal()" aria-label="Close critique modal" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-brand/40">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </header>
+
+      <!-- ================= MODAL BODY (SWITCHABLE STATES) ================= -->
+      <div id="modal-content-scroll" class="flex-1 overflow-y-auto p-5 md:p-6 space-y-5 bg-[#fafafa]">
+        
+        <!-- ------------------------------------------------------------- -->
+        <!-- STATE A: START                                                -->
+        <!-- ------------------------------------------------------------- -->
+        <section id="state-view-A" class="state-container hidden space-y-6">
+          <div class="text-center py-6 px-4 max-w-lg mx-auto">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-4">
+              <span class="material-symbols-outlined text-3xl">rate_review</span>
+            </div>
+            <div class="inline-block px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-mono font-medium mb-3">
+              Project: StudySync
+            </div>
+            <h3 class="font-display font-bold text-xl text-slate-900 mb-2">Request AI Peer Critique</h3>
+            <p class="text-sm text-slate-600 leading-relaxed">
+              We'll review your pitch and suggest improvements. This runs in the background; you can close this window.
+            </p>
+          </div>
+
+          <div class="bg-white rounded-xl border border-slate-200 p-4 space-y-3 text-xs text-slate-600 shadow-sm">
+            <div class="font-semibold text-slate-800 text-sm">What gets analyzed:</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
+                <span class="">Problem statement precision</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
+                <span class="">Quantifiable impact &amp; metrics</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
+                <span class="">Target user specificity</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
+                <span class="">Team role clarity &amp; feasibility</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+            <button onclick="closeRefineModal()" class="px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
+              Cancel
+            </button>
+            <button onclick="switchState('B')" class="px-5 py-2.5 text-sm font-semibold text-white bg-brand hover:bg-brand-hover rounded-lg shadow-sm shadow-brand/30 transition-all flex items-center gap-2">
+              <span class="material-symbols-outlined text-sm">auto_awesome</span>
+              <span class="">Request critique</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- STATE B: SUBMITTING                                           -->
+        <!-- ------------------------------------------------------------- -->
+        <section id="state-view-B" class="state-container hidden space-y-6">
+          <div class="text-center py-6 px-4 max-w-lg mx-auto">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-brand/10 text-brand flex items-center justify-center mb-4">
+              <span class="material-symbols-outlined text-3xl animate-spin">progress_activity</span>
+            </div>
+            <div class="inline-block px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-mono font-medium mb-3">
+              Project: StudySync
+            </div>
+            <h3 class="font-display font-bold text-xl text-slate-900 mb-2">Submitting your pitch...</h3>
+            <p class="text-sm text-slate-600 leading-relaxed">
+              We'll review your pitch and suggest improvements. This runs in the background; you can close this window.
+            </p>
+          </div>
+
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+            <button disabled="" class="px-4 py-2.5 text-sm font-medium text-slate-400 bg-transparent rounded-lg cursor-not-allowed">
+              Cancel
+            </button>
+            <button disabled="" class="px-5 py-2.5 text-sm font-semibold text-white bg-brand/70 rounded-lg cursor-not-allowed flex items-center gap-2">
+              <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+              <span class="">Submitting...</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- STATE C: QUEUED / PROCESSING (3-Step Progress JobProgress)    -->
+        <!-- ------------------------------------------------------------- -->
+        <section id="state-view-C" class="state-container hidden space-y-6" aria-live="polite">
+          <div class="text-center py-4">
+            <h3 class="font-display font-bold text-lg text-slate-900 mb-1">Critique in progress</h3>
+            <p class="text-xs text-slate-500 font-mono">Job ID: #critique-9481-benguerir</p>
+          </div>
+
+          <!-- JobProgress: 3-step progress with subtle animated active step -->
+          <div class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <div class="space-y-6">
+              
+              <!-- Step 1: Queued (Completed) -->
+              <div class="flex items-start gap-4">
+                <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                  <span class="material-symbols-outlined text-base">check</span>
+                </div>
+                <div class="flex-1 pt-1">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm font-semibold text-slate-900">1. Queued</span>
+                    <span class="text-xs text-emerald-700 font-mono">Finished (0.4s)</span>
+                  </div>
+                  <p class="text-xs text-slate-500 mt-0.5">Pitch ingested into critique pipeline.</p>
+                </div>
+              </div>
+
+              <!-- Connector Line -->
+              <div class="w-0.5 h-6 bg-emerald-300 ml-4 -my-3"></div>
+
+              <!-- Step 2: Analyzing your pitch (Active / Animated) -->
+              <div class="flex items-start gap-4">
+                <div class="w-8 h-8 rounded-full bg-brand/10 text-brand flex items-center justify-center flex-shrink-0 ring-4 ring-brand/20 animate-subtle-pulse">
+                  <span class="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                </div>
+                <div class="flex-1 pt-1">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm font-semibold text-brand">2. Analyzing your pitch</span>
+                    <span class="text-xs text-brand font-mono font-medium">In progress...</span>
+                  </div>
+                  <p class="text-xs text-slate-600 mt-0.5">Evaluating problem framing, clarity, and target metrics against rubric.</p>
+                </div>
+              </div>
+
+              <!-- Connector Line -->
+              <div class="w-0.5 h-6 bg-slate-200 ml-4 -my-3"></div>
+
+              <!-- Step 3: Writing feedback (Pending) -->
+              <div class="flex items-start gap-4 opacity-50">
+                <div class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center flex-shrink-0">
+                  <span class="material-symbols-outlined text-base">edit_note</span>
+                </div>
+                <div class="flex-1 pt-1">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm font-semibold text-slate-600">3. Writing feedback</span>
+                    <span class="text-xs text-slate-400 font-mono">Pending</span>
+                  </div>
+                  <p class="text-xs text-slate-400 mt-0.5">Synthesizing constructive suggestions and diff comparisons.</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Non-blocking background reminder banner -->
+          <div class="p-3.5 bg-slate-100/80 rounded-xl border border-slate-200/80 text-xs text-slate-600 flex items-center gap-3">
+            <span class="material-symbols-outlined text-slate-400 text-lg">info</span>
+            <span class="">You can close this window, your critique will be waiting.</span>
+          </div>
+
+          <div class="flex justify-end pt-2">
+            <button onclick="closeRefineModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors">
+              Close Window
+            </button>
+          </div>
+        </section>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- STATE D: RESULTS (Summary, StrengthsList, SuggestionCards)    -->
+        <!-- ------------------------------------------------------------- -->
+        <section id="state-view-D" class="state-container space-y-5">
+          
+          <!-- CritiqueSummary Card -->
+          <div id="CritiqueSummary" class="bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-brand text-lg">fact_check</span>
+              <h3 class="font-display font-bold text-slate-900 text-sm md:text-base">Executive Assessment</h3>
+            </div>
+            <p class="text-sm text-slate-700 leading-relaxed font-sans">
+              StudySync addresses a genuine campus pain point around peer code review bottlenecks. The solution is technically viable, but the problem framing is currently too broad and lacks measurable impact metrics. Applying the 3 suggestions below will sharply increase your peer review score.
+            </p>
+          </div>
+
+          <!-- StrengthsList: Short list with check icons -->
+          <div id="StrengthsList" class="bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-mono font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-emerald-600 text-sm">verified</span>
+                Key Strengths (3 Verified)
+              </h4>
+              <span class="text-[11px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 font-medium">Ready for pitch</span>
+            </div>
+            <ul class="space-y-2 text-xs text-slate-700">
+              <li class="flex items-start gap-2.5">
+                <span class="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span class="material-symbols-outlined text-xs font-bold">check</span>
+                </span>
+                <span class=""><strong>Strong technical integration:</strong> Leveraging the official 42 Intra API ensures reliable peer authentication and project status verification.</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span class="material-symbols-outlined text-xs font-bold">check</span>
+                </span>
+                <span class=""><strong>High peer incentive:</strong> Gamification aligns directly with campus evaluation points and peer defense culture.</span>
+              </li>
+              <li class="flex items-start gap-2.5">
+                <span class="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span class="material-symbols-outlined text-xs font-bold">check</span>
+                </span>
+                <span class=""><strong>Clear product scope:</strong> Realistic roadmap achievable within the Circle 04 capstone timeframe.</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Suggestions Group Heading -->
+          <div class="flex items-center justify-between pt-2"><div class="flex items-center gap-2"><h4 class="text-xs font-mono font-bold uppercase tracking-wider text-slate-500">Structured Suggestions (8 items)</h4><span id="suggestions-status-pill" class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium border border-slate-200">1 applied · 7 remaining</span></div><span class="text-xs text-slate-400">Independent apply actions</span></div>
+
+          <!-- SUGGESTIONS GROUP -->
+          <div class="space-y-4"><!-- Suggestion Card 1: Problem (High Severity - Interactive) --><div id="card-suggestion-1" class="SuggestionCard bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-3.5 transition-all"><div class="flex items-start justify-between gap-2"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">Problem</span><span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200">High Severity</span></div><span class="text-[11px] font-mono text-slate-400">#sug-01</span></div><div><h5 class="font-display font-bold text-slate-900 text-sm">Problem statement is vague and unquantified</h5><p class="text-xs text-slate-500 mt-1">Specify who suffers, how frequently it occurs, and the measurable cost in defense retakes.</p></div><div class="SuggestionCompare space-y-2 text-xs"><div class="p-3 rounded-lg bg-rose-50/60 border border-rose-100 text-slate-700"><div class="text-[10px] font-mono uppercase text-rose-800 font-bold mb-1">Current pitch text:</div><p class="font-sans text-xs leading-relaxed text-slate-700">"Students struggle to find help. Peer evaluation slots get booked with mismatched skill levels, leading to repeated failed defenses."</p></div><div class="p-3 rounded-lg bg-emerald-50/60 border border-emerald-100 text-slate-800"><div class="text-[10px] font-mono uppercase text-emerald-800 font-bold mb-1">Suggested refinement:</div><p class="font-sans leading-relaxed">"Over <span class="diff-add">65% of first-year 1337 students</span> fail their initial graphics evaluations because peer slots are booked with <span class="diff-add">mismatched skill tiers</span>, delaying project completion by an average of <span class="diff-add">12 days</span>."</p></div></div><div class="text-xs text-slate-600 flex items-start gap-1.5 pt-1"><span class="material-symbols-outlined text-slate-400 text-sm">lightbulb</span><span class=""><strong>Rationale:</strong> Campus evaluators look for specific user pain points and cost metrics over generic statements.</span></div><div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100"><button onclick="dismissCard('card-suggestion-1')" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">Dismiss</button><button onclick="applyCard('card-suggestion-1')" class="btn-apply-suggestion px-4 py-1.5 text-xs font-semibold text-white bg-brand hover:bg-brand-hover active:scale-[0.98] rounded-lg shadow-sm transition-all flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">auto_fix_high</span><span class="">Apply suggestion</span></button></div></div><!-- Suggestion Card 2: Solution Architecture (High Severity) --><div id="card-suggestion-2" class="SuggestionCard bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-3.5 transition-all"><div class="flex items-start justify-between gap-2"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">Solution</span><span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200">High Severity</span></div><span class="text-[11px] font-mono text-slate-400">#sug-02</span></div><div><h5 class="font-display font-bold text-slate-900 text-sm">Automate 42 Intra API verification instead of manual trust</h5><p class="text-xs text-slate-500 mt-1">Clarify how peer expertise is programmatically verified rather than self-reported by peers.</p></div><div class="SuggestionCompare space-y-2 text-xs"><div class="p-3 rounded-lg bg-rose-50/60 border border-rose-100 text-slate-700"><div class="text-[10px] font-mono uppercase text-rose-800 font-bold mb-1">Current text:</div><p class="font-sans text-xs">"An algorithm-driven peer matching bot on top of 42 Intra API that pairs senior students with learners."</p></div><div class="p-3 rounded-lg bg-emerald-50/60 border border-emerald-100 text-slate-800"><div class="text-[10px] font-mono uppercase text-emerald-800 font-bold mb-1">Suggested refinement:</div><p class="font-sans leading-relaxed">"OAuth2-authenticated backend querying <span class="diff-add">Intra API v2 webhooks</span> to cryptographically guarantee that code reviewers scored <span class="diff-add">≥100% on the exact targeted project</span> before slot confirmation."</p></div></div><div class="text-xs text-slate-600 flex items-start gap-1.5 pt-1"><span class="material-symbols-outlined text-slate-400 text-sm">lightbulb</span><span class=""><strong>Rationale:</strong> Defense juries scrutinize security and truthfulness of peer-rating platforms.</span></div><div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100"><button onclick="dismissCard('card-suggestion-2')" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">Dismiss</button><button onclick="applyCard('card-suggestion-2')" class="btn-apply-suggestion px-4 py-1.5 text-xs font-semibold text-white bg-brand hover:bg-brand-hover active:scale-[0.98] rounded-lg shadow-sm transition-all flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">auto_fix_high</span><span class="">Apply suggestion</span></button></div></div><!-- Suggestion Card 3: Target Users (Medium Severity - APPLIED/COLLAPSED STATE) --><div id="card-suggestion-3" class="SuggestionCard bg-white rounded-xl border border-emerald-200 p-4 md:p-5 shadow-sm space-y-3.5 transition-all applied-card"><div class="flex items-center justify-between py-1 bg-emerald-50/60 px-3 py-2 rounded-lg"><div class="flex items-center gap-2.5"><span class="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">✓</span><div class="min-w-0"><span class="text-xs font-semibold text-emerald-950 font-display block">Target Users: Narrowed to Circles 01-03 first-year cohort</span><span class="text-[11px] text-emerald-700 font-mono">Applied to Section 3 (Target Users)</span></div></div><div class="flex items-center gap-1 text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full text-xs font-mono font-medium"><span class="material-symbols-outlined text-xs">done_all</span><span class="">Applied</span></div></div></div><!-- Suggestion Card 4: Technical Feasibility (High Severity) --><div id="card-suggestion-4" class="SuggestionCard bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-3.5 transition-all"><div class="flex items-start justify-between gap-2"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">Technical Feasibility</span><span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200">High Severity</span></div><span class="text-[11px] font-mono text-slate-400">#sug-04</span></div><div><h5 class="font-display font-bold text-slate-900 text-sm">Incorporate isolated container sandbox for pre-defense leak checks</h5><p class="text-xs text-slate-500 mt-1">Address cluster security and automated valgrind memory-leak execution.</p></div><div class="SuggestionCompare space-y-2 text-xs"><div class="p-3 rounded-lg bg-rose-50/60 border border-rose-100 text-slate-700"><div class="text-[10px] font-mono uppercase text-rose-800 font-bold mb-1">Current text:</div><p class="font-sans text-xs">"Reviewers run code locally on their own iMac clusters during the session."</p></div><div class="p-3 rounded-lg bg-emerald-50/60 border border-emerald-100 text-slate-800"><div class="text-[10px] font-mono uppercase text-emerald-800 font-bold mb-1">Suggested refinement:</div><p class="font-sans leading-relaxed">"Ephemeral <span class="diff-add">Dockerized Linux micro-containers</span> run automated norminette, sanitize flags, and <span class="diff-add">Valgrind leak checks in &lt;15 seconds</span> without exposing host iMac filesystems."</p></div></div><div class="text-xs text-slate-600 flex items-start gap-1.5 pt-1"><span class="material-symbols-outlined text-slate-400 text-sm">lightbulb</span><span class=""><strong>Rationale:</strong> 1337 technical juries prize cluster filesystem safety and reproducible evaluation sandboxes.</span></div><div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100"><button onclick="dismissCard('card-suggestion-4')" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">Dismiss</button><button onclick="applyCard('card-suggestion-4')" class="btn-apply-suggestion px-4 py-1.5 text-xs font-semibold text-white bg-brand hover:bg-brand-hover active:scale-[0.98] rounded-lg shadow-sm transition-all flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">auto_fix_high</span><span class="">Apply suggestion</span></button></div></div><!-- Suggestion Card 5: Team Composition & Roles (Medium Severity) --><div id="card-suggestion-5" class="SuggestionCard bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-3.5 transition-all"><div class="flex items-start justify-between gap-2"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">Team</span><span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">Medium Severity</span></div><span class="text-[11px] font-mono text-slate-400">#sug-05</span></div><div><h5 class="font-display font-bold text-slate-900 text-sm">Define distinct peer engineering ownership &amp; lead roles</h5><p class="text-xs text-slate-500 mt-1">Specify which co-founder owns API webhooks, UI design, and evaluation logic.</p></div><div class="SuggestionCompare space-y-2 text-xs"><div class="p-3 rounded-lg bg-rose-50/60 border border-rose-100 text-slate-700"><div class="text-[10px] font-mono uppercase text-rose-800 font-bold mb-1">Current text:</div><p class="font-sans text-xs">"Built by two 1337 Benguerir peers passionate about collaborative learning."</p></div><div class="p-3 rounded-lg bg-emerald-50/60 border border-emerald-100 text-slate-800"><div class="text-[10px] font-mono uppercase text-emerald-800 font-bold mb-1">Suggested refinement:</div><p class="font-sans leading-relaxed">"Engineered by <span class="diff-add">@sel-bou (Circle 05 Backend/OAuth Lead)</span> and <span class="diff-add">@amine-dev (Circle 04 Frontend &amp; WebSockets Lead)</span> with designated SLA commitments."</p></div></div><div class="text-xs text-slate-600 flex items-start gap-1.5 pt-1"><span class="material-symbols-outlined text-slate-400 text-sm">lightbulb</span><span class=""><strong>Rationale:</strong> Pitch reviewers look for unambiguous accountability across key system deliverables.</span></div><div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100"><button onclick="dismissCard('card-suggestion-5')" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">Dismiss</button><button onclick="applyCard('card-suggestion-5')" class="btn-apply-suggestion px-4 py-1.5 text-xs font-semibold text-white bg-brand hover:bg-brand-hover active:scale-[0.98] rounded-lg shadow-sm transition-all flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">auto_fix_high</span><span class="">Apply suggestion</span></button></div></div><!-- Suggestion Card 6: Expected Impact (Low Severity) --><div id="card-suggestion-6" class="SuggestionCard bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-3.5 transition-all"><div class="flex items-start justify-between gap-2"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">Impact</span><span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">Low Severity</span></div><span class="text-[11px] font-mono text-slate-400">#sug-06</span></div><div><h5 class="font-display font-bold text-slate-900 text-sm">Quantify defense pass rates and queue time reduction</h5><p class="text-xs text-slate-500 mt-1">Replace qualitative sentiments with measurable pass rate targets.</p></div><div class="SuggestionCompare space-y-2 text-xs"><div class="p-3 rounded-lg bg-rose-50/60 border border-rose-100 text-slate-700"><div class="text-[10px] font-mono uppercase text-rose-800 font-bold mb-1">Current text:</div><p class="font-sans text-xs">"Help students succeed faster and build a stronger collaborative culture on campus."</p></div><div class="p-3 rounded-lg bg-emerald-50/60 border border-emerald-100 text-slate-800"><div class="text-[10px] font-mono uppercase text-emerald-800 font-bold mb-1">Suggested refinement:</div><p class="font-sans leading-relaxed">"Increase <span class="diff-add">first-attempt evaluation pass rates by 35%</span> and reduce peer search wait time from <span class="diff-add">4 days to under 4 hours</span> during active campus sprints."</p></div></div><div class="text-xs text-slate-600 flex items-start gap-1.5 pt-1"><span class="material-symbols-outlined text-slate-400 text-sm">lightbulb</span><span class=""><strong>Rationale:</strong> Concrete metrics allow pitch evaluators to judge true return on investment and student value.</span></div><div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100"><button onclick="dismissCard('card-suggestion-6')" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">Dismiss</button><button onclick="applyCard('card-suggestion-6')" class="btn-apply-suggestion px-4 py-1.5 text-xs font-semibold text-white bg-brand hover:bg-brand-hover active:scale-[0.98] rounded-lg shadow-sm transition-all flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">auto_fix_high</span><span class="">Apply suggestion</span></button></div></div><!-- Suggestion Card 7: Resource Sustainability (Low Severity) --><div id="card-suggestion-7" class="SuggestionCard bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-3.5 transition-all"><div class="flex items-start justify-between gap-2"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">Business / Sustainability</span><span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">Low Severity</span></div><span class="text-[11px] font-mono text-slate-400">#sug-07</span></div><div><h5 class="font-display font-bold text-slate-900 text-sm">Cluster server footprint &amp; zero-cost infrastructure plan</h5><p class="text-xs text-slate-500 mt-1">Demonstrate operational longevity using free campus student cluster tiers.</p></div><div class="SuggestionCompare space-y-2 text-xs"><div class="p-3 rounded-lg bg-rose-50/60 border border-rose-100 text-slate-700"><div class="text-[10px] font-mono uppercase text-rose-800 font-bold mb-1">Current text:</div><p class="font-sans text-xs">"Hosted on a cloud VPS paid by the student creators."</p></div><div class="p-3 rounded-lg bg-emerald-50/60 border border-emerald-100 text-slate-800"><div class="text-[10px] font-mono uppercase text-emerald-800 font-bold mb-1">Suggested refinement:</div><p class="font-sans leading-relaxed">"Deployed sustainably on <span class="diff-add">1337 student Kubernetes lab nodes</span> with local SQLite/Redis caching, incurring <span class="diff-add">$0 recurring cloud expenses</span> for indefinite campus autonomy."</p></div></div><div class="text-xs text-slate-600 flex items-start gap-1.5 pt-1"><span class="material-symbols-outlined text-slate-400 text-sm">lightbulb</span><span class=""><strong>Rationale:</strong> Proving long-term zero cost reassures evaluators the project won't abandon students after grading.</span></div><div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100"><button onclick="dismissCard('card-suggestion-7')" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">Dismiss</button><button onclick="applyCard('card-suggestion-7')" class="btn-apply-suggestion px-4 py-1.5 text-xs font-semibold text-white bg-brand hover:bg-brand-hover active:scale-[0.98] rounded-lg shadow-sm transition-all flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">auto_fix_high</span><span class="">Apply suggestion</span></button></div></div><!-- Suggestion Card 8: Roadmap & Timeline (Medium Severity) --><div id="card-suggestion-8" class="SuggestionCard bg-white rounded-xl border border-slate-200 p-4 md:p-5 shadow-sm space-y-3.5 transition-all"><div class="flex items-start justify-between gap-2"><div class="flex items-center gap-2 flex-wrap"><span class="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">Market / Timeline</span><span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">Medium Severity</span></div><span class="text-[11px] font-mono text-slate-400">#sug-08</span></div><div><h5 class="font-display font-bold text-slate-900 text-sm">Anchor timeline to 42 Common Core evaluation calendar</h5><p class="text-xs text-slate-500 mt-1">Align alpha, beta testing, and campus defense dates to quarterly student intake.</p></div><div class="SuggestionCompare space-y-2 text-xs"><div class="p-3 rounded-lg bg-rose-50/60 border border-rose-100 text-slate-700"><div class="text-[10px] font-mono uppercase text-rose-800 font-bold mb-1">Current text:</div><p class="font-sans text-xs">"Launch beta next month and full release in the new year."</p></div><div class="p-3 rounded-lg bg-emerald-50/60 border border-emerald-100 text-slate-800"><div class="text-[10px] font-mono uppercase text-emerald-800 font-bold mb-1">Suggested refinement:</div><p class="font-sans leading-relaxed">"Deliver <span class="diff-add">Closed Alpha to 40 Benguerir peers by Nov 15</span>; complete Circle 04 evaluation defense by <span class="diff-add">Dec 05 ahead of the winter pool</span>."</p></div></div><div class="text-xs text-slate-600 flex items-start gap-1.5 pt-1"><span class="material-symbols-outlined text-slate-400 text-sm">lightbulb</span><span class=""><strong>Rationale:</strong> Concrete timeboxes demonstrate project management readiness to defense examiners.</span></div><div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100"><button onclick="dismissCard('card-suggestion-8')" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">Dismiss</button><button onclick="applyCard('card-suggestion-8')" class="btn-apply-suggestion px-4 py-1.5 text-xs font-semibold text-white bg-brand hover:bg-brand-hover active:scale-[0.98] rounded-lg shadow-sm transition-all flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">auto_fix_high</span><span class="">Apply suggestion</span></button></div></div></div>
+        </section>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- STATE E: SUGGESTION APPLYING (Spinner on one card, others active) -->
+        <!-- ------------------------------------------------------------- -->
+        <section id="state-view-E" class="state-container hidden space-y-4">
+          <div class="p-3 bg-brand/5 border border-brand/20 rounded-xl text-xs text-brand flex items-center gap-2">
+            <span class="material-symbols-outlined text-base animate-spin">sync</span>
+            <span class="">Applying suggestion #sug-01 to pitch text... Other suggestions remain interactive.</span>
+          </div>
+
+          <!-- Card 1 in Applying State -->
+          <div class="bg-white rounded-xl border border-brand/40 p-5 shadow-sm space-y-3 ring-2 ring-brand/10">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-brand bg-brand/10 px-2 py-0.5 rounded">Problem (High)</span>
+              <span class="text-xs text-brand font-mono animate-pulse">Applying update...</span>
+            </div>
+            <h5 class="font-display font-bold text-slate-900 text-sm">Problem statement is vague and unquantified</h5>
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-600">
+              Patching diff into section "1. Problem Statement"...
+            </div>
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button disabled="" class="px-3 py-1.5 text-xs text-slate-400 cursor-not-allowed">Dismiss</button>
+              <!-- Card spinner button -->
+              <button disabled="" class="px-4 py-1.5 text-xs font-semibold text-white bg-brand rounded-lg flex items-center gap-2 cursor-wait opacity-90">
+                <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                <span class="">Applying suggestion...</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card 2 remains fully interactive -->
+          <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">Target users (Medium)</span>
+              <span class="text-xs text-slate-400 font-mono">Interactive</span>
+            </div>
+            <h5 class="font-display font-bold text-slate-900 text-sm">Audience defined as "everyone" is too broad</h5>
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">Dismiss</button>
+              <button class="px-4 py-1.5 text-xs font-semibold text-white bg-brand hover:bg-brand-hover rounded-lg flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">auto_fix_high</span>
+                <span class="">Apply suggestion</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- STATE F: SUGGESTION APPLIED (Collapses to compact row)        -->
+        <!-- ------------------------------------------------------------- -->
+        <section id="state-view-F" class="state-container hidden space-y-4">
+          <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center gap-2">
+            <span class="material-symbols-outlined text-base">check_circle</span>
+            <span class="">Suggestion applied! Pitch text successfully updated in the project draft.</span>
+          </div>
+
+          <!-- Card 1 collapsed to compact row: check icon and "Applied", no buttons -->
+          <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl px-4 py-3 flex items-center justify-between transition-all">
+            <div class="flex items-center gap-3">
+              <span class="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-sm font-bold">check</span>
+              </span>
+              <div>
+                <span class="text-xs font-semibold text-emerald-950 font-display">Problem: Statement precision &amp; metrics</span>
+                <span class="text-[11px] text-emerald-700 block font-mono">Updated in draft pitch</span>
+              </div>
+            </div>
+            <!-- Collapsed state with check icon and "Applied", no action buttons -->
+            <div class="flex items-center gap-1.5 text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-full text-xs font-medium font-mono">
+              <span class="material-symbols-outlined text-sm">done_all</span>
+              <span class="">Applied</span>
+            </div>
+          </div>
+
+          <!-- Other cards remain active and NOT stale -->
+          <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">Target users</span>
+                <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Medium</span>
+              </div>
+              <span class="text-[11px] font-mono text-emerald-600 font-medium">Still Valid</span>
+            </div>
+            <h5 class="font-display font-bold text-slate-900 text-sm">Audience defined as "everyone" is too broad</h5>
+            <div class="p-3 rounded-lg bg-emerald-50/60 border border-emerald-100 text-xs text-slate-800">
+              Suggested: "1337 Benguerir &amp; Khouribga students in Circles 01 to 04 tackling graphics projects."
+            </div>
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button class="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg">Dismiss</button>
+              <button class="px-4 py-1.5 text-xs font-semibold text-white bg-brand hover:bg-brand-hover rounded-lg flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">auto_fix_high</span>
+                <span class="">Apply suggestion</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- STATE G: STALE (Pitch changed after critique generated)       -->
+        <!-- ------------------------------------------------------------- -->
+        <section id="state-view-G" class="state-container hidden space-y-4">
+          
+          <!-- StaleBanner: Warning at the top of results with Run new critique button -->
+          <div id="StaleBanner" class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-amber-600 text-xl flex-shrink-0 mt-0.5">warning</span>
+              <div>
+                <h5 class="text-xs font-bold font-display uppercase tracking-wide text-amber-800">Critique Stale</h5>
+                <p class="text-xs text-amber-900 mt-0.5 leading-relaxed">
+                  Your pitch changed after this critique was generated. Suggestions can no longer be applied.
+                </p>
+              </div>
+            </div>
+            <button onclick="switchState('C')" class="px-3.5 py-2 text-xs font-semibold text-white bg-amber-700 hover:bg-amber-800 rounded-lg transition-colors flex items-center gap-1.5 flex-shrink-0 shadow-sm">
+              <span class="material-symbols-outlined text-sm">refresh</span>
+              <span class="">Run new critique</span>
+            </button>
+          </div>
+
+          <!-- Cards with disabled buttons and tooltip -->
+          <div class="bg-white/80 rounded-xl border border-slate-200 p-5 space-y-3 opacity-75">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">Problem (High)</span>
+              <span class="text-xs font-mono text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Pitch Outdated</span>
+            </div>
+            <h5 class="font-display font-bold text-slate-800 text-sm">Problem statement is vague and unquantified</h5>
+            <div class="p-3 bg-slate-50 rounded-lg text-xs text-slate-600">
+              Suggested: "Over 65% of first-year 1337 students fail their initial graphics evaluations..."
+            </div>
+            <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+              <span class="text-[11px] text-slate-400 italic">Target pitch was modified at 14:15 by @sel-bou</span>
+              <!-- Disabled button with tooltip explaining why -->
+              <div class="relative group">
+                <button disabled="" class="px-4 py-1.5 text-xs font-medium text-slate-400 bg-slate-100 border border-slate-200 rounded-lg cursor-not-allowed flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-sm">lock</span>
+                  <span class="">Apply suggestion</span>
+                </button>
+                <div class="absolute bottom-full right-0 mb-1.5 hidden group-hover:block w-48 p-2 bg-slate-900 text-white text-[11px] rounded shadow-lg z-20 pointer-events-none">
+                  Disabled because pitch content was edited after this critique was generated. Run a new critique.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- STATE H: APPLY CONFLICT (Inline error under one card)          -->
+        <!-- ------------------------------------------------------------- -->
+        <section id="state-view-H" class="state-container hidden space-y-4">
+          <!-- Card with Inline Conflict Error -->
+          <div class="bg-white rounded-xl border border-rose-300 p-5 shadow-sm space-y-3.5 ring-2 ring-rose-100">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">Problem (High)</span>
+              <span class="text-xs font-mono font-semibold text-rose-600 flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">error</span>
+                Conflict detected
+              </span>
+            </div>
+
+            <h5 class="font-display font-bold text-slate-900 text-sm">Problem statement is vague and unquantified</h5>
+
+            <!-- Current vs Suggested -->
+            <div class="p-3 bg-rose-50/40 rounded-lg text-xs text-slate-700 border border-rose-100">
+              Target diff: "Students struggle to find help."
+            </div>
+
+            <!-- REQUIRED INLINE ERROR UNDER CARD -->
+            <div class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800 flex items-start gap-2.5">
+              <span class="material-symbols-outlined text-rose-600 text-base mt-0.5 flex-shrink-0">sync_problem</span>
+              <div>
+                <p class="font-semibold">This text no longer matches your pitch. Run a new critique.</p>
+                <p class="text-[11px] text-rose-700 mt-0.5">The underlying section was modified in another tab or by a teammate.</p>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button class="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg">Dismiss</button>
+              <button onclick="switchState('C')" class="px-4 py-1.5 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg flex items-center gap-1.5 shadow-sm">
+                <span class="material-symbols-outlined text-sm">refresh</span>
+                <span class="">Run new critique</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Other card unharmed -->
+          <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">Target users (Medium)</span>
+              <span class="text-xs text-emerald-700 font-mono font-medium">Ready</span>
+            </div>
+            <h5 class="font-display font-bold text-slate-900 text-sm">Audience defined as "everyone" is too broad</h5>
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-100">
+              <button class="px-3 py-1.5 text-xs text-slate-500 hover:bg-slate-100 rounded-lg">Dismiss</button>
+              <button class="px-4 py-1.5 text-xs font-semibold text-white bg-brand hover:bg-brand-hover rounded-lg flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">auto_fix_high</span>
+                <span class="">Apply suggestion</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- STATE I: FAILED (ErrorBlock with friendly message & Retry)    -->
+        <!-- ------------------------------------------------------------- -->
+        <section id="state-view-I" class="state-container hidden space-y-5">
+          <div id="ErrorBlock" class="bg-white rounded-xl border border-rose-200 p-6 shadow-sm text-center max-w-md mx-auto space-y-4">
+            <div class="w-14 h-14 mx-auto rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
+              <span class="material-symbols-outlined text-3xl">cloud_off</span>
+            </div>
+            <div>
+              <h4 class="font-display font-bold text-slate-900 text-base">Critique generation failed</h4>
+              <p class="text-xs text-slate-600 mt-1 leading-relaxed">
+                We couldn't connect to the campus critique engine to analyze your pitch. Your current draft is completely safe.
+              </p>
+            </div>
+            <div class="p-2.5 bg-rose-50 rounded-lg text-[11px] font-mono text-rose-700 text-left">
+              Error: RAG_INFERENCE_TIMEOUT (Campus Benguerir Gateway v2.4)
+            </div>
+            <div class="flex items-center justify-center gap-3 pt-2">
+              <button onclick="closeRefineModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg">
+                Close
+              </button>
+              <button onclick="switchState('C')" class="px-5 py-2 text-xs font-semibold text-white bg-brand hover:bg-brand-hover rounded-lg shadow-sm flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-sm">refresh</span>
+                <span class="">Retry</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- STATE J: EMPTY RESULTS ("No major issues found")              -->
+        <!-- ------------------------------------------------------------- -->
+        <section id="state-view-J" class="state-container hidden space-y-5">
+          <div id="EmptyResults" class="bg-white rounded-xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
+              <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-xl font-bold">celebration</span>
+              </div>
+              <div>
+                <h4 class="font-display font-bold text-slate-900 text-base">No major issues found, your pitch looks solid</h4>
+                <p class="text-xs text-slate-500">Your pitch satisfies all core rubrics for Circle 04 capstone evaluation.</p>
+              </div>
+            </div>
+
+            <!-- Strengths list only (No illustration as requested) -->
+            <div class="space-y-3 pt-1">
+              <div class="text-xs font-mono font-bold uppercase tracking-wider text-slate-500">
+                Validated Pitch Strengths
+              </div>
+              <ul class="space-y-2.5 text-xs text-slate-700">
+                <li class="flex items-start gap-2.5">
+                  <span class="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span class="material-symbols-outlined text-xs font-bold">check</span>
+                  </span>
+                  <span class=""><strong>Clear value proposition:</strong> Direct solution to peer evaluation waitlists with demonstrable student demand.</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                  <span class="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span class="material-symbols-outlined text-xs font-bold">check</span>
+                  </span>
+                  <span class=""><strong>Realistic engineering metrics:</strong> Benchmarks match 42 Intra API rate limits and WebSockets requirements.</span>
+                </li>
+                <li class="flex items-start gap-2.5">
+                  <span class="w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span class="material-symbols-outlined text-xs font-bold">check</span>
+                  </span>
+                  <span class=""><strong>Concise presentation:</strong> Reads under 90 seconds, optimal for campus demo day format.</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex justify-end">
+              <button onclick="closeRefineModal()" class="px-4 py-2 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg">
+                Done
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- ------------------------------------------------------------- -->
+        <!-- STATE K: MOBILE VIEW (375px frame variants of C and D)        -->
+        <!-- ------------------------------------------------------------- -->
+        <section id="state-view-K-mobile" class="state-container hidden space-y-4">
+          <div class="p-3 bg-slate-100 rounded-xl text-xs text-slate-600 flex items-center justify-between">
+            <span class="font-mono font-bold">Mobile Viewport Simulation (375px Width)</span>
+            <div class="flex items-center gap-1.5">
+              <button onclick="setMobileSubTab('C')" id="m-tab-c" class="px-2 py-0.5 rounded bg-brand text-white text-[11px] font-medium">JobProgress (C)</button>
+              <button onclick="setMobileSubTab('D')" id="m-tab-d" class="px-2 py-0.5 rounded bg-slate-200 text-slate-700 text-[11px] font-medium">Results (D)</button>
+            </div>
+          </div>
+
+          <!-- Mobile Simulated Frame (Exact 375px width container) -->
+          <div class="mx-auto w-[375px] max-w-full bg-white rounded-2xl border-4 border-slate-800 shadow-xl overflow-hidden flex flex-col h-[520px]">
+            
+            <!-- Mobile Header / Sheet Bar -->
+            <div class="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between flex-shrink-0">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-brand text-base">auto_awesome</span>
+                <span class="font-display font-bold text-sm text-slate-900">Refine your pitch</span>
+              </div>
+              <button onclick="switchState('D')" class="text-slate-400 hover:text-slate-600">
+                <span class="material-symbols-outlined text-base">close</span>
+              </button>
+            </div>
+
+            <!-- Mobile Sub-View C (JobProgress) -->
+            <div id="mobile-subview-C" class="p-4 flex-1 overflow-y-auto space-y-4 bg-slate-50">
+              <div class="text-xs font-mono text-slate-500">Critique from Oct 25, 14:02</div>
+              <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-4 shadow-sm">
+                <div class="flex items-center gap-3">
+                  <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">✓</span>
+                  <div>
+                    <div class="text-xs font-semibold text-slate-900">1. Queued</div>
+                    <div class="text-[10px] text-slate-400 font-mono">Completed</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <span class="w-6 h-6 rounded-full bg-brand/20 text-brand flex items-center justify-center text-xs animate-spin">◐</span>
+                  <div>
+                    <div class="text-xs font-semibold text-brand">2. Analyzing your pitch</div>
+                    <div class="text-[10px] text-brand font-mono">Running...</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3 opacity-50">
+                  <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-xs">3</span>
+                  <div>
+                    <div class="text-xs font-semibold text-slate-600">3. Writing feedback</div>
+                    <div class="text-[10px] text-slate-400 font-mono">Pending</div>
+                  </div>
+                </div>
+              </div>
+              <p class="text-[11px] text-slate-500 italic text-center">You can close this window, your critique will be waiting.</p>
+            </div>
+
+            <!-- Mobile Sub-View D (Results with sticky footer) -->
+            <div id="mobile-subview-D" class="hidden flex-1 overflow-y-auto p-3 space-y-3 bg-slate-50">
+              <div class="text-[11px] font-mono text-slate-500">Critique from Oct 25, 14:02</div>
+              
+              <!-- Compact Assessment -->
+              <div class="bg-white p-3 rounded-lg border border-slate-200 text-xs">
+                <div class="font-bold text-slate-900 mb-1">Assessment</div>
+                <p class="text-slate-600 text-[11px] leading-tight">Solves a genuine campus problem; needs sharper problem metrics.</p>
+              </div>
+
+              <!-- Mobile Card with Diff and Full-Width action -->
+              <div class="bg-white p-3.5 rounded-lg border border-slate-200 space-y-2.5 shadow-sm"><div class="flex items-center justify-between"><span class="text-[10px] font-mono font-bold bg-slate-100 px-1.5 py-0.5 rounded">Problem (High)</span><span class="text-[10px] font-mono text-rose-700 bg-rose-50 px-1 rounded">#sug-01</span></div><div class="text-xs font-bold text-slate-900">Problem statement is vague and unquantified</div><div class="p-2.5 rounded bg-rose-50/70 border border-rose-100 text-slate-700 space-y-1"><div class="flex items-center justify-between"><span class="text-[10px] font-mono uppercase text-rose-800 font-bold">Current pitch text:</span><button type="button" onclick="const mobTxt = document.getElementById('mob-sug1-text'); const mobLbl = document.getElementById('mob-sug1-lbl'); if (mobTxt.classList.contains('line-clamp-2')) { mobTxt.classList.remove('line-clamp-2'); mobLbl.textContent = 'Less'; } else { mobTxt.classList.add('line-clamp-2'); mobLbl.textContent = 'More'; }" class="text-[10px] font-semibold text-rose-700 underline focus:outline-none" id="mob-sug1-lbl">More</button></div><p id="mob-sug1-text" class="text-[11px] leading-tight text-slate-700 line-clamp-2 font-sans">Students struggle to find help. Peer slots get booked across mismatched tiers. Review requests scatter across Discord chats, causing chaotic reviews and dozens of wasted hours in evaluation queues with unverified peer feedback.</p></div><div class="text-[11px] bg-emerald-50 p-2 rounded border border-emerald-100 text-slate-800 leading-snug"><span class="text-[10px] font-mono uppercase text-emerald-800 font-bold block mb-0.5">Suggested refinement:</span>"Over <span class="diff-add">65% of first-year 1337 students</span> fail graphics defenses because peer slots are booked with <span class="diff-add">mismatched skill tiers</span>, delaying project completion by <span class="diff-add">12 days</span>."</div><button class="w-full py-2 bg-brand hover:bg-brand-hover text-white text-xs font-semibold rounded-lg shadow-sm transition-colors">Apply suggestion</button></div>
+            </div>
+
+            <!-- Sticky Mobile Footer -->
+            <div class="p-2.5 bg-white border-t border-slate-200 flex items-center justify-between flex-shrink-0 text-xs shadow-md"><div class="flex items-center gap-1.5"><span id="mobile-counter-text" class="text-[11px] font-mono font-semibold text-brand bg-brand/10 px-2 py-0.5 rounded-full border border-brand/20">1 applied · 7 remaining</span></div><div class="flex items-center gap-1.5"><button onclick="dismissAllSuggestions()" class="px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:text-rose-700 bg-slate-50 border border-slate-200 rounded">Dismiss all</button><button onclick="closeRefineModal()" class="px-2.5 py-1 bg-brand text-white text-[11px] font-semibold rounded shadow-sm">Close</button></div></div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- ================= MODAL FOOTER ================= -->
+      <footer class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between flex-shrink-0 text-xs text-slate-500"><div class="flex items-center gap-3"><div class="flex items-center gap-1.5 font-mono text-slate-600 hidden sm:flex"><span class="w-2 h-2 rounded-full bg-brand"></span><span class="">1337.Nexus AI Critique</span></div><div id="modal-live-counter" class="inline-flex items-center gap-1.5 bg-brand/10 text-brand px-2.5 py-1 rounded-full text-xs font-semibold font-mono border border-brand/20"><span class="w-1.5 h-1.5 rounded-full bg-brand animate-pulse"></span><span id="counter-text" class="">1 applied · 7 remaining</span></div></div><div class="flex items-center gap-2.5"><button id="btn-dismiss-all" onclick="dismissAllSuggestions()" class="px-3 py-1.5 text-slate-600 hover:text-rose-700 hover:bg-rose-50 font-medium rounded-lg border border-slate-200 text-xs transition-colors flex items-center gap-1"><span class="material-symbols-outlined text-sm">delete_sweep</span><span class="">Dismiss all</span></button><button onclick="applyAllSuggestions()" class="px-4 py-1.5 text-xs font-semibold text-white bg-brand hover:bg-brand-hover active:scale-[0.98] rounded-lg shadow-sm transition-all flex items-center gap-1.5"><span class="material-symbols-outlined text-sm">done_all</span><span class="">Apply all remaining</span></button><button onclick="closeRefineModal()" class="px-3 py-1.5 text-slate-500 hover:text-slate-800 font-medium rounded-lg hover:bg-slate-200/60 transition-colors text-xs">Close</button></div></footer>
+
+    </div>
+  </div>
+
+  <!-- Client-side Interactive State Controller Script -->
+  <script>
+    // State Switcher Function
+    function switchState(stateKey) {
+      // Manage Modal Visibility for 'none' vs modal states
+      const backdrop = document.getElementById('RefineProjectModalBackdrop');
+      if (stateKey === 'none') {
+        backdrop.classList.add('hidden');
+      } else {
+        backdrop.classList.remove('hidden');
+      }
+
+      // Update Dev Buttons Styling
+      document.querySelectorAll('.state-tab').forEach(btn => {
+        btn.classList.remove('active', 'bg-brand', 'text-white', 'shadow-sm');
+        btn.classList.add('text-slate-600');
+      });
+      const activeBtn = document.getElementById(`btn-${stateKey}`);
+      if (activeBtn) {
+        activeBtn.classList.add('active', 'bg-brand', 'text-white', 'shadow-sm');
+        activeBtn.classList.remove('text-slate-600');
+      }
+
+      // Hide all states
+      document.querySelectorAll('.state-container').forEach(el => {
+        el.classList.add('hidden');
+      });
+
+      // Show chosen state
+      const targetState = document.getElementById(`state-view-${stateKey}`);
+      if (targetState) {
+        targetState.classList.remove('hidden');
+      }
+    }
+
+    // Modal open/close helpers
+    function openRefineModal() {
+      switchState('D'); // Default opens in results view
+    }
+
+    function closeRefineModal() {
+      switchState('none');
+    }
+
+    // Mobile sub-tab switcher for State K
+    function setMobileSubTab(sub) {
+      const cView = document.getElementById('mobile-subview-C');
+      const dView = document.getElementById('mobile-subview-D');
+      const cBtn = document.getElementById('m-tab-c');
+      const dBtn = document.getElementById('m-tab-d');
+
+      if (sub === 'C') {
+        cView.classList.remove('hidden');
+        dView.classList.add('hidden');
+        cBtn.className = 'px-2 py-0.5 rounded bg-brand text-white text-[11px] font-medium';
+        dBtn.className = 'px-2 py-0.5 rounded bg-slate-200 text-slate-700 text-[11px] font-medium';
+      } else {
+        cView.classList.add('hidden');
+        dView.classList.remove('hidden');
+        dBtn.className = 'px-2 py-0.5 rounded bg-brand text-white text-[11px] font-medium';
+        cBtn.className = 'px-2 py-0.5 rounded bg-slate-200 text-slate-700 text-[11px] font-medium';
+      }
+    }
+
+    // Interactive Card Apply action simulation
+    function applyCard(cardId) {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      
+      // Temporary spinner simulation on the clicked card
+      const applyBtn = card.querySelector('.btn-apply-suggestion');
+      if (applyBtn) {
+        applyBtn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span><span>Applying...</span>';
+        applyBtn.classList.add('opacity-80', 'cursor-wait');
+      }
+
+      setTimeout(() => {
+        // Collapse card to state F (Applied)
+        card.innerHTML = `
+          <div class="flex items-center justify-between py-1 bg-emerald-50/50 px-2 rounded-lg">
+            <div class="flex items-center gap-2.5">
+              <span class="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">✓</span>
+              <span class="text-xs font-semibold text-emerald-950 font-display">Suggestion applied to draft pitch</span>
+            </div>
+            <div class="flex items-center gap-1 text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full text-xs font-mono font-medium">
+              <span class="material-symbols-outlined text-xs">done_all</span>
+              <span>Applied</span>
+            </div>
+          </div>
+        `;
+
+        // Update the live pitch in the background screen!
+        if (cardId === 'card-suggestion-1') {
+          const liveProblem = document.getElementById('live-pitch-problem');
+          if (liveProblem) {
+            liveProblem.innerHTML = 'Over <span class="bg-emerald-100 text-emerald-900 font-semibold px-1 rounded">65% of first-year 1337 students</span> fail their initial graphics evaluations because peer slots are booked with <span class="bg-emerald-100 text-emerald-900 font-semibold px-1 rounded">mismatched skill tiers</span>, delaying project completion by an average of <span class="bg-emerald-100 text-emerald-900 font-semibold px-1 rounded">12 days</span>.';
+          }
+        }
+      }, 700);
+    }
+
+    function dismissCard(cardId) {
+      const card = document.getElementById(cardId);
+      if (card) {
+        card.style.opacity = '0.3';
+        card.style.pointerEvents = 'none';
+        setTimeout(() => {
+          card.remove();
+        }, 300);
+      }
+    }
+
+    // Default setup: open in State D for instant developer review
+    window.addEventListener('DOMContentLoaded', () => {
+      switchState('D');
+    });
+  </script>
+
+
+
+
+<script>
+function updateSuggestionCounters() {
+  const totalCards = 8;
+  const currentCards = document.querySelectorAll('#state-view-D .SuggestionCard');
+  const appliedCards = document.querySelectorAll('#state-view-D .SuggestionCard.applied-card');
+  const appliedCount = appliedCards.length;
+  const remainingCount = currentCards.length - appliedCount;
+  
+  const counterText = `${appliedCount} applied · ${remainingCount} remaining`;
+  const counterEl = document.getElementById('counter-text');
+  if (counterEl) counterEl.textContent = counterText;
+  
+  const topPill = document.getElementById('suggestions-status-pill');
+  if (topPill) topPill.textContent = counterText;
+
+  const mobCounter = document.getElementById('mobile-counter-text');
+  if (mobCounter) mobCounter.textContent = counterText;
+}
+
+function dismissAllSuggestions() {
+  const cards = document.querySelectorAll('#state-view-D .SuggestionCard:not(.applied-card)');
+  cards.forEach(card => {
+    card.style.opacity = '0';
+    card.style.transform = 'scale(0.95)';
+    card.style.transition = 'all 0.25s ease';
+  });
+  setTimeout(() => {
+    cards.forEach(card => card.remove());
+    updateSuggestionCounters();
+  }, 250);
+}
+
+function applyAllSuggestions() {
+  const cards = document.querySelectorAll('#state-view-D .SuggestionCard:not(.applied-card)');
+  cards.forEach((card, idx) => {
+    setTimeout(() => {
+      applyCard(card.id);
+    }, idx * 120);
+  });
+}
+
+// Hook existing apply/dismiss functions to update counters
+const originalApplyCard = window.applyCard;
+window.applyCard = function(cardId) {
+  const card = document.getElementById(cardId);
+  if (card) {
+    card.classList.add('applied-card');
+  }
+  if (typeof originalApplyCard === 'function') {
+    originalApplyCard(cardId);
+  }
+  setTimeout(updateSuggestionCounters, 750);
+};
+
+const originalDismissCard = window.dismissCard;
+window.dismissCard = function(cardId) {
+  if (typeof originalDismissCard === 'function') {
+    originalDismissCard(cardId);
+  }
+  setTimeout(updateSuggestionCounters, 350);
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  updateSuggestionCounters();
+});
+</script></body></html>

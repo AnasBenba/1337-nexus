@@ -5,11 +5,6 @@ services:
     env_file:
       - .env
 
-    # environment:
-    #   POSTGRES_DB: ${POSTGRES_DB}
-    #   POSTGRES_USER: ${POSTGRES_USER}
-    #   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
@@ -45,9 +40,13 @@ services:
         PYTHON_IMAGE: ${PYTHON_IMAGE}
 
     restart: unless-stopped
+    
     env_file:
       - .env
+
+
     environment:
+    
       # DATABASE_URL: ${DATABASE_URL}
       # MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL}
       # TRUSTED_PROXY_SUBNET: ${TRUSTED_PROXY_SUBNET}
@@ -78,6 +77,7 @@ services:
         NGINX_IMAGE: ${NGINX_IMAGE}
 
     restart: unless-stopped
+
     env_file:
       - .env
     # environment:

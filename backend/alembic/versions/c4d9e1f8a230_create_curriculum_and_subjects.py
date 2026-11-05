@@ -1,7 +1,7 @@
 """create curriculum and subjects tables
 
 Revision ID: c4d9e1f8a230
-Revises: b7a721fc05b8
+Revises: 7c1c9f5e2a14
 Create Date: 2026-10-13 04:45:00.000000
 """
 
@@ -14,10 +14,9 @@ from pgvector.sqlalchemy import Vector
 from app.shared.ai.config import EMBEDDING_DIMENSIONS
 
 revision: str = "c4d9e1f8a230"
-down_revision: Union[str, Sequence[str], None] = "b7a721fc05b8"
+down_revision: Union[str, Sequence[str], None] = "7c1c9f5e2a14"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
-
 
 def upgrade() -> None:
     op.create_table(
