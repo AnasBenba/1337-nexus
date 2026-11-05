@@ -10,6 +10,7 @@ Query design:
   - ORDER BY distance ASC (closest first), LIMIT k.
   - Returns plain dicts so the service layer stays ORM-agnostic.
 """
+
 from __future__ import annotations
 
 import logging

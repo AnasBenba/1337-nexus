@@ -2,6 +2,7 @@
 Pydantic v2 schemas and data transfer objects for the copilot ask flow.
 Compatible with DBML Table copilot_threads & Table copilot_messages.
 """
+
 from __future__ import annotations
 
 import uuid

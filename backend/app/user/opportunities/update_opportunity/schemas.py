@@ -8,9 +8,6 @@ class UpdateOpportunityRequest(BaseModel):
 
     @model_validator(mode="after")
     def require_update_field(self) -> "UpdateOpportunityRequest":
-        if all(
-            value is None
-            for value in (self.title, self.description, self.required_skills)
-        ):
+        if all(value is None for value in (self.title, self.description, self.required_skills)):
             raise ValueError("At least one opportunity field must be provided")
         return self

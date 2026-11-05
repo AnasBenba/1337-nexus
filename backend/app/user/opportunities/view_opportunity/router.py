@@ -1,4 +1,3 @@
-
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,6 +7,7 @@ from app.core.db import get_db_session
 from app.user.opportunities.browse_opportunities.schemas import (
     OpportunityResponse,
 )
+
 from . import service
 
 router = APIRouter(tags=["opportunities"])
