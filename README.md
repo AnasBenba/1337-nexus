@@ -191,7 +191,7 @@ mypy -p app.user.copilot.ask -m app.models.copilot
 - [x] `[INFRA-001]` 3-container topology over dedicated Docker bridge network
 - [x] `[INFRA-002]` Nginx HTTPS termination, SPA serving, and proxy routing
 - [x] `[INFRA-003]` Tune PostgreSQL config for 0.5 GB memory limit
-- [ ] `[INFRA-004]` GitHub Actions CI/CD pipeline with Ruff, mypy, and Vitest
+- [x] `[INFRA-004]` GitHub Actions CI/CD pipeline with Ruff, mypy, and Pytest
 - [x] `[INFRA-005]` Bootstrap and backup operational scripts
 
 ### Identity & Security (`IDNT`)
