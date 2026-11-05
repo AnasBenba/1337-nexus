@@ -12,6 +12,7 @@ from user.pitches.create_pitch.models import Pitch
 import app.models.copilot
 import app.models.job
 from app.oauth import user  # noqa: F401
+from app.collaboration.chat import models as chat_models  # noqa: F401
 
 config = context.config
 

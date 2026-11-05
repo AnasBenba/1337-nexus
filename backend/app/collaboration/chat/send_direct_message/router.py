@@ -1,14 +1,16 @@
 import json
-from uuid import UUID
-from fastapi import WebSocket, WebSocketDisconnect, APIRouter, Depends
-from app.collaboration.chat.models  import Message
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.db import get_db_session as get_db
-from .socket_manager import manager
-from app.core.db import get_db_session
 
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.collaboration.chat.models import Message
+from app.core.db import get_db_session
+from app.oauth.user import Users
+
+from .socket_manager import manager
 from .service import start_chat
-from fastapi import Cookie, WebSocketException, status
+
 router = APIRouter()
 
 
@@ -18,32 +20,43 @@ async def chat_endpoint(
     user_id: int,
     db: AsyncSession = Depends(get_db_session),
 ) -> None:
+    if await db.get(Users, user_id) is None:
+        await websocket.close(code=1008, reason="Unknown user")
+        return
+
     await start_chat(websocket, user_id, db)
+
 
 @router.websocket("/ws/chat/team/{team_id}/{user_id}")
 async def team_chat_endpoint(
     websocket: WebSocket,
     team_id: int,
     user_id: int,
-    db: AsyncSession = Depends(get_db_session)
-):
+    db: AsyncSession = Depends(get_db_session),
+) -> None:
+    if await db.get(Users, user_id) is None:
+        await websocket.close(code=1008, reason="Unknown user")
+        return
+
     await manager.connect_team(team_id, user_id, websocket)
     try:
         while True:
             data = await websocket.receive_text()
-            payload = json.loads(data)
-            content = payload["content"]
+            try:
+                payload = json.loads(data)
+                content = payload["content"]
+            except (json.JSONDecodeError, KeyError, TypeError):
+                await websocket.send_json({"error": "Message must contain content"})
+                continue
 
-            # Save team message to DB
             new_msg = Message(
                 sender_id=user_id,
                 team_id=team_id,
-                content=content
+                content=content,
             )
             db.add(new_msg)
             await db.commit()
 
-            # Broadcast to everyone in the team
             broadcast_payload = json.dumps({
                 "from": user_id,
                 "team_id": team_id,
@@ -55,12 +68,36 @@ async def team_chat_endpoint(
         manager.disconnect_team(team_id, user_id)
 
 
+@router.get("/messages/team/{team_id}")
+async def get_team_chat_history(
+    team_id: int,
+    db: AsyncSession = Depends(get_db_session),
+) -> list[dict[str, str | None]]:
+    stmt = (
+        select(Message)
+        .where(Message.team_id == team_id)
+        .order_by(Message.created_at.asc())
+    )
+    result = await db.execute(stmt)
+    messages = result.scalars().all()
+    return [
+        {
+            "id": str(message.id),
+            "content": message.content,
+            "created_at": message.created_at.isoformat(),
+            "sender_id": str(message.sender_id),
+            "team_id": str(message.team_id),
+        }
+        for message in messages
+    ]
+
+
 @router.get("/messages/{user_a}/{user_b}")
 async def get_chat_history(
-    user_a: int, 
-    user_b: int, 
-    db: AsyncSession = Depends(get_db_session)
-):
+    user_a: int,
+    user_b: int,
+    db: AsyncSession = Depends(get_db_session),
+) -> list[dict[str, str | None]]:
     stmt = (
         select(Message)
         .where(

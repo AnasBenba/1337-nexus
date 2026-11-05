@@ -1,5 +1,6 @@
-from fastapi import WebSocket 
-from uuid import UUID  
+from fastapi import WebSocket
+
+
 class ConnectionManager:
     def __init__(self):
         self.active_dms: dict[int, WebSocket] = {}
@@ -33,8 +34,15 @@ class ConnectionManager:
 
     async def broadcast_to_team(self, team_id: int, sender_id: int, message: str):
         if team_id in self.active_teams:
-            for member_id, ws in self.active_teams[team_id].items():
+            disconnected_members = []
+            for member_id, ws in list(self.active_teams[team_id].items()):
                 if member_id != sender_id:  # Don't echo back to sender
-                    await ws.send_text(message)
+                    try:
+                        await ws.send_text(message)
+                    except Exception:
+                        disconnected_members.append(member_id)
+
+            for member_id in disconnected_members:
+                self.disconnect_team(team_id, member_id)
 
 manager = ConnectionManager()

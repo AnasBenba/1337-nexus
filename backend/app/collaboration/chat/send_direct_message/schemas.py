@@ -1,8 +1,9 @@
 
-import uuid
 from pydantic import BaseModel
+
 
 class MessageCreate(BaseModel):
     content: str
-    receiver_id: uuid.UUID
-    sender_id: uuid.UUID
+    sender_id: int
+    receiver_id: int | None = None
+    team_id: int | None = None
