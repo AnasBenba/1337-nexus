@@ -1,5 +1,3 @@
-
-
 import json
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -16,19 +14,21 @@ async def start_chat(websocket: WebSocket, user_id: int, db: AsyncSession):
 
     stmt = (
         select(Message)
-        .where((Message.receiver_id == user_id) & (Message.is_read == False))
+        .where((Message.receiver_id == user_id) & Message.is_read.is_(False))
         .order_by(Message.created_at.asc())
     )
     result = await db.execute(stmt)
     unread_messages = result.scalars().all()
 
     for msg in unread_messages:
-        payload = json.dumps({
-            "from": msg.sender_id,
-            "content": msg.content,
-            "created_at": msg.created_at.isoformat(),
-            "offline_message": True
-        })
+        payload = json.dumps(
+            {
+                "from": msg.sender_id,
+                "content": msg.content,
+                "created_at": msg.created_at.isoformat(),
+                "offline_message": True,
+            }
+        )
         await websocket.send_text(payload)
         msg.is_read = True
 
@@ -43,24 +43,16 @@ async def start_chat(websocket: WebSocket, user_id: int, db: AsyncSession):
                 receiver_id = int(payload["receiver_id"])
                 content = payload["content"]
             except (json.JSONDecodeError, KeyError, TypeError, ValueError):
-                await websocket.send_json(
-                    {"error": "Message must contain receiver_id and content"}
-                )
+                await websocket.send_json({"error": "Message must contain receiver_id and content"})
                 continue
 
-            live_message = json.dumps({
-                "from": user_id,
-                "content": content
-            })
+            live_message = json.dumps({"from": user_id, "content": content})
 
             # Try to push live
             delivered = await manager.send_dm(live_message, receiver_id)
 
             new_message = Message(
-                sender_id=user_id,
-                receiver_id=receiver_id,
-                content=content,
-                is_read=delivered
+                sender_id=user_id, receiver_id=receiver_id, content=content, is_read=delivered
             )
             db.add(new_message)
             await db.commit()

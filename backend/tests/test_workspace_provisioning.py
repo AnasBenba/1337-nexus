@@ -83,8 +83,7 @@ async def test_acceptance_provisions_workspace_in_same_commit(
     )
     provision = AsyncMock()
     monkeypatch.setattr(
-        "app.user.opportunities.review_applications.service."
-        "provision_workspace_for_application",
+        "app.user.opportunities.review_applications.service.provision_workspace_for_application",
         provision,
     )
     db = MagicMock()
@@ -117,8 +116,7 @@ async def test_acceptance_rolls_back_status_when_provisioning_fails(
     )
     provision = AsyncMock(side_effect=RuntimeError("channel bootstrap failed"))
     monkeypatch.setattr(
-        "app.user.opportunities.review_applications.service."
-        "provision_workspace_for_application",
+        "app.user.opportunities.review_applications.service.provision_workspace_for_application",
         provision,
     )
     db = MagicMock()

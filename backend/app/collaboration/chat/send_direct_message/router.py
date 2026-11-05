@@ -8,8 +8,8 @@ from app.collaboration.chat.models import Message
 from app.core.db import get_db_session
 from app.oauth.user import Users
 
-from .socket_manager import manager
 from .service import start_chat
+from .socket_manager import manager
 
 router = APIRouter()
 
@@ -57,11 +57,9 @@ async def team_chat_endpoint(
             db.add(new_msg)
             await db.commit()
 
-            broadcast_payload = json.dumps({
-                "from": user_id,
-                "team_id": team_id,
-                "content": content
-            })
+            broadcast_payload = json.dumps(
+                {"from": user_id, "team_id": team_id, "content": content}
+            )
             await manager.broadcast_to_team(team_id, user_id, broadcast_payload)
 
     except WebSocketDisconnect:
@@ -73,11 +71,7 @@ async def get_team_chat_history(
     team_id: int,
     db: AsyncSession = Depends(get_db_session),
 ) -> list[dict[str, str | None]]:
-    stmt = (
-        select(Message)
-        .where(Message.team_id == team_id)
-        .order_by(Message.created_at.asc())
-    )
+    stmt = select(Message).where(Message.team_id == team_id).order_by(Message.created_at.asc())
     result = await db.execute(stmt)
     messages = result.scalars().all()
     return [
@@ -101,8 +95,8 @@ async def get_chat_history(
     stmt = (
         select(Message)
         .where(
-            ((Message.sender_id == user_a) & (Message.receiver_id == user_b)) |
-            ((Message.sender_id == user_b) & (Message.receiver_id == user_a))
+            ((Message.sender_id == user_a) & (Message.receiver_id == user_b))
+            | ((Message.sender_id == user_b) & (Message.receiver_id == user_a))
         )
         .order_by(Message.created_at.asc())
     )

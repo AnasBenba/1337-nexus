@@ -4,16 +4,17 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
-from alembic import context
-from app.core.config import get_settings
-from app.shared.models import Base
-import app.models.curriculum
-from user.pitches.create_pitch.models import Pitch
-import app.models.copilot
-import app.models.job
-from app.oauth import user  # noqa: F401
-from app.collaboration.chat import models as chat_models  # noqa: F401
+import app.models.canvas  # noqa: F401
+import app.models.copilot  # noqa: F401
+import app.models.curriculum  # noqa: F401
+import app.models.job  # noqa: F401
 import app.teams.models  # noqa: F401
+from alembic import context
+from app.collaboration.chat import models as chat_models  # noqa: F401
+from app.core.config import get_settings
+from app.oauth import user  # noqa: F401
+from app.shared.models import Base
+from app.user.pitches.models import Pitch  # noqa: F401
 
 config = context.config
 
