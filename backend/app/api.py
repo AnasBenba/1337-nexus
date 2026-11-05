@@ -28,7 +28,8 @@ from app.user.opportunities.view_opportunity.router import (
 from app.user.opportunities.withdraw_application.router import (
     router as withdraw_application_router,
 )
-from app.user.pitches.router import router as pitches_router
+from .user.pitches.router import router as pitches_router
+
 from app.user.projects.refine_project.router import (
     router as refine_project_router,
 )
