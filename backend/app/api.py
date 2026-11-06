@@ -28,8 +28,6 @@ from app.user.opportunities.view_opportunity.router import (
 from app.user.opportunities.withdraw_application.router import (
     router as withdraw_application_router,
 )
-from .user.pitches.router import router as pitches_router
-
 from app.user.projects.refine_project.router import (
     router as refine_project_router,
 )
@@ -42,6 +40,7 @@ from .user.copilot.ask.router import router as ask_router
 from .user.copilot.retrieve_curriculum.router import (
     router as retrieve_curriculum_router,
 )
+from .user.pitches.router import router as pitches_router
 
 router = APIRouter()
 HOME_PAGE = Path(__file__).parent / "index.html"

@@ -212,7 +212,7 @@ mypy -p app.user.copilot.ask -m app.models.copilot
 
 ### Collaborative Canvas (`CV`)
 - [x] `[CV-401]` Socket.IO Binary CRDT Relay
-- [ ] `[CV-402]` Canvas Snapshot Compaction Engine
+- [x] `[CV-402]` Canvas Snapshot Compaction Engine
 - [ ] `[CV-403]` Collaborative Whiteboard UI
 
 ### Recruitment, Teams & Kanban (`RTK`)
