@@ -12,3 +12,7 @@ services:
       - ../backend/alembic:/app/alembic
       - ../backend/alembic.ini:/app/alembic.ini:ro
       - ../backend/content:/app/content
+
+  prometheus:
+    ports:
+      - "9090:9090"
