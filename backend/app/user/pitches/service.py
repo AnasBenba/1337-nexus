@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Sequence
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -6,8 +7,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shared.ai.client import get_ai_provider
 from app.user.pitches.models import Pitch
-from app.user.pitches.schemas import PitchCreate
+from app.user.pitches.schemas import PitchCategory, PitchCreate
 from app.user.pitches.utils import render_and_sanitize
+
+
+async def get_all_pitches(db: AsyncSession, limit: int = 40) -> Sequence[Pitch]:
+    query = select(Pitch).order_by(Pitch.created_at.desc()).limit(limit)
+    result = await db.execute(query)
+    return result.scalars().all()
 
 
 async def get_one_pitch(db: AsyncSession, pitch_id: uuid.UUID) -> Pitch:
@@ -16,6 +23,23 @@ async def get_one_pitch(db: AsyncSession, pitch_id: uuid.UUID) -> Pitch:
     if not pitch:
         raise HTTPException(status_code=404, detail="Pitch not found")
     return pitch
+
+
+async def search_pitches(
+    db: AsyncSession,
+    query: str,
+    limit: int = 10,
+    category: PitchCategory | str | None = None,
+) -> Sequence[Pitch]:
+    ai = get_ai_provider()
+    query_embedding = await ai.embed([query])
+    query_vector = query_embedding[0]
+    db_query = select(Pitch)
+    if category:
+        db_query = db_query.where(Pitch.category == category)
+    db_query = db_query.order_by(Pitch.embedding.cosine_distance(query_vector)).limit(limit)
+    result = await db.execute(db_query)
+    return result.scalars().all()
 
 
 async def create_pitch(db: AsyncSession, pitch: PitchCreate, author_id: int | None = None) -> Pitch:
@@ -60,3 +84,13 @@ async def update_pitch(
     await db.commit()
     await db.refresh(existing_pitch)
     return existing_pitch
+
+
+async def delete_pitch(db: AsyncSession, pitch_id: uuid.UUID) -> dict[str, str]:
+    result = await db.execute(select(Pitch).where(Pitch.id == pitch_id))
+    pitch = result.scalar_one_or_none()
+    if pitch is None:
+        raise HTTPException(status_code=404, detail="Pitch not found")
+    await db.delete(pitch)
+    await db.commit()
+    return {"message": "Pitch deleted successfully"}

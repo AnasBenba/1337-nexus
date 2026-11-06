@@ -191,7 +191,7 @@ mypy -p app.user.copilot.ask -m app.models.copilot
 - [x] `[INFRA-001]` 3-container topology over dedicated Docker bridge network
 - [x] `[INFRA-002]` Nginx HTTPS termination, SPA serving, and proxy routing
 - [x] `[INFRA-003]` Tune PostgreSQL config for 0.5 GB memory limit
-- [ ] `[INFRA-004]` GitHub Actions CI/CD pipeline with Ruff, mypy, and Vitest
+- [x] `[INFRA-004]` GitHub Actions CI/CD pipeline with Ruff, mypy, and Pytest
 - [x] `[INFRA-005]` Bootstrap and backup operational scripts
 
 ### Identity & Security (`IDNT`)
@@ -207,23 +207,23 @@ mypy -p app.user.copilot.ask -m app.models.copilot
 - [x] `[AI-201]` Vector Distance Retrieval Query (pgvector cosine search)
 - [x] `[AI-202]` Server-Sent Events (SSE) Streaming Endpoint
 - [x] `[AI-203]` Frontend SSE Stream Reader & Co-Pilot UI
-- [ ] `[AI-101]` Transactional Database Task Queue (`ai_jobs`)
-- [ ] `[AI-102]` Pitch Refiner Workflow
+- [x] `[AI-301]` Transactional Database Task Queue (`ai_jobs`)
+- [x] `[AI-302]` Pitch Refiner Workflow
 
 ### Collaborative Canvas (`CV`)
-- [ ] `[CV-401]` Socket.IO Binary CRDT Relay
+- [x] `[CV-401]` Socket.IO Binary CRDT Relay
 - [ ] `[CV-402]` Canvas Snapshot Compaction Engine
 - [ ] `[CV-403]` Collaborative Whiteboard UI
 
 ### Recruitment, Teams & Kanban (`RTK`)
 - [x] `[RTK-001]` Recruitment postings, match scoring, and review lifecycle
-- [ ] `[RTK-002]` Atomic workspace provisioning on founder acceptance
+- [x] `[RTK-002]` Atomic workspace provisioning on founder acceptance
 - [ ] `[RTK-003]` Frontend Kanban drag-and-drop UI and recruitment review queue
 - [ ] `[RTK-004]` GitHub polling engine with X-Poll-Interval compliance
 - [ ] `[RTK-005]` Kanban backend with Lexorank ordering and board revision guards
 
 ### Social, Discovery & Gamification (`SDG`)
-- [ ] `[SDG-001]` Pitch CRUD with Markdown, sanitization, and pgvector search
+- [x] `[SDG-001]` Pitch CRUD with Markdown, sanitization, and pgvector search
 - [ ] `[SDG-002]` Realtime chat backend for team and DM namespaces
 - [ ] `[SDG-003]` Immutable `xp_events` ledger and automated badge evaluation
 - [ ] `[SDG-004]` In-app notifications persistence and notify push namespace

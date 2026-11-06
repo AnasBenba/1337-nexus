@@ -28,11 +28,15 @@ from app.user.opportunities.view_opportunity.router import (
 from app.user.opportunities.withdraw_application.router import (
     router as withdraw_application_router,
 )
-from app.user.pitches.router import router as pitches_router
+from .user.pitches.router import router as pitches_router
+
 from app.user.projects.refine_project.router import (
     router as refine_project_router,
 )
 
+from .collaboration.chat.send_direct_message.router import (
+    router as send_direct_message_router,
+)
 from .oauth import entrypoint, jwt, manager
 from .user.copilot.ask.router import router as ask_router
 from .user.copilot.retrieve_curriculum.router import (
@@ -96,30 +100,22 @@ async def auth_callback(request: Request, code: str, state: str) -> RedirectResp
     )
     response.delete_cookie("state", path="/")
     response.delete_cookie("code_verifier", path="/")
-
     return response
 
 
 @router.get("/health/live", tags=["health"])
 async def health_live() -> dict[str, str]:
-    return {
-        "status": "ok",
-        "service": "api",
-    }
+    return {"status": "ok", "service": "api"}
 
 
 @router.get("/health/ready", tags=["health"])
 async def health_ready() -> dict[str, object]:
-    return {
-        "status": "ready",
-        "dependencies": {
-            "database": "unknown",
-        },
-    }
+    return {"status": "ready", "dependencies": {"database": "unknown"}}
 
 
 def register_routes(app: FastAPI) -> None:
     app.include_router(router)
+    app.include_router(pitches_router)
     app.include_router(opportunities_router)
     app.include_router(create_opportunity_router)
     app.include_router(update_opportunity_router)
@@ -132,4 +128,4 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(apply_router)
     app.include_router(withdraw_application_router)
     app.include_router(refine_project_router)
-    app.include_router(pitches_router)
+    app.include_router(send_direct_message_router, tags=["Chat"])
