@@ -124,6 +124,8 @@ services:
   postgres-exporter:
     image: ${POSTGRES_EXPORTER_IMAGE:-prometheuscommunity/postgres-exporter:v0.16.0}
     restart: unless-stopped
+    command:
+      - "--no-collector.stat_bgwriter"
     environment:
       DATA_SOURCE_URI: postgres:5432/${POSTGRES_DB}?sslmode=disable
       DATA_SOURCE_USER: ${POSTGRES_USER}
