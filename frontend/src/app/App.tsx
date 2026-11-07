@@ -3,11 +3,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { CopilotPage } from '@/flows/user/copilot/ask';
 import { RefineProjectDemoPage } from '@/flows/user/projects/refine_project';
+import Login from './authentication/login/Login';
 
 export const App: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={<Layout />}>
           <Route index element={<Navigate to="/copilot" replace />} />
           <Route path="copilot" element={<CopilotPage />} />
