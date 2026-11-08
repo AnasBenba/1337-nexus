@@ -89,7 +89,7 @@ services:
         condition: service_started
 
     ports:
-      - "443:8443"
+      - "${NGINX_PORT:-443}:8443"
 
     volumes:
       - media_data:/media:ro
