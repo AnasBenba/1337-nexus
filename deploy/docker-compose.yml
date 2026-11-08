@@ -87,6 +87,8 @@ services:
     depends_on:
       backend:
         condition: service_started
+      grafana:
+        condition: service_started
 
     ports:
       - "${NGINX_PORT:-443}:8443"
