@@ -1,38 +1,119 @@
-# name: CI
+name: CI
 
-# on:
-#   push:
-#     branches:
-#       - main
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
-#   pull_request:
-#     branches:
-#       - main
+jobs:
+  backend-quality:
+    name: Backend Quality (Ruff & Mypy)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-# jobs:
-#   backend-quality:
-#     name: Backend Quality
-#     runs-on: ubuntu-latest
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
 
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v4
+      - name: Install Ruff & Mypy
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff~=0.14.0 mypy~=1.18.0 pydantic~=2.12.0 pydantic-settings~=2.11.0
 
-#       - name: Set up Python
-#         uses: actions/setup-python@v5
-#         with:
-#           python-version: "3.12"
+      - name: Run Ruff Linter
+        run: ruff check .
 
-#       - name: Install backend dependencies
-#         working-directory: backend
-#         run: |
-#           python -m pip install --upgrade pip
-#           pip install -r requirements.lock
+      - name: Run Ruff Formatter Check
+        run: ruff format --check .
 
-#       - name: Run Ruff
-#         working-directory: backend
-#         run: ruff check .
+      - name: Run Strict Mypy Typecheck
+        run: mypy -p app.user.copilot.ask -m app.models.copilot
 
-#       - name: Run mypy
-#         working-directory: backend
-#         run: mypy .
+  backend-tests:
+    name: Backend Tests (PostgreSQL + Pytest)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: nexus_migrator
+          POSTGRES_PASSWORD: nexus_migrator_password
+          POSTGRES_DB: nexus
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://nexus_migrator:nexus_migrator_password@localhost:5433/nexus
+      MIGRATION_DATABASE_URL: postgresql+asyncpg://nexus_migrator:nexus_migrator_password@localhost:5433/nexus
+      TRUSTED_PROXY_SUBNET: 127.0.0.1/32
+      AI_MODE: stub
+      GEMINI_API_KEY: test_dummy_key
+      JWT_SECRET: test_jwt_secret_for_ci_at_least_32_characters_long
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.lock
+          pip install -e ".[dev]"
+
+      - name: Initialize PostgreSQL extensions and roles
+        run: |
+          python - <<'PY'
+          import asyncio
+          import asyncpg
+
+          async def init():
+              conn = await asyncpg.connect("postgresql://nexus_migrator:nexus_migrator_password@localhost:5433/nexus")
+              await conn.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+              await conn.execute("""
+                  DO $$
+                  BEGIN
+                      IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'nexus_app') THEN
+                          CREATE ROLE nexus_app LOGIN PASSWORD 'nexus_app_password';
+                      END IF;
+                  END
+                  $$;
+              """)
+              await conn.execute("GRANT USAGE, CREATE ON SCHEMA public TO nexus_app;")
+              await conn.close()
+              print("PostgreSQL extensions and roles initialized successfully.")
+
+          asyncio.run(init())
+          PY
+
+      - name: Run Alembic migrations
+        run: alembic upgrade head
+
+      - name: Run Pytest test suite
+        run: pytest -v

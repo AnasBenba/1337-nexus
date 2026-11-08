@@ -33,6 +33,8 @@ build/
 artifacts/
 playwright-report/
 test-results/
+backend/tests/42_subjects/
+tests/42_subjects/
 
 # IDE / editor files
 .vscode/

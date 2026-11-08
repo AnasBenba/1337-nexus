@@ -24,7 +24,6 @@ def create_app() -> FastAPI:
     )
 
     register_routes(app)
-
     return app
 
 
