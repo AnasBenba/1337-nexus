@@ -2,9 +2,9 @@ import uuid
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Query, Request, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth import get_current_user
 from app.core.db import get_db_session
 from app.oauth.user import Users
 from app.user.projects.refine_project.schemas import (
@@ -28,46 +28,28 @@ async def get_current_user_dep(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db_session)],
     x_user_id: Annotated[str | None, Header()] = None,
-    user_id: Annotated[int | None, Query()] = None,
+    user_id: Annotated[str | None, Query()] = None,
 ) -> Users:
-    """
-    Resolve the current authenticated user.
-    Supports X-User-Id header, query param, or fallback to database user.
-    """
-    # 1. Explicit Header
+    """Resolve current user via X-User-Id header, query param, or standard auth cookie/bearer."""
     if x_user_id:
         try:
-            uid = int(x_user_id)
+            uid = uuid.UUID(x_user_id) if not isinstance(x_user_id, uuid.UUID) else x_user_id
             user = await db.get(Users, uid)
             if user:
                 return user
-        except ValueError:
+        except (ValueError, TypeError):
             pass
 
-    # 2. Query parameter
     if user_id:
-        user = await db.get(Users, user_id)
-        if user:
-            return user
+        try:
+            uid = uuid.UUID(user_id) if not isinstance(user_id, uuid.UUID) else user_id
+            user = await db.get(Users, uid)
+            if user:
+                return user
+        except (ValueError, TypeError):
+            pass
 
-    # 3. Fallback to existing user in database
-    result = await db.execute(select(Users).limit(1))
-    user = result.scalar_one_or_none()
-    if user:
-        return user
-
-    # 4. Dev seed user if database is empty
-    dev_user = Users(
-        id=1,
-        login="sel-bou",
-        fullname="Soufiane El B.",
-        role="user",
-        intra_id=4242,
-    )
-    db.add(dev_user)
-    await db.commit()
-    await db.refresh(dev_user)
-    return dev_user
+    return await get_current_user(request, db)
 
 
 # Supports both canonical /api/v1/user/projects and frontend flow /api/user/projects/refine-project

@@ -83,8 +83,7 @@ export const RefineProjectDemoPage: React.FC = () => {
   const handlePitchUpdated = (newVersionToken: string) => {
     // eslint-disable-next-line no-console
     console.log('Pitch updated via AI suggestion! New version token:', newVersionToken);
-    setPitchContentOverride((prev) => (prev ?? activePitch.content) + '\n\n[Updated with AI Refinement: ' + newVersionToken.slice(0, 8) + ']');
-    // Also re-fetch pitches to ensure DB sync
+    setPitchContentOverride(null);
     loadPitches();
   };
 
