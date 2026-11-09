@@ -7,7 +7,6 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     database_url: SecretStr
     migration_database_url: SecretStr
-    trusted_proxy_subnet: str
 
     # Background task worker (ai_jobs)
     job_worker_concurrency: int = 5

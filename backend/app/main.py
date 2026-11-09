@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.jobs import job_worker_lifespan
 from app.realtime.server import get_socket_app
@@ -24,6 +25,7 @@ def create_app() -> FastAPI:
     )
 
     register_routes(app)
+    Instrumentator().instrument(app).expose(app)
     return app
 
 
