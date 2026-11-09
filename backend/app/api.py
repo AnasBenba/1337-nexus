@@ -3,6 +3,7 @@ from pathlib import Path
 from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 
+from app.collaboration.board.router import router as board_router
 from app.user.opportunities.apply.router import router as apply_router
 from app.user.opportunities.browse_opportunities.router import (
     router as opportunities_router,
@@ -127,4 +128,6 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(apply_router)
     app.include_router(withdraw_application_router)
     app.include_router(refine_project_router)
+    app.include_router(pitches_router)
+    app.include_router(board_router)
     app.include_router(send_direct_message_router, tags=["Chat"])
