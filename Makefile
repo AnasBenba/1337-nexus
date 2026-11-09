@@ -18,12 +18,16 @@ VENV := backend/.venv
 PYTHON := $(VENV)/bin/python
 
 .PHONY: \
+	all \
+	start \
 	help \
 	validate \
 	dev-validate \
 	dev \
 	dev-build \
+	dev-wait \
 	down \
+	down-volumes \
 	ps \
 	logs \
 	logs-backend \
@@ -35,35 +39,66 @@ PYTHON := $(VENV)/bin/python
 	lint \
 	types \
 	test \
+	frontend-dev \
+	frontend-build \
 	frontend-test \
 	migrate \
 	seed \
 	ingest \
 	gen-api \
+	setup \
 	clean
+
+.DEFAULT_GOAL := start
+
+all: start
+
+start: dev-build dev-wait migrate ingest
+	@echo ""
+	@echo "======================================================================"
+	@echo " 🚀 1337 Nexus Development Stack is UP & READY!"
+	@echo "======================================================================"
+	@echo " • Frontend (Nginx HTTPS): https://localhost:8443 (or https://localhost)"
+	@echo " • Backend API & Swagger:  http://localhost:8000/docs"
+	@echo " • Backend Health:         http://localhost:8000/health/ready"
+	@echo " • PostgreSQL Port:        localhost:5433"
+	@echo "----------------------------------------------------------------------"
+	@echo " Useful commands:"
+	@echo " • View all logs:          make logs"
+	@echo " • View backend logs:      make logs-backend"
+	@echo " • View frontend/nginx:    make logs-nginx"
+	@echo " • Run frontend dev server:make frontend-dev (Vite HMR on :5173)"
+	@echo " • Stop stack:             make down"
+	@echo "======================================================================"
+
 help:
 	@echo "1337 Nexus commands:"
-	@echo "  make validate       Validate base Compose"
-	@echo "  make dev-validate   Validate base + dev Compose"
-	@echo "  make dev            Start development stack"
-	@echo "  make dev-build      Build and start development stack"
+	@echo "  make                Start full stack (backend, frontend, db, migrations, ingest)"
+	@echo "  make start          Alias for starting the full stack"
+	@echo "  make dev            Start development stack in foreground"
+	@echo "  make dev-build      Build and start development stack in background"
 	@echo "  make down           Stop development stack"
+	@echo "  make down-volumes   Stop stack and remove volumes"
 	@echo "  make ps             Show service status"
 	@echo "  make logs           Follow all logs"
 	@echo "  make logs-backend   Follow backend logs"
 	@echo "  make logs-postgres  Follow PostgreSQL logs"
 	@echo "  make logs-nginx     Follow Nginx logs"
 	@echo "  make postgres       Start only PostgreSQL"
+	@echo "  make frontend-dev   Start frontend Vite dev server (HMR on port 5173)"
+	@echo "  make frontend-build Build frontend production bundle"
+	@echo "  make frontend-test  Run frontend Vitest"
 	@echo "  make backup         Run backup script"
 	@echo "  make perf           Run performance smoke test"
 	@echo "  make lint           Run Ruff"
 	@echo "  make types          Run mypy"
 	@echo "  make test           Run backend pytest"
-	@echo "  make frontend-test  Run frontend Vitest"
 	@echo "  make migrate        Run Alembic migrations"
 	@echo "  make seed           Run seed command"
 	@echo "  make ingest         Ingest curriculum subjects"
 	@echo "  make gen-api        Export OpenAPI"
+	@echo "  make validate       Validate base Compose"
+	@echo "  make dev-validate   Validate base + dev Compose"
 	@echo
 	@echo 'Use DOCKER="sudo docker" if Docker requires sudo.'
 
@@ -77,7 +112,17 @@ dev:
 	$(DEV_COMPOSE) up
 
 dev-build:
-	$(DEV_COMPOSE) up --build postgres backend
+	$(DEV_COMPOSE) up --build -d
+
+dev-wait:
+	@echo "Waiting for backend service to become ready..."
+	@for i in $$(seq 1 30); do \
+		if curl -s http://localhost:8000/health/ready 2>/dev/null | grep -q 'ready'; then \
+			echo "Backend is ready!"; \
+			break; \
+		fi; \
+		sleep 1; \
+	done
 
 down:
 	$(DEV_COMPOSE) down
@@ -110,13 +155,19 @@ perf:
 	sudo ./$(PERF_SCRIPT)
 
 lint:
-	cd backend && python -m ruff check .
+	cd backend && (test -x .venv/bin/ruff && .venv/bin/ruff check . || python3 -m ruff check .)
 
 types:
-	cd backend && python -m mypy .
+	cd backend && (test -x .venv/bin/mypy && .venv/bin/mypy . || python3 -m mypy .)
 
 test:
-	cd backend && python -m pytest
+	cd backend && (test -x .venv/bin/pytest && .venv/bin/pytest || python3 -m pytest)
+
+frontend-dev:
+	cd frontend && npm run dev
+
+frontend-build:
+	cd frontend && npm run build
 
 frontend-test:
 	cd frontend && npm run test
