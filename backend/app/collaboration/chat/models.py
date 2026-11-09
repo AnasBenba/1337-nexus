@@ -1,7 +1,10 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Uuid
-from app.shared.models import Base # Adjust this import to match your Base location
+
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Text, Uuid
+
+from app.shared.models import Base
+
 
 class Message(Base):
     __tablename__ = "messages"
@@ -10,4 +13,7 @@ class Message(Base):
     content = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     sender_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    receiver_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    team_id = Column(Uuid(as_uuid=True), ForeignKey("workspace_teams.id"), nullable=True, index=True)
+    receiver_id = Column(Uuid(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    is_read = Column(Boolean, default=False, nullable=False)
+    is_delivered = Column(Boolean, default=False, nullable=False)

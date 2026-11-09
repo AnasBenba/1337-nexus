@@ -7,9 +7,13 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 from app.core.config import get_settings
 from app.shared.models import Base
-from user.pitches.create_pitch.models import Pitch
-
-target_metadata = Base.metadata
+import app.models.curriculum
+from app.user.pitches.models import Pitch  # noqa: F401
+import app.models.copilot
+import app.models.job
+from app.oauth import user  # noqa: F401
+from app.collaboration.chat import models as chat_models  # noqa: F401
+import app.teams.models  # noqa: F401
 
 config = context.config
 

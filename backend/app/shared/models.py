@@ -1,5 +1,14 @@
-from sqlalchemy.orm import DeclarativeBase
+from enum import Enum as PythonEnum
+
+from sqlalchemy.orm import declarative_base
+
+Base = declarative_base()
 
 
-class Base(DeclarativeBase):
-    """Base class for all SQLAlchemy ORM models."""
+class UserRole(str, PythonEnum):
+    STUDENT = "student"
+    ADMIN = "admin"
+    PARTNER = "partner"
+
+
+# The active User model is defined in app.oauth.user.Users.

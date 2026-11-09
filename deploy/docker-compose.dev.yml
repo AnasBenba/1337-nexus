@@ -1,7 +1,7 @@
 services:
   postgres:
     ports:
-      - "5432:5432"
+      - "5433:5432"
 
   backend:
     ports:
@@ -11,3 +11,4 @@ services:
       - ../backend/app:/app/app
       - ../backend/alembic:/app/alembic
       - ../backend/alembic.ini:/app/alembic.ini:ro
+      - ../backend/content:/app/content
