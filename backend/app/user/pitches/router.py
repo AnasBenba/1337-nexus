@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,6 +21,22 @@ from app.user.pitches.service import (
 )
 
 router = APIRouter(tags=["Pitches"])
+
+
+async def require_pitch_author(
+    db: AsyncSession,
+    pitch_id: uuid.UUID,
+    current_user: Users,
+) -> Pitch:
+    """Ensure current user is the pitch author or an administrator."""
+    pitch = await get_one_pitch(db=db, pitch_id=pitch_id)
+    is_admin = getattr(current_user, "role", "") == "admin"
+    if not is_admin and pitch.author_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only modify your own pitches",
+        )
+    return pitch
 
 
 @router.get(
@@ -117,7 +133,9 @@ async def update_pitch_endpoint(
     pitch_id: uuid.UUID,
     pitch: PitchCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: Annotated[Users, Depends(get_current_user)],
 ) -> Pitch:
+    await require_pitch_author(db, pitch_id, current_user)
     return await update_pitch(db=db, pitch_id=pitch_id, pitch=pitch)
 
 
@@ -132,5 +150,7 @@ async def update_pitch_endpoint(
 async def delete_pitch_endpoint(
     pitch_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: Annotated[Users, Depends(get_current_user)],
 ) -> dict[str, str]:
+    await require_pitch_author(db, pitch_id, current_user)
     return await delete_pitch(db=db, pitch_id=pitch_id)
