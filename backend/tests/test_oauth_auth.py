@@ -65,14 +65,17 @@ def test_jwt_invalid_token_signature_raises_401() -> None:
 
 def test_users_model_instantiation() -> None:
     """Test Soufiane's Users model fields."""
+    import uuid
+
+    user_id = uuid.uuid4()
     user = Users(
-        id=1,
+        id=user_id,
         login="soufiane",
         fullname="Soufiane El B",
         role="student",
         intra_id=424242,
     )
-    assert user.id == 1
+    assert user.id == user_id
     assert user.login == "soufiane"
     assert user.fullname == "Soufiane El B"
     assert user.role == "student"

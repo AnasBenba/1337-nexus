@@ -42,7 +42,9 @@ async def search_pitches(
     return result.scalars().all()
 
 
-async def create_pitch(db: AsyncSession, pitch: PitchCreate, author_id: int | None = None) -> Pitch:
+async def create_pitch(
+    db: AsyncSession, pitch: PitchCreate, author_id: uuid.UUID | None = None
+) -> Pitch:
     ai = get_ai_provider()
     pitch_data = pitch.model_dump()
     embeddings = await ai.embed([pitch_data["content"]])

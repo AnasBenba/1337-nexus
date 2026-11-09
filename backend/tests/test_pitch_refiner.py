@@ -96,13 +96,16 @@ def mock_ai_provider():
         yield ai_mock
 
 
-async def create_test_user(session: AsyncSession, user_id: int, role: str = "user") -> Users:
+async def create_test_user(
+    session: AsyncSession, user_id: int | uuid.UUID, role: str = "user"
+) -> Users:
+    uid = uuid.UUID(int=user_id) if isinstance(user_id, int) else user_id
     user = Users(
-        id=user_id,
+        id=uid,
         login=f"user_{user_id}",
         fullname=f"User {user_id}",
         role=role,
-        intra_id=1000 + user_id,
+        intra_id=1000 + (user_id if isinstance(user_id, int) else 1),
     )
     session.add(user)
     await session.commit()
@@ -112,7 +115,7 @@ async def create_test_user(session: AsyncSession, user_id: int, role: str = "use
 
 async def create_test_pitch(
     session: AsyncSession,
-    author_id: int,
+    author_id: int | uuid.UUID,
     title: str = "Initial Pitch Title",
     description: str | None = "A great project connecting students to mentors.",
     content: str = (
@@ -122,6 +125,7 @@ async def create_test_pitch(
     ),
     status: PitchStatus = PitchStatus.DRAFT,
 ) -> Pitch:
+    aid = uuid.UUID(int=author_id) if isinstance(author_id, int) else author_id
     pitch = Pitch(
         id=uuid.uuid4(),
         title=title,
@@ -129,7 +133,7 @@ async def create_test_pitch(
         content=content,
         category=PitchCategory.TECH,
         status=status,
-        author_id=author_id,
+        author_id=aid,
     )
     session.add(pitch)
     await session.commit()

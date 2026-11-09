@@ -37,6 +37,7 @@ from .collaboration.chat.send_direct_message.router import (
     router as send_direct_message_router,
 )
 from .oauth import entrypoint, jwt, manager
+from .oauth.auth_router import router as auth_router
 from .user.copilot.ask.router import router as ask_router
 from .user.copilot.retrieve_curriculum.router import (
     router as retrieve_curriculum_router,
@@ -86,7 +87,7 @@ async def auth_callback(request: Request, code: str, state: str) -> RedirectResp
     intra_user = await manager.get_user(token["access_token"])
     nexus_user = await manager.manage_user(intra_user)
 
-    jwt_token = jwt.create_access_token(nexus_user.intra_id)
+    jwt_token = jwt.create_access_token(nexus_user.id, role=nexus_user.role)
 
     response = RedirectResponse(url="/home", status_code=303)
     response.set_cookie(
@@ -115,6 +116,7 @@ async def health_ready() -> dict[str, object]:
 
 def register_routes(app: FastAPI) -> None:
     app.include_router(router)
+    app.include_router(auth_router)
     app.include_router(pitches_router)
     app.include_router(opportunities_router)
     app.include_router(create_opportunity_router)
@@ -128,6 +130,5 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(apply_router)
     app.include_router(withdraw_application_router)
     app.include_router(refine_project_router)
-    app.include_router(pitches_router)
     app.include_router(board_router)
     app.include_router(send_direct_message_router, tags=["Chat"])

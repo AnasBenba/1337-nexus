@@ -57,11 +57,7 @@ async def _rank_for_position(
     before_card_id: UUID | None,
     moving_card_id: UUID | None = None,
 ) -> str:
-    cards = [
-        card
-        for card in await _column_cards(db, column_id)
-        if card.id != moving_card_id
-    ]
+    cards = [card for card in await _column_cards(db, column_id) if card.id != moving_card_id]
     if before_card_id is None:
         before_index = len(cards)
     else:
@@ -150,9 +146,7 @@ async def move_board_card(
     if board_id is not None and destination.board_id != board_id:
         raise BoardValidationError("Card does not belong to the requested board")
     board = await _lock_board(db, destination.board_id, expected_board_revision)
-    card.rank = await _rank_for_position(
-        db, destination.id, before_card_id, moving_card_id=card.id
-    )
+    card.rank = await _rank_for_position(db, destination.id, before_card_id, moving_card_id=card.id)
     card.column_id = destination.id
     await _bump_revision(db, board)
     await db.commit()

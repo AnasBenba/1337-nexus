@@ -10,9 +10,7 @@ from app.shared.models import Base
 
 class BoardColumn(Base):
     __tablename__ = "board_columns"
-    __table_args__ = (
-        UniqueConstraint("board_id", "name", name="uq_board_columns_board_name"),
-    )
+    __table_args__ = (UniqueConstraint("board_id", "name", name="uq_board_columns_board_name"),)
 
     id: Mapped[UUID] = mapped_column(PostgreSQLUUID(as_uuid=True), primary_key=True, default=uuid4)
     board_id: Mapped[UUID] = mapped_column(
@@ -36,9 +34,7 @@ class BoardColumn(Base):
 
 class BoardCard(Base):
     __tablename__ = "board_cards"
-    __table_args__ = (
-        UniqueConstraint("column_id", "rank", name="uq_board_cards_column_rank"),
-    )
+    __table_args__ = (UniqueConstraint("column_id", "rank", name="uq_board_cards_column_rank"),)
 
     id: Mapped[UUID] = mapped_column(PostgreSQLUUID(as_uuid=True), primary_key=True, default=uuid4)
     column_id: Mapped[UUID] = mapped_column(
