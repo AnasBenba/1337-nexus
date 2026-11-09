@@ -3,6 +3,7 @@ from .models import BoardCard, BoardColumn
 from .service import (
     BoardRevisionConflict,
     BoardValidationError,
+    create_board,
     create_board_card,
     create_board_column,
     delete_board_column,
@@ -14,6 +15,7 @@ __all__ = [
     "BoardColumn",
     "BoardRevisionConflict",
     "BoardValidationError",
+    "create_board",
     "RankSpaceExhausted",
     "create_board_card",
     "create_board_column",

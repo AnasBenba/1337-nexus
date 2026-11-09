@@ -9,7 +9,7 @@ from app.user.opportunities.apply.models import Application
 async def withdraw_application(
     db: AsyncSession,
     opportunity_id: UUID,
-    user_id: UUID,
+    user_id: int,
 ) -> None:
     statement = select(Application).where(
         Application.user_id == user_id,

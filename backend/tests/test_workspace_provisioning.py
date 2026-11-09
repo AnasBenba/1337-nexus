@@ -23,7 +23,7 @@ async def test_provision_workspace_creates_all_entities():
     db.add_all = MagicMock()
     db.flush = AsyncMock()
     opportunity_id = uuid4()
-    founder_id = uuid4()
+    founder_id = 2
 
     result = await provision_workspace(
         db,
@@ -34,7 +34,7 @@ async def test_provision_workspace_creates_all_entities():
     db.add_all.assert_called_once()
     db.flush.assert_awaited_once()
     entities = db.add_all.call_args.args[0]
-    assert len(entities) == 4
+    assert len(entities) == 5
     assert isinstance(result.team, WorkspaceTeam)
     assert isinstance(result.board, WorkspaceBoard)
     assert isinstance(result.canvas, WorkspaceCanvasDocument)
@@ -48,7 +48,7 @@ async def test_provision_workspace_creates_all_entities():
 
 @pytest.mark.asyncio
 async def test_provision_workspace_reuses_complete_existing_workspace():
-    team = WorkspaceTeam(opportunity_id=uuid4(), founder_id=uuid4())
+    team = WorkspaceTeam(opportunity_id=uuid4(), founder_id=2)
     board = WorkspaceBoard(team=team)
     canvas = WorkspaceCanvasDocument(team=team)
     channel = WorkspaceChannel(team=team)
@@ -78,7 +78,7 @@ async def test_acceptance_provisions_workspace_in_same_commit(
     application = SimpleNamespace(
         id=uuid4(),
         opportunity_id=uuid4(),
-        user_id=uuid4(),
+        user_id=2,
         status="pending",
     )
     provision = AsyncMock()
@@ -111,7 +111,7 @@ async def test_acceptance_rolls_back_status_when_provisioning_fails(
     application = SimpleNamespace(
         id=uuid4(),
         opportunity_id=uuid4(),
-        user_id=uuid4(),
+        user_id=2,
         status="pending",
     )
     provision = AsyncMock(side_effect=RuntimeError("channel bootstrap failed"))

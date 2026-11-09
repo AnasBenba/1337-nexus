@@ -32,6 +32,16 @@ from app.user.opportunities.withdraw_application.router import (
 from app.user.projects.refine_project.router import (
     router as refine_project_router,
 )
+from app.teams.router import router as teams_router
+from app.user.projects.archive_project.router import router as archive_project_router
+from app.user.projects.create_project.router import router as create_project_router
+from app.user.projects.edit_project.router import router as edit_project_router
+from app.user.projects.my_projects.router import router as my_projects_router
+from app.user.projects.publish_project.router import router as publish_project_router
+from app.user.projects.recommended_projects.router import (
+    router as recommended_projects_router,
+)
+from app.user.quick_actions.router import router as quick_actions_router
 
 from .collaboration.chat.send_direct_message.router import (
     router as send_direct_message_router,
@@ -128,6 +138,14 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(apply_router)
     app.include_router(withdraw_application_router)
     app.include_router(refine_project_router)
+    app.include_router(create_project_router)
+    app.include_router(my_projects_router)
+    app.include_router(recommended_projects_router)
+    app.include_router(edit_project_router)
+    app.include_router(publish_project_router)
+    app.include_router(archive_project_router)
+    app.include_router(quick_actions_router)
+    app.include_router(teams_router)
     app.include_router(pitches_router)
     app.include_router(board_router)
     app.include_router(send_direct_message_router, tags=["Chat"])

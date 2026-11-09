@@ -23,7 +23,12 @@ def upgrade() -> None:
         "workspace_teams",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("opportunity_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("founder_id", postgresql.UUID(as_uuid=True), nullable=False),
+        sa.Column(
+            "founder_id",
+            sa.Integer(),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),

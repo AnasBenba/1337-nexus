@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.teams.models import WorkspaceBoard
+from app.teams.models import WorkspaceBoard, WorkspaceTeam, WorkspaceTeamMember
 
 from .lexorank import RankSpaceExhausted, rank_between, rebalance_ranks
 from .models import BoardCard, BoardColumn
@@ -22,12 +22,68 @@ class BoardValidationError(ValueError):
     pass
 
 
-async def _lock_board(db: AsyncSession, board_id: UUID, expected_revision: int) -> WorkspaceBoard:
+async def _authorize_board(
+    db: AsyncSession, board: WorkspaceBoard, user_id: int | None
+) -> None:
+    if user_id is None:
+        return
+    is_member = await db.scalar(
+        select(WorkspaceTeamMember.id).where(
+            WorkspaceTeamMember.team_id == board.team_id,
+            WorkspaceTeamMember.user_id == user_id,
+            WorkspaceTeamMember.status == "active",
+        )
+    )
+    if is_member is None:
+        raise PermissionError("Active team membership is required")
+
+
+async def create_board(
+    db: AsyncSession,
+    *,
+    team_id: UUID,
+    name: str = "Main Board",
+    user_id: int | None = None,
+) -> WorkspaceBoard:
+    if user_id is not None:
+        member = await db.scalar(
+            select(WorkspaceTeamMember.id).where(
+                WorkspaceTeamMember.team_id == team_id,
+                WorkspaceTeamMember.user_id == user_id,
+                WorkspaceTeamMember.status == "active",
+            )
+        )
+        if member is None:
+            raise PermissionError("Active team membership is required")
+    existing = await db.scalar(
+        select(WorkspaceBoard).where(WorkspaceBoard.team_id == team_id)
+    )
+    if existing is not None:
+        raise BoardValidationError("A board already exists for this team")
+    team = await db.scalar(select(WorkspaceTeam).where(WorkspaceTeam.id == team_id))
+    if team is None:
+        raise BoardValidationError("Team not found")
+    board = WorkspaceBoard(team_id=team.id, name=name)
+    db.add(board)
+    await db.flush()
+    db.add(BoardColumn(board_id=board.id, name="To do", position=0))
+    await db.commit()
+    await db.refresh(board)
+    return board
+
+
+async def _lock_board(
+    db: AsyncSession,
+    board_id: UUID,
+    expected_revision: int,
+    user_id: int | None = None,
+) -> WorkspaceBoard:
     board = await db.scalar(
         select(WorkspaceBoard).where(WorkspaceBoard.id == board_id).with_for_update()
     )
     if board is None:
         raise BoardValidationError("Board not found")
+    await _authorize_board(db, board, user_id)
     if board.board_revision != expected_revision:
         raise BoardRevisionConflict(expected_revision, board.board_revision)
     return board
@@ -91,8 +147,9 @@ async def create_board_column(
     board_id: UUID,
     name: str,
     expected_board_revision: int,
+    user_id: int | None = None,
 ) -> BoardColumn:
-    board = await _lock_board(db, board_id, expected_board_revision)
+    board = await _lock_board(db, board_id, expected_board_revision, user_id)
     max_position = await db.scalar(
         select(func.coalesce(func.max(BoardColumn.position), -1)).where(
             BoardColumn.board_id == board.id
@@ -115,11 +172,12 @@ async def create_board_card(
     expected_board_revision: int,
     description: str | None = None,
     before_card_id: UUID | None = None,
+    user_id: int | None = None,
 ) -> BoardCard:
     column = await db.scalar(select(BoardColumn).where(BoardColumn.id == column_id))
     if column is None:
         raise BoardValidationError("Column not found")
-    board = await _lock_board(db, column.board_id, expected_board_revision)
+    board = await _lock_board(db, column.board_id, expected_board_revision, user_id)
     rank = await _rank_for_position(db, column.id, before_card_id)
     card = BoardCard(column_id=column.id, title=title, description=description, rank=rank)
     db.add(card)
@@ -137,6 +195,7 @@ async def move_board_card(
     expected_board_revision: int,
     before_card_id: UUID | None = None,
     board_id: UUID | None = None,
+    user_id: int | None = None,
 ) -> BoardCard:
     card = await db.scalar(select(BoardCard).where(BoardCard.id == card_id))
     destination = await db.scalar(
@@ -149,7 +208,9 @@ async def move_board_card(
         raise BoardValidationError("Card and destination must belong to the same board")
     if board_id is not None and destination.board_id != board_id:
         raise BoardValidationError("Card does not belong to the requested board")
-    board = await _lock_board(db, destination.board_id, expected_board_revision)
+    board = await _lock_board(
+        db, destination.board_id, expected_board_revision, user_id
+    )
     card.rank = await _rank_for_position(
         db, destination.id, before_card_id, moving_card_id=card.id
     )
@@ -166,13 +227,14 @@ async def delete_board_column(
     column_id: UUID,
     expected_board_revision: int,
     board_id: UUID | None = None,
+    user_id: int | None = None,
 ) -> None:
     column = await db.scalar(select(BoardColumn).where(BoardColumn.id == column_id))
     if column is None:
         raise BoardValidationError("Column not found")
     if board_id is not None and column.board_id != board_id:
         raise BoardValidationError("Column does not belong to the requested board")
-    board = await _lock_board(db, column.board_id, expected_board_revision)
+    board = await _lock_board(db, column.board_id, expected_board_revision, user_id)
     column_count = await db.scalar(
         select(func.count(BoardColumn.id)).where(BoardColumn.board_id == board.id)
     )
