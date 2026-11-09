@@ -14,6 +14,8 @@ from app.collaboration.chat import models as chat_models  # noqa: F401
 from app.core.config import get_settings
 from app.oauth import user  # noqa: F401
 from app.shared.models import Base
+from app.user.opportunities.apply.models import Application  # noqa: F401
+from app.user.opportunities.browse_opportunities.models import Opportunity  # noqa: F401
 from app.user.pitches.models import Pitch  # noqa: F401
 
 config = context.config

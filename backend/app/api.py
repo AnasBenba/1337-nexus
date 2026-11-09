@@ -3,36 +3,7 @@ from pathlib import Path
 from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 
-from app.collaboration.board.router import router as board_router
-from app.user.opportunities.apply.router import router as apply_router
-from app.user.opportunities.browse_opportunities.router import (
-    router as opportunities_router,
-)
-from app.user.opportunities.create_opportunity.router import (
-    router as create_opportunity_router,
-)
-from app.user.opportunities.match_scoring.router import (
-    router as match_scoring_router,
-)
-from app.user.opportunities.publish_opportunity.router import (
-    router as publish_opportunity_router,
-)
-from app.user.opportunities.review_applications.router import (
-    router as review_applications_router,
-)
-from app.user.opportunities.update_opportunity.router import (
-    router as update_opportunity_router,
-)
-from app.user.opportunities.view_opportunity.router import (
-    router as view_opportunity_router,
-)
-from app.user.opportunities.withdraw_application.router import (
-    router as withdraw_application_router,
-)
-from app.user.projects.refine_project.router import (
-    router as refine_project_router,
-)
-
+from .collaboration.board.router import router as board_router
 from .collaboration.chat.send_direct_message.router import (
     router as send_direct_message_router,
 )
@@ -42,7 +13,35 @@ from .user.copilot.ask.router import router as ask_router
 from .user.copilot.retrieve_curriculum.router import (
     router as retrieve_curriculum_router,
 )
+from .user.opportunities.apply.router import router as apply_router
+from .user.opportunities.browse_opportunities.router import (
+    router as opportunities_router,
+)
+from .user.opportunities.create_opportunity.router import (
+    router as create_opportunity_router,
+)
+from .user.opportunities.match_scoring.router import (
+    router as match_scoring_router,
+)
+from .user.opportunities.publish_opportunity.router import (
+    router as publish_opportunity_router,
+)
+from .user.opportunities.review_applications.router import (
+    router as review_applications_router,
+)
+from .user.opportunities.update_opportunity.router import (
+    router as update_opportunity_router,
+)
+from .user.opportunities.view_opportunity.router import (
+    router as view_opportunity_router,
+)
+from .user.opportunities.withdraw_application.router import (
+    router as withdraw_application_router,
+)
 from .user.pitches.router import router as pitches_router
+from .user.projects.refine_project.router import (
+    router as refine_project_router,
+)
 
 router = APIRouter()
 HOME_PAGE = Path(__file__).parent / "index.html"

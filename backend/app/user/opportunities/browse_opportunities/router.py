@@ -13,6 +13,21 @@ router = APIRouter(tags=["opportunities"])
     "/opportunities/",
     response_model=list[OpportunityResponse],
 )
+@router.get(
+    "/opportunities",
+    response_model=list[OpportunityResponse],
+    include_in_schema=False,
+)
+@router.get(
+    "/api/v1/opportunities/",
+    response_model=list[OpportunityResponse],
+    include_in_schema=False,
+)
+@router.get(
+    "/api/v1/opportunities",
+    response_model=list[OpportunityResponse],
+    include_in_schema=False,
+)
 async def browse_opportunities(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=10, ge=1, le=100),
