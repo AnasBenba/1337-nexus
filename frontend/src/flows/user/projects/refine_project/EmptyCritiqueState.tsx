@@ -4,11 +4,13 @@ import { StrengthsList } from './StrengthsList';
 interface EmptyCritiqueStateProps {
   strengths?: string[];
   onDone?: () => void;
+  onReanalyze?: () => void;
 }
 
 export const EmptyCritiqueState: React.FC<EmptyCritiqueStateProps> = ({
   strengths = [],
   onDone,
+  onReanalyze,
 }) => {
   return (
     <section id="state-view-J" className="space-y-5">
@@ -38,8 +40,19 @@ export const EmptyCritiqueState: React.FC<EmptyCritiqueStateProps> = ({
           </div>
         )}
 
-        {onDone && (
-          <div className="pt-3 border-t border-slate-100 flex justify-end">
+        <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+          {onReanalyze ? (
+            <button
+              type="button"
+              onClick={onReanalyze}
+              className="px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-lg border border-slate-200 flex items-center gap-1.5 transition-colors"
+            >
+              <span className="material-symbols-outlined text-[16px]">refresh</span>
+              <span>Re-analyze Pitch</span>
+            </button>
+          ) : <div />}
+
+          {onDone && (
             <button
               type="button"
               onClick={onDone}
@@ -47,8 +60,8 @@ export const EmptyCritiqueState: React.FC<EmptyCritiqueStateProps> = ({
             >
               Done
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </section>
   );
