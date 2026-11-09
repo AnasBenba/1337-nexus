@@ -1,9 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { loginWith42 } from './Auth.api';
 import './Login.css';
 
 type View = 'student' | 'admin' | 'email';
-
-const OAUTH_42_URL = '/api/auth/42'; // TODO: your backend route
 
 /* ---------- background mesh (data-driven) ---------- */
 
@@ -200,7 +199,7 @@ function StudentView({ onAdmin, onEmail, onTerms }: StudentViewProps) {
           in their stack, and collaborate across every campus — from first commit to demo day.
         </p>
 
-        <button type="button" className="btn-42" onClick={() => { window.location.href = OAUTH_42_URL; }}>
+        <button type="button" className="btn-42" onClick={loginWith42}>
           <span className="fortytwo">42</span>
           Sign in with your 42 Intra account
         </button>
