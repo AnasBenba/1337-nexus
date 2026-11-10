@@ -13,13 +13,15 @@ async def get_current_user(
     request: Request,
     db: AsyncSession = Depends(get_db_session),
 ) -> Users:
-    # 1. Try cookie
-    token = request.cookies.get("access_token")
-    # 2. Try Authorization header
+    token = None
+    # 1. Try Authorization header first (tab-scoped bearer token)
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+
+    # 2. Fallback to cookie
     if not token:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            token = auth_header[7:].strip()
+        token = request.cookies.get("access_token")
 
     if not token:
         raise HTTPException(

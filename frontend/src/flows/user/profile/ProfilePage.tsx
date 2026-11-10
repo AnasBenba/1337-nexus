@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { authFetch } from '@/lib/auth';
 
 type UserProfile = {
   id: string;
@@ -46,7 +47,7 @@ export const ProfilePage: React.FC = () => {
       setLoading(true);
       setError(null);
       const url = userId ? `/api/v1/profile/${userId}` : '/api/v1/profile/me';
-      const res = await fetch(url, { credentials: 'include' });
+      const res = await authFetch(url);
       if (!res.ok) {
         throw new Error(`Failed to load profile (${res.status})`);
       }
@@ -60,7 +61,7 @@ export const ProfilePage: React.FC = () => {
       });
 
       if (!data.is_self && data.id) {
-        const sRes = await fetch(`/api/v1/friends/${data.id}/status`, { credentials: 'include' });
+        const sRes = await authFetch(`/api/v1/friends/${data.id}/status`);
         if (sRes.ok) {
           const sData = await sRes.json();
           setFriendshipStatus(sData.status || (data.is_friend ? 'accepted' : 'none'));
@@ -82,10 +83,9 @@ export const ProfilePage: React.FC = () => {
     try {
       setSaving(true);
       setError(null);
-      const res = await fetch('/api/v1/profile/me', {
+      const res = await authFetch('/api/v1/profile/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
         body: JSON.stringify(editForm),
       });
       if (!res.ok) {
@@ -111,35 +111,31 @@ export const ProfilePage: React.FC = () => {
       setError(null);
 
       if (friendshipStatus === 'accepted') {
-        const res = await fetch(`/api/v1/friends/${profile.id}`, {
+        const res = await authFetch(`/api/v1/friends/${profile.id}`, {
           method: 'DELETE',
-          credentials: 'include',
         });
         if (!res.ok) throw new Error('Failed to remove friend');
         setFriendshipStatus('none');
         setProfile((prev) => (prev ? { ...prev, is_friend: false } : null));
         setSuccessMessage('Friend removed.');
       } else if (friendshipStatus === 'pending_received') {
-        const res = await fetch(`/api/v1/friends/${profile.id}/accept`, {
+        const res = await authFetch(`/api/v1/friends/${profile.id}/accept`, {
           method: 'POST',
-          credentials: 'include',
         });
         if (!res.ok) throw new Error('Failed to accept friend request');
         setFriendshipStatus('accepted');
         setProfile((prev) => (prev ? { ...prev, is_friend: true } : null));
         setSuccessMessage('Friend request accepted! You are now friends.');
       } else if (friendshipStatus === 'pending_sent') {
-        const res = await fetch(`/api/v1/friends/${profile.id}`, {
+        const res = await authFetch(`/api/v1/friends/${profile.id}`, {
           method: 'DELETE',
-          credentials: 'include',
         });
         if (!res.ok) throw new Error('Failed to cancel request');
         setFriendshipStatus('none');
         setSuccessMessage('Friend request cancelled.');
       } else {
-        const res = await fetch(`/api/v1/friends/${profile.id}`, {
+        const res = await authFetch(`/api/v1/friends/${profile.id}`, {
           method: 'POST',
-          credentials: 'include',
         });
         if (!res.ok) throw new Error('Failed to send friend request');
         const data = await res.json();

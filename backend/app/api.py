@@ -71,16 +71,12 @@ async def auth_login() -> RedirectResponse:
     return await entrypoint.redirect_to_forttytwo()
 
 
-@router.get("/api/v1/auth/dev-login", tags=["auth"])
-@router.get("/auth/dev-login", tags=["auth"])
-async def dev_login(
-    login: str = "anas",
-    fullname: str | None = None,
-    campus: str | None = None,
-    redirect: str = "/messages",
-    db: AsyncSession = Depends(get_db_session),
-) -> RedirectResponse:
-    """Convenience development login to quickly test multi-user features in browser."""
+async def _get_or_create_dev_user(
+    login: str,
+    fullname: str | None,
+    campus: str | None,
+    db: AsyncSession,
+) -> Users:
     default_names = {
         "anas": ("Anas Ben", "1337 Khouribga", "42 / 1337 Fullstack developer & transcendence explorer"),
         "yassine": ("Yassine Daoudi", "1337 Benguerir", "Real-time communication & Socket.IO architect"),
@@ -108,19 +104,58 @@ async def dev_login(
         db.add(user)
         await db.commit()
         await db.refresh(user)
+    return user
+
+
+@router.get("/api/v1/auth/dev-login", tags=["auth"])
+@router.get("/auth/dev-login", tags=["auth"])
+async def dev_login(
+    login: str = "anas",
+    fullname: str | None = None,
+    campus: str | None = None,
+    redirect: str = "/messages",
+    db: AsyncSession = Depends(get_db_session),
+) -> RedirectResponse:
+    """Convenience development login to quickly test multi-user features in browser."""
+    user = await _get_or_create_dev_user(login, fullname, campus, db)
 
     token = jwt.create_access_token(user_id=str(user.id), expires_delta=timedelta(days=7))
-    response = RedirectResponse(url=redirect, status_code=303)
+    separator = "&" if "?" in redirect else "?"
+    redirect_with_token = f"{redirect}{separator}dev_token={token}&login={user.login}"
+    response = RedirectResponse(url=redirect_with_token, status_code=303)
     response.set_cookie(
         key="access_token",
         value=token,
-        httponly=True,
+        httponly=False,
         secure=False,
         samesite="lax",
         max_age=7 * 24 * 3600,
         path="/",
     )
     return response
+
+
+@router.get("/api/v1/auth/dev-token", tags=["auth"])
+@router.get("/auth/dev-token", tags=["auth"])
+async def dev_token(
+    login: str = "anas",
+    fullname: str | None = None,
+    campus: str | None = None,
+    db: AsyncSession = Depends(get_db_session),
+) -> dict[str, object]:
+    """Return access token JSON for tab-specific authentication."""
+    user = await _get_or_create_dev_user(login, fullname, campus, db)
+    token = jwt.create_access_token(user_id=str(user.id), expires_delta=timedelta(days=7))
+    return {
+        "status": "ok",
+        "token": token,
+        "user": {
+            "id": str(user.id),
+            "login": user.login,
+            "fullname": user.fullname,
+            "campus": user.campus,
+        },
+    }
 
 
 @router.get("/api/v1/auth/logout", tags=["auth"])

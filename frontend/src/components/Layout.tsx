@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { authFetch, setAuthToken, clearAuthToken } from '@/lib/auth';
 
 interface CurrentUser {
   id: string;
@@ -13,13 +14,35 @@ export const Layout: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
 
   useEffect(() => {
-    fetch('/api/v1/profile/me', { credentials: 'include' })
+    authFetch('/api/v1/profile/me')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data && data.login) setCurrentUser(data);
       })
       .catch(() => {});
   }, []);
+
+  const handleSwitchUser = async (targetLogin: string) => {
+    try {
+      const res = await fetch(`/api/v1/auth/dev-token?login=${targetLogin}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.token) {
+          setAuthToken(data.token);
+          window.location.reload();
+          return;
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    window.location.href = `/api/v1/auth/dev-login?login=${targetLogin}`;
+  };
+
+  const handleLogout = () => {
+    clearAuthToken();
+    window.location.href = '/api/v1/auth/logout';
+  };
 
   return (
     <div className="min-h-screen bg-surface font-body-md text-body-md text-on-surface antialiased">
@@ -62,32 +85,42 @@ export const Layout: React.FC = () => {
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="font-semibold text-on-surface">@{currentUser.login}</span>
               <span className="text-outline">|</span>
-              <a
-                href={
-                  currentUser.login === 'anas'
-                    ? '/api/v1/auth/dev-login?login=yassine'
-                    : '/api/v1/auth/dev-login?login=anas'
-                }
-                className="text-primary font-medium hover:underline"
-                title="Switch test account"
+              <button
+                type="button"
+                onClick={() => void handleSwitchUser(currentUser.login === 'anas' ? 'yassine' : 'anas')}
+                className="text-primary font-medium hover:underline cursor-pointer"
+                title="Switch test account for this tab"
               >
                 Switch to @{currentUser.login === 'anas' ? 'yassine' : 'anas'}
-              </a>
+              </button>
               <span className="text-outline">|</span>
-              <a href="/api/v1/auth/logout" className="text-on-surface-variant hover:text-error" title="Log out">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="text-on-surface-variant hover:text-error cursor-pointer font-medium"
+                title="Log out"
+              >
                 Logout
-              </a>
+              </button>
             </div>
           ) : (
             <div className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-xs">
               <span className="font-bold text-primary">Sign in:</span>
-              <a href="/api/v1/auth/dev-login?login=anas" className="font-semibold text-primary hover:underline">
+              <button
+                type="button"
+                onClick={() => void handleSwitchUser('anas')}
+                className="font-semibold text-primary hover:underline cursor-pointer"
+              >
                 @anas
-              </a>
+              </button>
               <span className="text-outline">/</span>
-              <a href="/api/v1/auth/dev-login?login=yassine" className="font-semibold text-primary hover:underline">
+              <button
+                type="button"
+                onClick={() => void handleSwitchUser('yassine')}
+                className="font-semibold text-primary hover:underline cursor-pointer"
+              >
                 @yassine
-              </a>
+              </button>
             </div>
           )}
 

@@ -24,23 +24,31 @@ class ChatNamespace(socketio.AsyncNamespace):
     async def on_connect(self, sid: str, environ: dict, auth: Any = None) -> bool:
         token = None
 
-        # 1. Check auth dictionary
+        # 1. Check auth dictionary (Socket.IO client auth payload)
         if isinstance(auth, dict):
             token = auth.get("token") or auth.get("access_token")
 
-        # 2. Check cookies
+        # 2. Check query string (e.g. ?token=... or ?dev_token=...)
         if not token:
-            cookies = SimpleCookie()
-            cookies.load(environ.get("HTTP_COOKIE", ""))
-            token_cookie = cookies.get("access_token")
-            if token_cookie:
-                token = token_cookie.value
+            from urllib.parse import parse_qs
+            qs = parse_qs(environ.get("QUERY_STRING", ""))
+            candidates = qs.get("token") or qs.get("dev_token")
+            if candidates:
+                token = candidates[0]
 
         # 3. Check authorization header
         if not token:
             auth_header = environ.get("HTTP_AUTHORIZATION", "")
             if auth_header.startswith("Bearer "):
                 token = auth_header[7:].strip()
+
+        # 4. Fallback to cookie
+        if not token:
+            cookies = SimpleCookie()
+            cookies.load(environ.get("HTTP_COOKIE", ""))
+            token_cookie = cookies.get("access_token")
+            if token_cookie:
+                token = token_cookie.value
 
         if not token:
             logger.warning("Chat connection rejected: No authentication token found")

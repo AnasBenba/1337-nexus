@@ -1,6 +1,7 @@
 import React, { FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { io, Socket } from 'socket.io-client';
+import { authFetch, getAuthToken } from '@/lib/auth';
 
 type ChatMessage = {
   id: string;
@@ -96,7 +97,7 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     const fetchMe = async () => {
       try {
-        const res = await fetch('/api/v1/profile/me', { credentials: 'include' });
+        const res = await authFetch('/api/v1/profile/me');
         if (res.ok) {
           const data = await res.json();
           setCurrentUserId(data.id);
@@ -113,8 +114,8 @@ export const ChatPage: React.FC = () => {
   const loadConversationsAndFriends = async () => {
     try {
       const [convRes, friendsRes] = await Promise.all([
-        fetch('/api/v1/chat/conversations', { credentials: 'include' }),
-        fetch('/api/v1/friends', { credentials: 'include' }),
+        authFetch('/api/v1/chat/conversations'),
+        authFetch('/api/v1/friends'),
       ]);
 
       if (convRes.ok) {
@@ -136,11 +137,14 @@ export const ChatPage: React.FC = () => {
 
   // 3. Connect Socket.IO to /chat namespace ONCE on mount
   useEffect(() => {
+    const token = getAuthToken();
     const socket = io('/chat', {
       path: '/socket.io',
       transports: ['polling', 'websocket'],
       withCredentials: true,
       autoConnect: true,
+      auth: token ? { token } : undefined,
+      query: token ? { token } : undefined,
     });
     socketRef.current = socket;
     setStatus('connecting');
@@ -214,7 +218,7 @@ export const ChatPage: React.FC = () => {
         setSelectedPeer(peer);
       } else {
         // Fetch peer profile directly
-        void fetch(`/api/v1/profile/${directPeerId}`, { credentials: 'include' })
+        void authFetch(`/api/v1/profile/${directPeerId}`)
           .then((r) => r.json())
           .then((data) => {
             if (data.id) {
@@ -238,9 +242,7 @@ export const ChatPage: React.FC = () => {
 
     const loadHistory = async () => {
       try {
-        const res = await fetch(`/api/v1/chat/messages/${selectedPeer.id}`, {
-          credentials: 'include',
-        });
+        const res = await authFetch(`/api/v1/chat/messages/${selectedPeer.id}`);
         if (res.ok) {
           const body: unknown[] = await res.json();
           const history = body
@@ -301,10 +303,9 @@ export const ChatPage: React.FC = () => {
     } else {
       // Fallback via REST
       try {
-        const res = await fetch('/api/v1/chat/messages', {
+        const res = await authFetch('/api/v1/chat/messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
           body: JSON.stringify({ receiver_id: selectedPeer.id, content }),
         });
         if (res.ok) {
@@ -552,18 +553,12 @@ export const ChatPage: React.FC = () => {
                 </div>
               ) : (
                 messages.map((message, index) => {
+                  const myId = (currentUserId || currentUserIdRef.current || '').toLowerCase();
+                  const peerId = (selectedPeer?.id || '').toLowerCase();
+                  const sId = (message.senderId || '').toLowerCase();
                   const isMine =
-                    Boolean(
-                      currentUserId &&
-                        (message.senderId === currentUserId ||
-                          message.senderId === String(currentUserId)),
-                    ) ||
-                    Boolean(
-                      selectedPeer &&
-                        message.senderId !== selectedPeer.id &&
-                        message.receiverId === selectedPeer.id,
-                    ) ||
-                    Boolean(selectedPeer && message.senderId !== selectedPeer.id);
+                    (Boolean(myId) && sId === myId) ||
+                    (Boolean(peerId) && sId !== peerId);
 
                   return (
                     <div

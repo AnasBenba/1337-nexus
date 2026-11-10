@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { authFetch } from '@/lib/auth';
 
 type FriendUser = {
   id: string;
@@ -47,7 +48,7 @@ export const FriendsPage: React.FC = () => {
   const loadFriends = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/v1/friends', { credentials: 'include' });
+      const res = await authFetch('/api/v1/friends');
       if (!res.ok) {
         throw new Error('Failed to load friends');
       }
@@ -63,7 +64,7 @@ export const FriendsPage: React.FC = () => {
   const loadRequests = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/v1/friends/requests', { credentials: 'include' });
+      const res = await authFetch('/api/v1/friends/requests');
       if (res.ok) {
         const data = await res.json();
         setIncomingRequests(data.incoming || []);
@@ -80,7 +81,7 @@ export const FriendsPage: React.FC = () => {
     try {
       setLoading(true);
       const url = query ? `/api/v1/users?q=${encodeURIComponent(query)}` : '/api/v1/users';
-      const res = await fetch(url, { credentials: 'include' });
+      const res = await authFetch(url);
       if (!res.ok) {
         throw new Error('Failed to load students directory');
       }
@@ -96,7 +97,7 @@ export const FriendsPage: React.FC = () => {
   // Always refresh requests count in background
   const refreshRequestsCount = async () => {
     try {
-      const res = await fetch('/api/v1/friends/requests', { credentials: 'include' });
+      const res = await authFetch('/api/v1/friends/requests');
       if (res.ok) {
         const data = await res.json();
         setIncomingRequests(data.incoming || []);
@@ -109,6 +110,13 @@ export const FriendsPage: React.FC = () => {
 
   useEffect(() => {
     void refreshRequestsCount();
+    const interval = setInterval(() => {
+      void refreshRequestsCount();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     if (activeTab === 'friends') {
       void loadFriends();
     } else if (activeTab === 'requests') {
@@ -129,9 +137,8 @@ export const FriendsPage: React.FC = () => {
     try {
       setActionLoading(userId);
       setError(null);
-      const res = await fetch(`/api/v1/friends/${userId}`, {
+      const res = await authFetch(`/api/v1/friends/${userId}`, {
         method: 'POST',
-        credentials: 'include',
       });
       if (!res.ok) {
         const body = await res.json();
@@ -152,9 +159,8 @@ export const FriendsPage: React.FC = () => {
     try {
       setActionLoading(requesterId);
       setError(null);
-      const res = await fetch(`/api/v1/friends/${requesterId}/accept`, {
+      const res = await authFetch(`/api/v1/friends/${requesterId}/accept`, {
         method: 'POST',
-        credentials: 'include',
       });
       if (!res.ok) {
         const body = await res.json();
@@ -174,9 +180,8 @@ export const FriendsPage: React.FC = () => {
     try {
       setActionLoading(requesterId);
       setError(null);
-      const res = await fetch(`/api/v1/friends/${requesterId}/decline`, {
+      const res = await authFetch(`/api/v1/friends/${requesterId}/decline`, {
         method: 'POST',
-        credentials: 'include',
       });
       if (!res.ok) {
         throw new Error('Failed to decline friend request');
@@ -195,9 +200,8 @@ export const FriendsPage: React.FC = () => {
     try {
       setActionLoading(friendId);
       setError(null);
-      const res = await fetch(`/api/v1/friends/${friendId}`, {
+      const res = await authFetch(`/api/v1/friends/${friendId}`, {
         method: 'DELETE',
-        credentials: 'include',
       });
       if (!res.ok) {
         throw new Error('Failed to cancel request');
@@ -219,9 +223,8 @@ export const FriendsPage: React.FC = () => {
     try {
       setActionLoading(friendId);
       setError(null);
-      const res = await fetch(`/api/v1/friends/${friendId}`, {
+      const res = await authFetch(`/api/v1/friends/${friendId}`, {
         method: 'DELETE',
-        credentials: 'include',
       });
       if (!res.ok) {
         throw new Error('Failed to remove friend');
