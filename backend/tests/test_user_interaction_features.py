@@ -170,26 +170,47 @@ async def test_add_and_list_friends(db: AsyncSession, sample_users: tuple[Users,
     u1, u2, _ = sample_users
     app = create_app()
 
-    # 1. Add u2 as friend
-    async with make_client(app, db, u1) as client:
-        add_res = await client.post(f"/friends/{u2.id}")
+    # 1. u1 sends friend request to u2
+    async with make_client(app, db, u1) as client1:
+        add_res = await client1.post(f"/friends/{u2.id}")
         assert add_res.status_code == 200
         assert add_res.json()["status"] == "ok"
+        assert add_res.json()["friendship_status"] == "pending"
 
-        # 2. List friends
-        list_res = await client.get("/friends")
+        # Check status before acceptance: pending_sent
+        status_res = await client1.get(f"/friends/{u2.id}/status")
+        assert status_res.status_code == 200
+        assert status_res.json()["is_friend"] is False
+        assert status_res.json()["status"] == "pending_sent"
+
+    # 2. u2 views incoming request and accepts it
+    async with make_client(app, db, u2) as client2:
+        req_res = await client2.get("/friends/requests")
+        assert req_res.status_code == 200
+        incoming = req_res.json()["incoming"]
+        assert any(r["user"]["id"] == str(u1.id) for r in incoming)
+
+        # u2 accepts friend request from u1
+        accept_res = await client2.post(f"/friends/{u1.id}/accept")
+        assert accept_res.status_code == 200
+        assert accept_res.json()["friendship_status"] == "accepted"
+
+    # 3. Both u1 and u2 now see each other in their friends list
+    async with make_client(app, db, u1) as client1:
+        list_res = await client1.get("/friends")
         assert list_res.status_code == 200
         friends = list_res.json()
         assert len(friends) >= 1
         assert any(f["id"] == str(u2.id) for f in friends)
 
-        # 3. Check status endpoint
-        status_res = await client.get(f"/friends/{u2.id}/status")
+        # Check status endpoint
+        status_res = await client1.get(f"/friends/{u2.id}/status")
         assert status_res.status_code == 200
         assert status_res.json()["is_friend"] is True
+        assert status_res.json()["status"] == "accepted"
 
-        # 4. View u2 profile and check is_friend is True
-        prof_res = await client.get(f"/profile/{u2.id}")
+        # View u2 profile and check is_friend is True
+        prof_res = await client1.get(f"/profile/{u2.id}")
         assert prof_res.status_code == 200
         assert prof_res.json()["is_friend"] is True
 
@@ -210,16 +231,17 @@ async def test_remove_friend(db: AsyncSession, sample_users: tuple[Users, Users,
     u1, u2, _ = sample_users
     app = create_app()
 
-    async with make_client(app, db, u1) as client:
-        # Add friend
-        await client.post(f"/friends/{u2.id}")
+    async with make_client(app, db, u1) as client1, make_client(app, db, u2) as client2:
+        # Send and accept friend request
+        await client1.post(f"/friends/{u2.id}")
+        await client2.post(f"/friends/{u1.id}/accept")
 
         # Remove friend
-        del_res = await client.delete(f"/friends/{u2.id}")
+        del_res = await client1.delete(f"/friends/{u2.id}")
         assert del_res.status_code == 200
 
         # Check status is now false
-        status_res = await client.get(f"/friends/{u2.id}/status")
+        status_res = await client1.get(f"/friends/{u2.id}/status")
         assert status_res.json()["is_friend"] is False
 
 

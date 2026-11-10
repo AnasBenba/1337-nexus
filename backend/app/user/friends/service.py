@@ -8,7 +8,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.oauth.user import Users
 from .models import Friendship
-from .schemas import FriendUserResponse, FriendshipStatusResponse
+from .schemas import (
+    FriendRequestItem,
+    FriendRequestsResponse,
+    FriendUserResponse,
+    FriendshipStatusResponse,
+)
 
 
 async def list_friends(
@@ -66,6 +71,82 @@ async def list_friends(
     return friends_list
 
 
+async def list_friend_requests(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+) -> FriendRequestsResponse:
+    # Incoming requests: someone requested to be our friend
+    incoming_stmt = (
+        select(Friendship)
+        .where(Friendship.friend_id == user_id, Friendship.status == "pending")
+        .order_by(Friendship.created_at.desc())
+    )
+    incoming_res = (await db.execute(incoming_stmt)).scalars().all()
+
+    # Outgoing requests: we requested someone
+    outgoing_stmt = (
+        select(Friendship)
+        .where(Friendship.user_id == user_id, Friendship.status == "pending")
+        .order_by(Friendship.created_at.desc())
+    )
+    outgoing_res = (await db.execute(outgoing_stmt)).scalars().all()
+
+    needed_ids = {f.user_id for f in incoming_res} | {f.friend_id for f in outgoing_res}
+    users_map: dict[uuid.UUID, Users] = {}
+    if needed_ids:
+        u_stmt = select(Users).where(Users.id.in_(list(needed_ids)))
+        u_res = (await db.execute(u_stmt)).scalars().all()
+        users_map = {u.id: u for u in u_res}
+
+    incoming_items: list[FriendRequestItem] = []
+    for f in incoming_res:
+        u = users_map.get(f.user_id)
+        if u:
+            incoming_items.append(
+                FriendRequestItem(
+                    friendship_id=f.id,
+                    user=FriendUserResponse(
+                        id=u.id,
+                        login=u.login,
+                        fullname=u.fullname,
+                        avatar_url=u.avatar_url,
+                        campus=u.campus,
+                        bio=u.bio,
+                        role=u.role,
+                        is_online=True,
+                        friended_at=f.created_at,
+                    ),
+                    created_at=f.created_at,
+                    type="incoming",
+                )
+            )
+
+    outgoing_items: list[FriendRequestItem] = []
+    for f in outgoing_res:
+        u = users_map.get(f.friend_id)
+        if u:
+            outgoing_items.append(
+                FriendRequestItem(
+                    friendship_id=f.id,
+                    user=FriendUserResponse(
+                        id=u.id,
+                        login=u.login,
+                        fullname=u.fullname,
+                        avatar_url=u.avatar_url,
+                        campus=u.campus,
+                        bio=u.bio,
+                        role=u.role,
+                        is_online=True,
+                        friended_at=f.created_at,
+                    ),
+                    created_at=f.created_at,
+                    type="outgoing",
+                )
+            )
+
+    return FriendRequestsResponse(incoming=incoming_items, outgoing=outgoing_items)
+
+
 async def add_friend(
     db: AsyncSession,
     user_id: uuid.UUID,
@@ -87,17 +168,65 @@ async def add_friend(
     )
     existing = (await db.execute(stmt)).scalar_one_or_none()
     if existing is not None:
+        # If pending and the other person sent it to us, auto-accept!
+        if existing.status == "pending" and existing.user_id == friend_id:
+            existing.status = "accepted"
+            await db.commit()
+            await db.refresh(existing)
         return existing, friend_user
 
     friendship = Friendship(
         user_id=user_id,
         friend_id=friend_id,
-        status="accepted",
+        status="pending",
     )
     db.add(friendship)
     await db.commit()
     await db.refresh(friendship)
     return friendship, friend_user
+
+
+async def accept_friend_request(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    requester_id: uuid.UUID,
+) -> tuple[Friendship, Users]:
+    friend_user = await db.get(Users, requester_id)
+    if friend_user is None:
+        raise ValueError("User not found")
+
+    stmt = select(Friendship).where(
+        Friendship.user_id == requester_id,
+        Friendship.friend_id == user_id,
+        Friendship.status == "pending",
+    )
+    friendship = (await db.execute(stmt)).scalar_one_or_none()
+    if friendship is None:
+        raise ValueError("Pending friend request not found")
+
+    friendship.status = "accepted"
+    await db.commit()
+    await db.refresh(friendship)
+    return friendship, friend_user
+
+
+async def decline_friend_request(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    requester_id: uuid.UUID,
+) -> bool:
+    stmt = select(Friendship).where(
+        Friendship.user_id == requester_id,
+        Friendship.friend_id == user_id,
+        Friendship.status == "pending",
+    )
+    friendship = (await db.execute(stmt)).scalar_one_or_none()
+    if friendship is None:
+        raise ValueError("Pending friend request not found")
+
+    await db.delete(friendship)
+    await db.commit()
+    return True
 
 
 async def remove_friend(
@@ -126,7 +255,7 @@ async def get_friendship_status(
     target_id: uuid.UUID,
 ) -> FriendshipStatusResponse:
     if user_id == target_id:
-        return FriendshipStatusResponse(target_id=target_id, is_friend=False, friendship_id=None)
+        return FriendshipStatusResponse(target_id=target_id, is_friend=False, status="none", friendship_id=None)
 
     stmt = select(Friendship).where(
         or_(
@@ -135,8 +264,22 @@ async def get_friendship_status(
         )
     )
     friendship = (await db.execute(stmt)).scalar_one_or_none()
+    if friendship is None:
+        return FriendshipStatusResponse(target_id=target_id, is_friend=False, status="none", friendship_id=None)
+
+    if friendship.status == "accepted":
+        status_str = "accepted"
+        is_friend = True
+    elif friendship.user_id == user_id:
+        status_str = "pending_sent"
+        is_friend = False
+    else:
+        status_str = "pending_received"
+        is_friend = False
+
     return FriendshipStatusResponse(
         target_id=target_id,
-        is_friend=friendship is not None,
-        friendship_id=friendship.id if friendship else None,
+        is_friend=is_friend,
+        status=status_str,
+        friendship_id=friendship.id,
     )

@@ -25,6 +25,7 @@ export const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [friendshipStatus, setFriendshipStatus] = useState<string>('none');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -57,6 +58,14 @@ export const ProfilePage: React.FC = () => {
         campus: data.campus || '1337 Benguerir',
         avatar_url: data.avatar_url || '',
       });
+
+      if (!data.is_self && data.id) {
+        const sRes = await fetch(`/api/v1/friends/${data.id}/status`, { credentials: 'include' });
+        if (sRes.ok) {
+          const sData = await sRes.json();
+          setFriendshipStatus(sData.status || (data.is_friend ? 'accepted' : 'none'));
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error loading profile');
     } finally {
@@ -100,22 +109,47 @@ export const ProfilePage: React.FC = () => {
     try {
       setFriendActionLoading(true);
       setError(null);
-      if (profile.is_friend) {
+
+      if (friendshipStatus === 'accepted') {
         const res = await fetch(`/api/v1/friends/${profile.id}`, {
           method: 'DELETE',
           credentials: 'include',
         });
         if (!res.ok) throw new Error('Failed to remove friend');
+        setFriendshipStatus('none');
         setProfile((prev) => (prev ? { ...prev, is_friend: false } : null));
         setSuccessMessage('Friend removed.');
+      } else if (friendshipStatus === 'pending_received') {
+        const res = await fetch(`/api/v1/friends/${profile.id}/accept`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        if (!res.ok) throw new Error('Failed to accept friend request');
+        setFriendshipStatus('accepted');
+        setProfile((prev) => (prev ? { ...prev, is_friend: true } : null));
+        setSuccessMessage('Friend request accepted! You are now friends.');
+      } else if (friendshipStatus === 'pending_sent') {
+        const res = await fetch(`/api/v1/friends/${profile.id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        if (!res.ok) throw new Error('Failed to cancel request');
+        setFriendshipStatus('none');
+        setSuccessMessage('Friend request cancelled.');
       } else {
         const res = await fetch(`/api/v1/friends/${profile.id}`, {
           method: 'POST',
           credentials: 'include',
         });
-        if (!res.ok) throw new Error('Failed to add friend');
-        setProfile((prev) => (prev ? { ...prev, is_friend: true } : null));
-        setSuccessMessage('Friend added!');
+        if (!res.ok) throw new Error('Failed to send friend request');
+        const data = await res.json();
+        setFriendshipStatus(data.friendship_status || 'pending_sent');
+        if (data.friendship_status === 'accepted') {
+          setProfile((prev) => (prev ? { ...prev, is_friend: true } : null));
+          setSuccessMessage('You are now friends!');
+        } else {
+          setSuccessMessage('Friend request sent!');
+        }
       }
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
@@ -207,30 +241,53 @@ export const ProfilePage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => navigate(`/messages?user=${profile.id}`)}
-                    className="flex items-center gap-2 px-5 py-2 bg-primary text-on-primary font-bold text-sm rounded-xl hover:opacity-90 transition-opacity"
+                    className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white font-bold text-sm rounded-xl hover:bg-blue-700 transition-colors shadow-xs"
                   >
                     <span className="material-symbols-outlined text-[18px]">chat</span>
                     Message
                   </button>
-                  <button
-                    type="button"
-                    disabled={friendActionLoading}
-                    onClick={handleToggleFriend}
-                    className={`flex items-center gap-2 px-4 py-2 font-semibold text-sm rounded-xl transition-colors ${
-                      profile.is_friend
-                        ? 'bg-surface-container text-error hover:bg-error-container/30'
-                        : 'bg-surface-container-high text-on-surface hover:bg-surface-container'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[18px]">
-                      {profile.is_friend ? 'person_remove' : 'person_add'}
-                    </span>
-                    {friendActionLoading
-                      ? 'Updating...'
-                      : profile.is_friend
-                        ? 'Remove Friend'
-                        : 'Add Friend'}
-                  </button>
+
+                  {friendshipStatus === 'accepted' ? (
+                    <button
+                      type="button"
+                      disabled={friendActionLoading}
+                      onClick={handleToggleFriend}
+                      className="flex items-center gap-2 px-4 py-2 font-semibold text-sm rounded-xl bg-surface-container text-error hover:bg-error-container/30 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">person_remove</span>
+                      {friendActionLoading ? 'Removing...' : 'Remove Friend'}
+                    </button>
+                  ) : friendshipStatus === 'pending_received' ? (
+                    <button
+                      type="button"
+                      disabled={friendActionLoading}
+                      onClick={handleToggleFriend}
+                      className="flex items-center gap-2 px-4 py-2 font-semibold text-sm rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">check</span>
+                      {friendActionLoading ? 'Accepting...' : 'Accept Friend Request'}
+                    </button>
+                  ) : friendshipStatus === 'pending_sent' ? (
+                    <button
+                      type="button"
+                      disabled={friendActionLoading}
+                      onClick={handleToggleFriend}
+                      className="flex items-center gap-2 px-4 py-2 font-semibold text-sm rounded-xl bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">pending</span>
+                      {friendActionLoading ? 'Cancelling...' : 'Request Sent (Cancel)'}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={friendActionLoading}
+                      onClick={handleToggleFriend}
+                      className="flex items-center gap-2 px-4 py-2 font-semibold text-sm rounded-xl bg-primary text-on-primary hover:opacity-90 transition-opacity"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">person_add</span>
+                      {friendActionLoading ? 'Sending...' : 'Add Friend'}
+                    </button>
+                  )}
                 </>
               )}
             </div>

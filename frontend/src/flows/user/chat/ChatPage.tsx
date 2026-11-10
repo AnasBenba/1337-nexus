@@ -68,8 +68,11 @@ export const ChatPage: React.FC = () => {
 
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const selectedPeerRef = useRef<ConversationPeer | null>(null);
+  const currentUserIdRef = useRef<string>('');
 
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [currentUserLogin, setCurrentUserLogin] = useState<string>('');
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [friends, setFriends] = useState<ConversationPeer[]>([]);
   const [selectedPeer, setSelectedPeer] = useState<ConversationPeer | null>(null);
@@ -80,6 +83,15 @@ export const ChatPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [filterQuery, setFilterQuery] = useState('');
 
+  // Keep refs in sync with state for Socket.IO event closures
+  useEffect(() => {
+    selectedPeerRef.current = selectedPeer;
+  }, [selectedPeer]);
+
+  useEffect(() => {
+    currentUserIdRef.current = currentUserId;
+  }, [currentUserId]);
+
   // 1. Fetch current authenticated user
   useEffect(() => {
     const fetchMe = async () => {
@@ -88,6 +100,7 @@ export const ChatPage: React.FC = () => {
         if (res.ok) {
           const data = await res.json();
           setCurrentUserId(data.id);
+          setCurrentUserLogin(data.login);
         }
       } catch {
         // Fallback
@@ -121,7 +134,7 @@ export const ChatPage: React.FC = () => {
     void loadConversationsAndFriends();
   }, []);
 
-  // 3. Connect Socket.IO to /chat namespace
+  // 3. Connect Socket.IO to /chat namespace ONCE on mount
   useEffect(() => {
     const socket = io('/chat', {
       path: '/socket.io',
@@ -150,25 +163,26 @@ export const ChatPage: React.FC = () => {
       const msg = parseMessage(payload);
       if (!msg) return;
 
-      setMessages((prev) => {
-        // Check if message belongs to active chat
-        if (
-          selectedPeer &&
-          (msg.senderId === selectedPeer.id || msg.receiverId === selectedPeer.id)
-        ) {
-          // Acknowledge read if it's sent to me
-          if (msg.senderId === selectedPeer.id) {
-            socket.emit('dm_read', { message_id: msg.id });
-          }
+      const activePeer = selectedPeerRef.current;
+      if (
+        activePeer &&
+        (msg.senderId === activePeer.id || msg.receiverId === activePeer.id)
+      ) {
+        setMessages((prev) => {
           const exists = prev.some((m) => m.id === msg.id && msg.id !== '');
           if (!exists) {
             return [...prev, msg];
           }
-        }
-        return prev;
-      });
+          return prev;
+        });
 
-      // Update conversations list
+        // Acknowledge read if it's sent to me
+        if (msg.senderId === activePeer.id && msg.id) {
+          socket.emit('dm_read', { message_id: msg.id });
+        }
+      }
+
+      // Update conversations list so sidebar snippet and badge update immediately
       void loadConversationsAndFriends();
     });
 
@@ -186,7 +200,7 @@ export const ChatPage: React.FC = () => {
     return () => {
       socket.disconnect();
     };
-  }, [selectedPeer]);
+  }, []);
 
   // 4. Handle directPeerId query param
   useEffect(() => {
@@ -273,7 +287,7 @@ export const ChatPage: React.FC = () => {
           setSending(false);
           const newMsg: ChatMessage = {
             id: ack?.message_id || `temp-${Date.now()}`,
-            senderId: currentUserId,
+            senderId: currentUserId || currentUserIdRef.current,
             receiverId: selectedPeer.id,
             content,
             createdAt: new Date().toISOString(),
@@ -539,25 +553,74 @@ export const ChatPage: React.FC = () => {
               ) : (
                 messages.map((message, index) => {
                   const isMine =
-                    message.senderId === currentUserId ||
-                    message.senderId === String(currentUserId);
+                    Boolean(
+                      currentUserId &&
+                        (message.senderId === currentUserId ||
+                          message.senderId === String(currentUserId)),
+                    ) ||
+                    Boolean(
+                      selectedPeer &&
+                        message.senderId !== selectedPeer.id &&
+                        message.receiverId === selectedPeer.id,
+                    ) ||
+                    Boolean(selectedPeer && message.senderId !== selectedPeer.id);
 
                   return (
                     <div
                       key={message.id || `${message.createdAt}-${index}`}
-                      className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}
+                      className={`flex w-full ${isMine ? 'justify-end' : 'justify-start'} items-end gap-2 my-1`}
                     >
+                      {/* Peer avatar on left */}
+                      {!isMine && (
+                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0 shadow-xs overflow-hidden border border-primary/20 mb-1">
+                          {selectedPeer.avatar_url ? (
+                            <img
+                              src={selectedPeer.avatar_url}
+                              alt={selectedPeer.login}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            selectedPeer.login.slice(0, 2).toUpperCase()
+                          )}
+                        </div>
+                      )}
+
                       <div
-                        className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-2.5 shadow-xs ${
+                        className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-2.5 shadow-sm transition-all ${
                           isMine
-                            ? 'bg-primary text-on-primary rounded-br-xs'
-                            : 'bg-surface-container text-on-surface rounded-bl-xs'
+                            ? 'bg-blue-600 text-white rounded-br-xs'
+                            : 'bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-bl-xs border border-slate-200 dark:border-slate-700'
                         }`}
                       >
+                        {/* Sender header */}
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span
+                            className={`text-[11px] font-bold ${
+                              isMine ? 'text-blue-100' : 'text-blue-600 dark:text-blue-400'
+                            }`}
+                          >
+                            {isMine ? 'You' : selectedPeer.fullname}
+                          </span>
+                          <span
+                            className={`text-[10px] ${
+                              isMine ? 'text-blue-200/80' : 'text-slate-400'
+                            }`}
+                          >
+                            @{isMine ? currentUserLogin || 'me' : selectedPeer.login}
+                          </span>
+                        </div>
+
+                        {/* Content */}
                         <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">
                           {message.content}
                         </p>
-                        <div className="mt-1 flex items-center justify-end gap-1.5 text-[10px] opacity-75">
+
+                        {/* Timestamp & Delivery */}
+                        <div
+                          className={`mt-1 flex items-center justify-end gap-1.5 text-[10px] ${
+                            isMine ? 'text-blue-100/80' : 'text-slate-400'
+                          }`}
+                        >
                           <time dateTime={message.createdAt}>
                             {new Date(message.createdAt).toLocaleTimeString([], {
                               hour: '2-digit',
@@ -565,7 +628,7 @@ export const ChatPage: React.FC = () => {
                             })}
                           </time>
                           {isMine && (
-                            <span className="material-symbols-outlined text-[13px]">
+                            <span className="material-symbols-outlined text-[14px]">
                               {message.read ? 'done_all' : 'done'}
                             </span>
                           )}

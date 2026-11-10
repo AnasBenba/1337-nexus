@@ -80,8 +80,8 @@ class ChatNamespace(socketio.AsyncNamespace):
                 return False
 
             user_id = user.id
-            await self.save_session(sid, {"user_id": user_id})
-            await self.enter_room(sid, f"user:{user_id}")
+            await self.save_session(sid, {"user_id": str(user_id)})
+            await self.enter_room(sid, f"user:{str(user_id)}")
 
             # Deliver offline messages
             statement = (
@@ -136,21 +136,27 @@ class ChatNamespace(socketio.AsyncNamespace):
             return {"status": "error", "message": "content is required"}
 
         session = await self.get_session(sid)
-        sender_id = session.get("user_id") if session else None
+        sender_id_raw = session.get("user_id") if session else None
 
-        if not isinstance(sender_id, UUID):
+        if not sender_id_raw:
             return {"status": "error", "message": "User is not authenticated"}
+
+        try:
+            sender_id = UUID(str(sender_id_raw))
+        except (TypeError, ValueError):
+            return {"status": "error", "message": "Invalid authenticated session"}
 
         async with SessionLocal() as db:
             receiver = await db.get(Users, receiver_id)
             if receiver is None:
                 return {"status": "error", "message": "Receiver not found"}
 
-            participants = self.server.manager.get_participants(
-                self.namespace,
-                f"user:{receiver_id}",
-            )
-            delivered = next(iter(participants), None) is not None
+            receiver_room = f"user:{receiver_id}"
+            try:
+                participants = list(self.server.manager.get_participants(self.namespace, receiver_room))
+                delivered = len(participants) > 0
+            except Exception:
+                delivered = False
 
             message = Message(
                 sender_id=sender_id,
@@ -163,19 +169,19 @@ class ChatNamespace(socketio.AsyncNamespace):
             await db.commit()
             await db.refresh(message)
 
-            if delivered:
-                await self.emit(
-                    "receive_dm",
-                    {
-                        "id": str(message.id),
-                        "from": str(sender_id),
-                        "to": str(receiver_id),
-                        "content": message.content,
-                        "created_at": message.created_at.isoformat(),
-                        "offline_message": False,
-                    },
-                    room=f"user:{receiver_id}",
-                )
+            # Always broadcast receive_dm event to the receiver's room
+            await self.emit(
+                "receive_dm",
+                {
+                    "id": str(message.id),
+                    "from": str(sender_id),
+                    "to": str(receiver_id),
+                    "content": message.content,
+                    "created_at": message.created_at.isoformat(),
+                    "offline_message": False,
+                },
+                room=receiver_room,
+            )
 
         return {
             "status": "ok",
@@ -197,10 +203,14 @@ class ChatNamespace(socketio.AsyncNamespace):
             return {"status": "error", "message": "message_id must be a valid UUID"}
 
         session = await self.get_session(sid)
-        user_id = session.get("user_id") if session else None
-
-        if not isinstance(user_id, UUID):
+        user_id_raw = session.get("user_id") if session else None
+        if not user_id_raw:
             return {"status": "error", "message": "User is not authenticated"}
+
+        try:
+            user_id = UUID(str(user_id_raw))
+        except (ValueError, TypeError):
+            return {"status": "error", "message": "Invalid authenticated session"}
 
         sender_id = None
         newly_read = False

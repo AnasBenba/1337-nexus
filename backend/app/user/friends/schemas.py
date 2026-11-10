@@ -23,11 +23,25 @@ class FriendUserResponse(BaseModel):
 class FriendshipStatusResponse(BaseModel):
     target_id: uuid.UUID
     is_friend: bool
+    status: str = "none"  # "none" | "pending_sent" | "pending_received" | "accepted"
     friendship_id: uuid.UUID | None = None
+
+
+class FriendRequestItem(BaseModel):
+    friendship_id: uuid.UUID
+    user: FriendUserResponse
+    created_at: datetime
+    type: str  # "incoming" | "outgoing"
+
+
+class FriendRequestsResponse(BaseModel):
+    incoming: list[FriendRequestItem]
+    outgoing: list[FriendRequestItem]
 
 
 class AddFriendResponse(BaseModel):
     status: str
     message: str
+    friendship_status: str = "pending"  # "pending" | "accepted"
     friendship_id: uuid.UUID | None = None
     friend: FriendUserResponse | None = None
