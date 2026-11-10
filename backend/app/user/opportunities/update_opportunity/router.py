@@ -17,6 +17,24 @@ router = APIRouter(tags=["opportunities"])
     response_model=OpportunityResponse,
     status_code=status.HTTP_200_OK,
 )
+@router.put(
+    "/opportunities/{opportunity_id}",
+    response_model=OpportunityResponse,
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
+)
+@router.patch(
+    "/api/v1/opportunities/{opportunity_id}",
+    response_model=OpportunityResponse,
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
+)
+@router.put(
+    "/api/v1/opportunities/{opportunity_id}",
+    response_model=OpportunityResponse,
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
+)
 async def update(
     opportunity_id: UUID,
     request: UpdateOpportunityRequest,

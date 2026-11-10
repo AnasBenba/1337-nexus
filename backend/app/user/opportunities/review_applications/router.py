@@ -48,6 +48,21 @@ async def list_applications(
     "/applications/{application_id}/status",
     response_model=ReviewedApplicationResponse,
 )
+@router.post(
+    "/applications/{application_id}/status",
+    response_model=ReviewedApplicationResponse,
+    include_in_schema=False,
+)
+@router.patch(
+    "/api/v1/applications/{application_id}/status",
+    response_model=ReviewedApplicationResponse,
+    include_in_schema=False,
+)
+@router.post(
+    "/api/v1/applications/{application_id}/status",
+    response_model=ReviewedApplicationResponse,
+    include_in_schema=False,
+)
 async def change_application_status(
     application_id: UUID,
     request: UpdateApplicationStatusRequest,

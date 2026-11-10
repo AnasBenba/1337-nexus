@@ -10,6 +10,7 @@ import app.models.curriculum  # noqa: F401
 import app.models.job  # noqa: F401
 import app.teams.models  # noqa: F401
 from alembic import context
+from app.collaboration.board import models as board_models  # noqa: F401
 from app.collaboration.chat import models as chat_models  # noqa: F401
 from app.core.config import get_settings
 from app.oauth import user  # noqa: F401

@@ -328,3 +328,4 @@ export const DiscoverPage: React.FC = () => {
     </div>
   );
 };
+

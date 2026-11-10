@@ -17,6 +17,6 @@ class ReviewedApplicationResponse(BaseModel):
     status: str
     message: str | None
     candidate_skills: list[str]
-    match_score: float
+    match_score: float = 0.0
     created_at: datetime
     updated_at: datetime

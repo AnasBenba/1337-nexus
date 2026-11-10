@@ -195,3 +195,4 @@ class ChatNamespace(socketio.AsyncNamespace):  # type: ignore[misc]
             )
 
         return {"status": "ok", "message_id": str(parsed_message_id)}
+

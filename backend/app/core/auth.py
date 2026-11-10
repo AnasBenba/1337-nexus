@@ -81,12 +81,13 @@ async def get_current_user(
     If no token is provided in non-production environments, gracefully
     falls back to a default dev user for seamless Swagger UI testing.
     """
-    token: str | None = request.cookies.get("access_token")
+    auth_header = request.headers.get("Authorization")
+    token: str | None = None
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
 
     if not token:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            token = auth_header.split(" ", 1)[1].strip()
+        token = request.cookies.get("access_token")
 
     if token:
         payload = jwt.verify_access_token(token)
@@ -127,11 +128,13 @@ async def get_current_user_strict(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> Users:
     """Strict dependency requiring an active authentication token without dev fallback."""
-    token: str | None = request.cookies.get("access_token")
+    auth_header = request.headers.get("Authorization")
+    token: str | None = None
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+
     if not token:
-        auth_header = request.headers.get("Authorization")
-        if auth_header and auth_header.startswith("Bearer "):
-            token = auth_header.split(" ", 1)[1].strip()
+        token = request.cookies.get("access_token")
 
     if not token:
         raise HTTPException(
