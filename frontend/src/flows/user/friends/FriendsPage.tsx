@@ -414,7 +414,9 @@ export const FriendsPage: React.FC = () => {
                           {friend.login.slice(0, 2).toUpperCase()}
                         </div>
                       )}
-                      <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-surface" />
+                      {friend.is_online && (
+                        <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-surface" />
+                      )}
                     </div>
 
                     <div className="flex-1 overflow-hidden">

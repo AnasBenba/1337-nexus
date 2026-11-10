@@ -90,6 +90,7 @@ class ChatNamespace(socketio.AsyncNamespace):
             user_id = user.id
             await self.save_session(sid, {"user_id": str(user_id)})
             await self.enter_room(sid, f"user:{str(user_id)}")
+            await self.emit("user_status", {"user_id": str(user_id), "is_online": True})
 
             # Deliver offline messages
             statement = (
@@ -126,7 +127,11 @@ class ChatNamespace(socketio.AsyncNamespace):
         return True
 
     async def on_disconnect(self, sid: str) -> None:
-        logger.info("Chat client disconnected: sid=%s", sid)
+        session = await self.get_session(sid)
+        user_id = session.get("user_id") if session else None
+        if user_id:
+            await self.emit("user_status", {"user_id": str(user_id), "is_online": False})
+        logger.info("Chat client disconnected: sid=%s, user_id=%s", sid, user_id)
 
     async def on_send_dm(self, sid: str, data: Any) -> dict[str, Any]:
         if not isinstance(data, dict):

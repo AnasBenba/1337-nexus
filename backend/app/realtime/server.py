@@ -28,6 +28,18 @@ def get_socketio_server() -> socketio.AsyncServer:
     return sio
 
 
+def is_user_online(user_id: Any) -> bool:
+    """Check if a user currently has an active Socket.IO connection in the /chat namespace."""
+    if not user_id:
+        return False
+    try:
+        room = f"user:{str(user_id)}"
+        participants = list(sio.manager.get_participants("/chat", room))
+        return len(participants) > 0
+    except Exception:
+        return False
+
+
 def get_socket_app(other_asgi_app: Any = None) -> socketio.ASGIApp:
     """
     Wrap an existing ASGI application (e.g. FastAPI) with the Socket.IO ASGI application.

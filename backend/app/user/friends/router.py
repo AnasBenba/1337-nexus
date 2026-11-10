@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
 from app.oauth.user import Users
+from app.realtime.server import is_user_online
 from app.user.dependencies import get_current_user
 from .schemas import (
     AddFriendResponse,
@@ -65,7 +66,7 @@ async def add_new_friend(
             campus=friend.campus,
             bio=friend.bio,
             role=friend.role,
-            is_online=True,
+            is_online=is_user_online(friend.id),
             friended_at=friendship.created_at,
         )
         msg = (
@@ -105,7 +106,7 @@ async def accept_incoming_friend_request(
             campus=friend.campus,
             bio=friend.bio,
             role=friend.role,
-            is_online=True,
+            is_online=is_user_online(friend.id),
             friended_at=friendship.created_at,
         )
         return AddFriendResponse(

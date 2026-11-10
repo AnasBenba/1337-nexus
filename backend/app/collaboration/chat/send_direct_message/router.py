@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.collaboration.chat.models import Message
 from app.core.db import get_db_session
 from app.oauth.user import Users
-from app.realtime.server import sio
+from app.realtime.server import is_user_online, sio
 from app.user.dependencies import get_current_user
 from .schemas import ConversationPartner, ConversationSummary, MessageCreate, MessageResponse
 from .service import start_chat
@@ -79,7 +79,7 @@ async def get_my_conversations(
                     fullname=peer_user.fullname,
                     avatar_url=peer_user.avatar_url,
                     campus=peer_user.campus or "1337 Benguerir",
-                    is_online=True,
+                    is_online=is_user_online(peer_user.id),
                 ),
                 last_message=MessageResponse.model_validate(data["last_message"]),
                 unread_count=data["unread_count"],

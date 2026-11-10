@@ -201,6 +201,32 @@ export const ChatPage: React.FC = () => {
       }
     });
 
+    socket.on('user_status', (payload: unknown) => {
+      if (typeof payload !== 'object' || payload === null) return;
+      const data = payload as { user_id?: string; is_online?: boolean };
+      if (!data.user_id) return;
+      const targetId = data.user_id.toLowerCase();
+      const onlineStatus = Boolean(data.is_online);
+
+      setSelectedPeer((prev) =>
+        prev && prev.id.toLowerCase() === targetId ? { ...prev, is_online: onlineStatus } : prev,
+      );
+
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.peer.id.toLowerCase() === targetId
+            ? { ...c, peer: { ...c.peer, is_online: onlineStatus } }
+            : c,
+        ),
+      );
+
+      setFriends((prev) =>
+        prev.map((f) =>
+          f.id.toLowerCase() === targetId ? { ...f, is_online: onlineStatus } : f,
+        ),
+      );
+    });
+
     return () => {
       socket.disconnect();
     };
@@ -408,7 +434,9 @@ export const ChatPage: React.FC = () => {
                         {friend.login.slice(0, 2).toUpperCase()}
                       </div>
                     )}
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border border-surface" />
+                    {friend.is_online && (
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border border-surface" />
+                    )}
                   </div>
                   <span className="text-[10px] font-mono text-on-surface truncate w-12 text-center">
                     {friend.login}
@@ -457,7 +485,9 @@ export const ChatPage: React.FC = () => {
                         {conv.peer.login.slice(0, 2).toUpperCase()}
                       </div>
                     )}
-                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border border-surface" />
+                    {conv.peer.is_online && (
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border border-surface" />
+                    )}
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -511,7 +541,9 @@ export const ChatPage: React.FC = () => {
                       {selectedPeer.login.slice(0, 2).toUpperCase()}
                     </div>
                   )}
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border border-surface" />
+                  {selectedPeer.is_online && (
+                    <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-green-500 border border-surface" />
+                  )}
                 </div>
 
                 <div>
@@ -522,7 +554,7 @@ export const ChatPage: React.FC = () => {
                     </span>
                   </h2>
                   <p className="text-[11px] text-on-surface-variant">
-                    {selectedPeer.campus || '1337 Benguerir'} • Realtime Direct Messaging
+                    {selectedPeer.campus || '1337 Benguerir'} • {selectedPeer.is_online ? 'Online' : 'Offline'}
                   </p>
                 </div>
               </div>

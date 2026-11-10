@@ -7,6 +7,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.oauth.user import Users
+from app.realtime.server import is_user_online
 from .models import Friendship
 from .schemas import (
     FriendRequestItem,
@@ -61,7 +62,7 @@ async def list_friends(
                 campus=u.campus,
                 bio=u.bio,
                 role=u.role,
-                is_online=True,  # Mock/live online status
+                is_online=is_user_online(u.id),
                 friended_at=f.created_at if f else None,
             )
         )
@@ -113,7 +114,7 @@ async def list_friend_requests(
                         campus=u.campus,
                         bio=u.bio,
                         role=u.role,
-                        is_online=True,
+                        is_online=is_user_online(u.id),
                         friended_at=f.created_at,
                     ),
                     created_at=f.created_at,
@@ -136,7 +137,7 @@ async def list_friend_requests(
                         campus=u.campus,
                         bio=u.bio,
                         role=u.role,
-                        is_online=True,
+                        is_online=is_user_online(u.id),
                         friended_at=f.created_at,
                     ),
                     created_at=f.created_at,
