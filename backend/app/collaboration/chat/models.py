@@ -24,3 +24,4 @@ class Message(Base):  # type: ignore[misc]
     team_id = Column(Integer, nullable=True, index=True)
     receiver_id = Column(PostgreSQLUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     is_read = Column(Boolean, default=False, nullable=False)
+    is_delivered = Column(Boolean, default=False, nullable=False)

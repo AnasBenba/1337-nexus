@@ -1,4 +1,6 @@
 import json
+import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
@@ -17,7 +19,7 @@ router = APIRouter()
 @router.websocket("/ws/chat/{user_id}")
 async def chat_endpoint(
     websocket: WebSocket,
-    user_id: int,
+    user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
 ) -> None:
     if await db.get(Users, user_id) is None:
@@ -31,7 +33,7 @@ async def chat_endpoint(
 async def team_chat_endpoint(
     websocket: WebSocket,
     team_id: int,
-    user_id: int,
+    user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
 ) -> None:
     if await db.get(Users, user_id) is None:
@@ -58,7 +60,7 @@ async def team_chat_endpoint(
             await db.commit()
 
             broadcast_payload = json.dumps(
-                {"from": user_id, "team_id": team_id, "content": content}
+                {"from": str(user_id), "team_id": team_id, "content": content}
             )
             await manager.broadcast_to_team(team_id, user_id, broadcast_payload)
 
@@ -78,7 +80,7 @@ async def get_team_chat_history(
         {
             "id": str(message.id),
             "content": message.content,
-            "created_at": message.created_at.isoformat(),
+            "created_at": message.created_at.isoformat() if message.created_at else None,
             "sender_id": str(message.sender_id),
             "team_id": str(message.team_id),
         }
@@ -88,10 +90,10 @@ async def get_team_chat_history(
 
 @router.get("/messages/{user_a}/{user_b}")
 async def get_chat_history(
-    user_a: int,
-    user_b: int,
+    user_a: uuid.UUID,
+    user_b: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
-) -> list[dict[str, str | None]]:
+) -> list[dict[str, Any]]:
     stmt = (
         select(Message)
         .where(
@@ -106,9 +108,11 @@ async def get_chat_history(
         {
             "id": str(message.id),
             "content": message.content,
-            "created_at": message.created_at.isoformat(),
+            "created_at": message.created_at.isoformat() if message.created_at else None,
             "sender_id": str(message.sender_id),
             "receiver_id": str(message.receiver_id),
+            "is_read": bool(message.is_read),
+            "delivered": getattr(message, "is_delivered", True),
         }
         for message in messages
     ]

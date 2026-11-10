@@ -5,6 +5,7 @@ from typing import Any
 import socketio  # type: ignore[import-untyped]
 
 from app.realtime.namespaces.canvas import CanvasNamespace
+from app.realtime.namespaces.chat import ChatNamespace
 
 # Async Socket.IO server configured for ASGI
 sio = socketio.AsyncServer(
@@ -16,7 +17,9 @@ sio = socketio.AsyncServer(
 
 # Register namespaces
 canvas_ns = CanvasNamespace("/canvas")
+chat_ns = ChatNamespace("/chat")
 sio.register_namespace(canvas_ns)
+sio.register_namespace(chat_ns)
 
 
 def get_socketio_server() -> socketio.AsyncServer:
