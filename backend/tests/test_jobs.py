@@ -32,7 +32,7 @@ from app.jobs.registry import register
 from app.jobs.worker import JobWorker
 from app.models.job import AIJob
 
-TEST_DB_URL = os.environ["DATABASE_URL"]
+TEST_DB_URL = os.environ["DATABASE_URL"].replace("postgresql://", "postgresql+asyncpg://")
 
 
 @pytest_asyncio.fixture(scope="function")

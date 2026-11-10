@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -40,5 +41,10 @@ class PitchResponse(BaseModel):
     rendered_content: str | None = None
     category: PitchCategory
     status: PitchStatus
+    state: PitchStatus | None = None
     description: str | None = None
     author_id: UUID | None = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if self.state is None:
+            self.state = self.status

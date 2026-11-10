@@ -42,6 +42,7 @@ from app.user.projects.refine_project.router import (
 from app.teams.router import router as teams_router
 from app.user.friends import friends_router
 from app.user.profile import profile_router
+from app.oauth.auth_router import router as auth_api_router
 from app.user.projects.archive_project.router import router as archive_project_router
 from app.user.projects.create_project.router import router as create_project_router
 from app.user.projects.edit_project.router import router as edit_project_router
@@ -253,4 +254,5 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(board_router)
     app.include_router(friends_router)
     app.include_router(profile_router)
+    app.include_router(auth_api_router)
     app.include_router(send_direct_message_router, tags=["Chat"])

@@ -1,14 +1,19 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
 from app.oauth.user import Users
+from app.teams.models import WorkspaceBoard
 from app.user.dependencies import get_current_user
 
+from .models import BoardCard, BoardColumn
 from .schemas import (
+    BoardDetailResponse,
     CardResponse,
+    ColumnDetailResponse,
     ColumnResponse,
     CreateCardRequest,
     CreateColumnRequest,
@@ -25,6 +30,67 @@ from .service import (
 )
 
 router = APIRouter(prefix="/boards", tags=["boards"])
+
+
+@router.get("/{board_id}", response_model=BoardDetailResponse)
+async def get_board_detail(
+    board_id: UUID,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: Users = Depends(get_current_user),
+) -> BoardDetailResponse:
+    board = await db.scalar(select(WorkspaceBoard).where(WorkspaceBoard.id == board_id))
+    if not board:
+        raise HTTPException(status_code=404, detail="Board not found")
+
+    columns = list(
+        (
+            await db.scalars(
+                select(BoardColumn)
+                .where(BoardColumn.board_id == board_id)
+                .order_by(BoardColumn.position)
+            )
+        ).all()
+    )
+
+    col_details = []
+    for col in columns:
+        cards = list(
+            (
+                await db.scalars(
+                    select(BoardCard)
+                    .where(BoardCard.column_id == col.id)
+                    .order_by(BoardCard.rank)
+                )
+            ).all()
+        )
+        col_details.append(
+            ColumnDetailResponse(
+                id=col.id,
+                board_id=col.board_id,
+                name=col.name,
+                position=col.position,
+                cards=[CardResponse.model_validate(c) for c in cards],
+            )
+        )
+    return BoardDetailResponse(
+        id=board.id,
+        team_id=board.team_id,
+        name=board.name,
+        board_revision=board.board_revision,
+        columns=col_details,
+    )
+
+
+@router.get("/team/{team_id}", response_model=BoardDetailResponse)
+async def get_team_board(
+    team_id: UUID,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: Users = Depends(get_current_user),
+) -> BoardDetailResponse:
+    board = await db.scalar(select(WorkspaceBoard).where(WorkspaceBoard.team_id == team_id))
+    if not board:
+        raise HTTPException(status_code=404, detail="Board not found for this team")
+    return await get_board_detail(board_id=board.id, db=db, current_user=current_user)
 
 
 @router.post("", response_model=dict, status_code=status.HTTP_201_CREATED)

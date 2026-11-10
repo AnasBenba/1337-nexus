@@ -105,7 +105,14 @@ export const Layout: React.FC = () => {
             </div>
           ) : (
             <div className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-xs">
-              <span className="font-bold text-primary">Sign in:</span>
+              <NavLink
+                to="/login"
+                className="font-bold text-primary hover:underline cursor-pointer flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-[14px]">login</span>
+                Sign In
+              </NavLink>
+              <span className="text-outline">|</span>
               <button
                 type="button"
                 onClick={() => void handleSwitchUser('anas')}

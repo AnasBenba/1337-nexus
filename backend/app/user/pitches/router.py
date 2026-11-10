@@ -1,10 +1,13 @@
+from __future__ import annotations
+
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.auth import get_current_user
 from app.core.db import get_db_session
 from app.oauth.user import Users
 from app.user.pitches.models import Pitch
@@ -20,21 +23,20 @@ from app.user.pitches.service import (
 router = APIRouter(tags=["Pitches"])
 
 
-async def get_current_user_dep(
-    request: Request,
-    db: Annotated[AsyncSession, Depends(get_db_session)],
-    x_user_id: Annotated[str | None, Header()] = None,
-    user_id: Annotated[int | None, Query()] = None,
-) -> Users | None:
-    if x_user_id:
-        try:
-            return await db.get(Users, int(x_user_id))
-        except ValueError:
-            pass
-    if user_id:
-        return await db.get(Users, user_id)
-    result = await db.execute(select(Users).limit(1))
-    return result.scalar_one_or_none()
+async def require_pitch_author(
+    db: AsyncSession,
+    pitch_id: uuid.UUID,
+    current_user: Users,
+) -> Pitch:
+    """Ensure current user is the pitch author or an administrator."""
+    pitch = await get_one_pitch(db=db, pitch_id=pitch_id)
+    is_admin = getattr(current_user, "role", "") == "admin"
+    if not is_admin and pitch.author_id and pitch.author_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only modify your own pitches",
+        )
+    return pitch
 
 
 @router.get(
@@ -77,10 +79,9 @@ async def search_pitches_endpoint(
 async def create_pitch_endpoint(
     pitch: PitchCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: Annotated[Users | None, Depends(get_current_user_dep)] = None,
+    current_user: Annotated[Users, Depends(get_current_user)],
 ) -> Pitch:
-    author_id = current_user.id if current_user else 1
-    return await create_pitch(db=db, pitch=pitch, author_id=author_id)
+    return await create_pitch(db=db, pitch=pitch, author_id=current_user.id)
 
 
 @router.get(
@@ -131,7 +132,9 @@ async def update_pitch_endpoint(
     pitch_id: uuid.UUID,
     pitch: PitchCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: Annotated[Users, Depends(get_current_user)],
 ) -> Pitch:
+    await require_pitch_author(db, pitch_id, current_user)
     return await update_pitch(db=db, pitch_id=pitch_id, pitch=pitch)
 
 
@@ -146,5 +149,7 @@ async def update_pitch_endpoint(
 async def delete_pitch_endpoint(
     pitch_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: Annotated[Users, Depends(get_current_user)],
 ) -> dict[str, str]:
+    await require_pitch_author(db, pitch_id, current_user)
     return await delete_pitch(db=db, pitch_id=pitch_id)
