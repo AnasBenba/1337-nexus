@@ -109,7 +109,7 @@ export const MarkdownBody: React.FC<MarkdownBodyProps> = ({
             const lang = match ? match[1] : '';
 
             return (
-              <div className="relative bg-inverse-surface text-inverse-on-surface rounded-DEFAULT p-space-md font-mono text-[13px] overflow-hidden shadow-md my-space-sm">
+              <div className="relative bg-inverse-surface text-inverse-on-surface rounded p-space-md font-mono text-[13px] overflow-hidden shadow-md my-space-sm">
                 <div className="flex items-center justify-between pb-space-xs mb-space-xs text-outline-variant font-label-code-tag text-[11px] border-b border-outline/20">
                   <span className="flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-[14px]">terminal</span>
@@ -133,7 +133,7 @@ export const MarkdownBody: React.FC<MarkdownBodyProps> = ({
             );
           },
           table: ({ children }) => (
-            <div className="my-space-md overflow-x-auto rounded-DEFAULT bg-surface-container-lowest shadow-sm border border-surface-container-high">
+            <div className="my-space-md overflow-x-auto rounded bg-surface-container-lowest shadow-sm border border-surface-container-high">
               <table className="w-full text-left font-body-sm text-body-sm">{children}</table>
             </div>
           ),

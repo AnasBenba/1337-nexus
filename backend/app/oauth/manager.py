@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from ..core import base, db
 from . import user
+from .permissions import Role, admin_logins
 
 
 async def get_user(access_token: str) -> dict:
@@ -82,14 +83,19 @@ async def manage_user(user_data: dict) -> user.Users:
             select(user.Users).where(user.Users.login == user_data["login"])
         )
         existing = result.scalar_one_or_none()
+        # Bootstrap: logins listed in ADMIN_LOGINS (.env) are promoted to admin on sign-in.
+        is_listed_admin = user_data["login"] in admin_logins()
 
         if existing is not None:
+            if is_listed_admin and existing.role != Role.ADMIN:
+                existing.role = Role.ADMIN
+                await session.commit()
             return existing
 
         new_user = user.Users(
             login=user_data["login"],
             fullname=user_data["displayname"],
-            role="user",
+            role=Role.ADMIN if is_listed_admin else Role.USER,
             intra_id=user_data["id"],
         )
 

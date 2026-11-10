@@ -19,7 +19,7 @@ export const ErrorBlock: React.FC<ErrorBlockProps> = ({
         </div>
       )}
 
-      <div className="bg-error-container text-on-error-container p-space-md rounded-DEFAULT shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-sm border border-error/20">
+      <div className="bg-error-container text-on-error-container p-space-md rounded shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-space-sm border border-error/20">
         <div className="flex items-center gap-space-sm">
           <span className="material-symbols-outlined text-[24px] text-error">wifi_off</span>
           <div>

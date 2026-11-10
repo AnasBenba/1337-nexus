@@ -42,7 +42,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onSelectPrompt }) => {
 
   return (
     <div className="flex-1 flex flex-col justify-center items-center py-space-xl">
-      <div className="w-16 h-16 rounded-DEFAULT bg-primary-fixed flex items-center justify-center text-primary mb-space-md shadow-sm">
+      <div className="w-16 h-16 rounded bg-primary-fixed flex items-center justify-center text-primary mb-space-md shadow-sm">
         <span className="material-symbols-outlined text-[34px]">auto_awesome</span>
       </div>
 
@@ -62,7 +62,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onSelectPrompt }) => {
             key={idx}
             type="button"
             onClick={() => onSelectPrompt(item.prompt)}
-            className="text-left p-space-md rounded-DEFAULT bg-surface-container-lowest hover:bg-surface-container-low shadow-sm transition-all group flex flex-col justify-between border border-transparent hover:border-surface-container-high cursor-pointer"
+            className="text-left p-space-md rounded bg-surface-container-lowest hover:bg-surface-container-low shadow-sm transition-all group flex flex-col justify-between border border-transparent hover:border-surface-container-high cursor-pointer"
           >
             <div className="flex items-center justify-between mb-space-xs">
               <span className={`font-label-code-tag text-label-code-tag font-bold ${item.circleClass}`}>
