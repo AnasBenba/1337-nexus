@@ -1,7 +1,26 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 
+interface CurrentUser {
+  id: string;
+  login: string;
+  fullname: string;
+  campus?: string;
+  avatar_url?: string;
+}
+
 export const Layout: React.FC = () => {
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+
+  useEffect(() => {
+    fetch('/api/v1/profile/me', { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.login) setCurrentUser(data);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <div className="min-h-screen bg-surface font-body-md text-body-md text-on-surface antialiased">
       {/* Top Header */}
@@ -31,17 +50,46 @@ export const Layout: React.FC = () => {
               type="button"
               className="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant shrink-0 hover:text-on-surface transition-colors cursor-pointer"
             >
-              <span>Benguerir</span>
+              <span>{currentUser?.campus ? currentUser.campus.replace('1337 ', '') : 'Benguerir'}</span>
               <span className="material-symbols-outlined text-[16px]">expand_more</span>
             </button>
           </div>
         </div>
 
         <div className="flex items-center gap-space-md">
-          <div className="hidden lg:flex items-center gap-space-xs font-label-code-tag text-label-code-tag px-space-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed">
-            <span className="w-2 h-2 rounded-full bg-primary-container animate-pulse" />
-            <span>1337 Benguerir</span>
-          </div>
+          {currentUser ? (
+            <div className="flex items-center gap-2 px-3 py-1 bg-surface-container-low rounded-full border border-outline-variant/60 text-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="font-semibold text-on-surface">@{currentUser.login}</span>
+              <span className="text-outline">|</span>
+              <a
+                href={
+                  currentUser.login === 'anas'
+                    ? '/api/v1/auth/dev-login?login=yassine'
+                    : '/api/v1/auth/dev-login?login=anas'
+                }
+                className="text-primary font-medium hover:underline"
+                title="Switch test account"
+              >
+                Switch to @{currentUser.login === 'anas' ? 'yassine' : 'anas'}
+              </a>
+              <span className="text-outline">|</span>
+              <a href="/api/v1/auth/logout" className="text-on-surface-variant hover:text-error" title="Log out">
+                Logout
+              </a>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-primary/10 rounded-full border border-primary/20 text-xs">
+              <span className="font-bold text-primary">Sign in:</span>
+              <a href="/api/v1/auth/dev-login?login=anas" className="font-semibold text-primary hover:underline">
+                @anas
+              </a>
+              <span className="text-outline">/</span>
+              <a href="/api/v1/auth/dev-login?login=yassine" className="font-semibold text-primary hover:underline">
+                @yassine
+              </a>
+            </div>
+          )}
 
           <div className="flex items-center gap-space-xs text-on-surface-variant">
             <button
@@ -73,9 +121,13 @@ export const Layout: React.FC = () => {
           <NavLink
             to="/profile"
             aria-label="My Profile"
-            className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-sm text-on-primary hover:opacity-90 transition-opacity"
+            className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-sm text-on-primary hover:opacity-90 transition-opacity overflow-hidden"
           >
-            <span className="material-symbols-outlined text-[18px]">person</span>
+            {currentUser?.avatar_url ? (
+              <img src={currentUser.avatar_url} alt={currentUser.login} className="w-full h-full object-cover" />
+            ) : (
+              <span className="material-symbols-outlined text-[18px]">person</span>
+            )}
           </NavLink>
         </div>
       </header>
@@ -85,22 +137,26 @@ export const Layout: React.FC = () => {
         <div className="bg-surface-container-low rounded-DEFAULT p-space-md mb-space-md relative overflow-hidden">
           <div className="h-10 -mx-space-md -mt-space-md bg-secondary-fixed mb-space-sm opacity-80" />
           <div className="flex items-center gap-space-sm">
-            <div className="w-11 h-11 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-md text-label-md font-bold shrink-0">
-              SE
+            <div className="w-11 h-11 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-md text-label-md font-bold shrink-0 overflow-hidden">
+              {currentUser?.avatar_url ? (
+                <img src={currentUser.avatar_url} alt={currentUser.login} className="w-full h-full object-cover" />
+              ) : (
+                (currentUser?.login || '42').slice(0, 2).toUpperCase()
+              )}
             </div>
             <div className="overflow-hidden">
               <div className="font-label-md text-label-md text-on-surface truncate font-bold">
-                Soufiane El B.
+                {currentUser?.fullname || 'Guest Student'}
               </div>
               <div className="flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
                 <span className="material-symbols-outlined text-[14px]">location_on</span>
-                <span className="text-[11px]">Benguerir</span>
+                <span className="text-[11px]">{currentUser?.campus || '1337 Coding School'}</span>
               </div>
             </div>
           </div>
           <div className="mt-space-sm flex items-center justify-between font-label-code-tag text-label-code-tag">
             <span className="px-space-xs py-0.5 rounded bg-surface-container-highest text-on-primary-container font-semibold">
-              Lvl 9.42
+              {currentUser ? `@${currentUser.login}` : 'Not logged in'}
             </span>
             <span className="text-outline text-[11px]">Circle 05</span>
           </div>

@@ -1,7 +1,14 @@
+from datetime import timedelta
 from pathlib import Path
+import uuid
 
-from fastapi import APIRouter, FastAPI, HTTPException, Request
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.db import get_db_session
+from app.oauth.user import Users
 
 from app.collaboration.board.router import router as board_router
 from app.user.opportunities.apply.router import router as apply_router
@@ -62,6 +69,66 @@ HOME_PAGE = Path(__file__).parent / "index.html"
 @router.get("/auth/login", tags=["auth"])
 async def auth_login() -> RedirectResponse:
     return await entrypoint.redirect_to_forttytwo()
+
+
+@router.get("/api/v1/auth/dev-login", tags=["auth"])
+@router.get("/auth/dev-login", tags=["auth"])
+async def dev_login(
+    login: str = "anas",
+    fullname: str | None = None,
+    campus: str | None = None,
+    redirect: str = "/messages",
+    db: AsyncSession = Depends(get_db_session),
+) -> RedirectResponse:
+    """Convenience development login to quickly test multi-user features in browser."""
+    default_names = {
+        "anas": ("Anas Ben", "1337 Khouribga", "42 / 1337 Fullstack developer & transcendence explorer"),
+        "yassine": ("Yassine Daoudi", "1337 Benguerir", "Real-time communication & Socket.IO architect"),
+        "ayoub": ("Ayoub Amine", "1337 Tetouan", "DevOps & Cloud architecture enthusiast"),
+        "soufiane": ("Soufiane B.", "1337 Benguerir", "Cybersecurity & microservices ninja"),
+    }
+
+    resolved_fullname = fullname or default_names.get(login, (login.capitalize(), "1337 Coding School", "Student"))[0]
+    resolved_campus = campus or default_names.get(login, (login.capitalize(), "1337 Coding School", "Student"))[1]
+    resolved_bio = default_names.get(login, (login.capitalize(), "1337 Coding School", "Student at 1337"))[2]
+
+    stmt = select(Users).where(Users.login == login)
+    user = await db.scalar(stmt)
+    if not user:
+        user = Users(
+            id=uuid.uuid4(),
+            email=f"{login}@student.1337.ma",
+            login=login,
+            fullname=resolved_fullname,
+            campus=resolved_campus,
+            bio=resolved_bio,
+            role="student",
+            is_active=True,
+        )
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
+
+    token = jwt.create_access_token(user_id=str(user.id), expires_delta=timedelta(days=7))
+    response = RedirectResponse(url=redirect, status_code=303)
+    response.set_cookie(
+        key="access_token",
+        value=token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=7 * 24 * 3600,
+        path="/",
+    )
+    return response
+
+
+@router.get("/api/v1/auth/logout", tags=["auth"])
+@router.get("/auth/logout", tags=["auth"])
+async def logout(redirect: str = "/messages") -> RedirectResponse:
+    response = RedirectResponse(url=redirect, status_code=303)
+    response.delete_cookie("access_token", path="/")
+    return response
 
 
 @router.get("/home", tags=["pages"])

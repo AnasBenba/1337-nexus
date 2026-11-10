@@ -125,7 +125,7 @@ export const ChatPage: React.FC = () => {
   useEffect(() => {
     const socket = io('/chat', {
       path: '/socket.io',
-      transports: ['websocket'],
+      transports: ['polling', 'websocket'],
       withCredentials: true,
       autoConnect: true,
     });
