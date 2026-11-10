@@ -14,7 +14,7 @@ class ApplyResponse(BaseModel):
 
     id: UUID
     opportunity_id: UUID
-    user_id: int
+    user_id: UUID
     status: str
     message: str | None
     candidate_skills: list[str]

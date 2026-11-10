@@ -19,7 +19,7 @@ class ProjectStatusRequest(BaseModel):
 
 class ProjectResponse(BaseModel):
     id: UUID
-    owner_id: int
+    owner_id: UUID
     title: str
     description: str
     status: str

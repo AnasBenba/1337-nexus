@@ -41,4 +41,4 @@ class PitchResponse(BaseModel):
     category: PitchCategory
     status: PitchStatus
     description: str | None = None
-    author_id: int | None = None
+    author_id: UUID | None = None

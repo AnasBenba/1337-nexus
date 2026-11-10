@@ -87,7 +87,7 @@ async def test_project_and_quick_action_use_authenticated_owner(db: AsyncSession
         )
         assert created.status_code == 201
         payload = created.json()
-        assert payload["owner_id"] == owner.id
+        assert payload["owner_id"] == str(owner.id)
 
         app.dependency_overrides[get_current_user] = lambda: other
         forbidden = await client.get(
@@ -180,10 +180,10 @@ async def test_migrations_expose_required_constraints(db: AsyncSession) -> None:
         )
     )
     columns = {(row.table_name, row.column_name): row.data_type for row in result}
-    assert columns[("projects", "owner_id")] == "integer"
-    assert columns[("applications", "user_id")] == "integer"
-    assert columns[("workspace_teams", "founder_id")] == "integer"
-    assert columns[("workspace_team_members", "user_id")] == "integer"
+    assert columns[("projects", "owner_id")] == "uuid"
+    assert columns[("applications", "user_id")] == "uuid"
+    assert columns[("workspace_teams", "founder_id")] == "uuid"
+    assert columns[("workspace_team_members", "user_id")] == "uuid"
 
     constraints = await db.scalars(
         text(

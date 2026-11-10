@@ -77,6 +77,19 @@ async def manage_user(user_data: dict) -> user.Users:
     async with db.migration_engine.begin() as connection:
         await connection.run_sync(base.Base.metadata.create_all)
 
+    avatar_url = (
+        user_data.get("image", {}).get("link")
+        if isinstance(user_data.get("image"), dict)
+        else None
+    )
+    email = user_data.get("email")
+    campus_list = user_data.get("campus", [])
+    campus_name = (
+        campus_list[0].get("name")
+        if campus_list and isinstance(campus_list, list) and isinstance(campus_list[0], dict)
+        else None
+    )
+
     async with db.SessionLocal() as session:
         result = await session.execute(
             select(user.Users).where(user.Users.login == user_data["login"])
@@ -84,6 +97,19 @@ async def manage_user(user_data: dict) -> user.Users:
         existing = result.scalar_one_or_none()
 
         if existing is not None:
+            updated = False
+            if avatar_url and not existing.avatar_url:
+                existing.avatar_url = avatar_url
+                updated = True
+            if campus_name and not existing.campus:
+                existing.campus = campus_name
+                updated = True
+            if email and not existing.email:
+                existing.email = email
+                updated = True
+            if updated:
+                await session.commit()
+                await session.refresh(existing)
             return existing
 
         new_user = user.Users(
@@ -91,6 +117,9 @@ async def manage_user(user_data: dict) -> user.Users:
             fullname=user_data["displayname"],
             role="user",
             intra_id=user_data["id"],
+            email=email,
+            avatar_url=avatar_url,
+            campus=campus_name,
         )
 
         session.add(new_user)

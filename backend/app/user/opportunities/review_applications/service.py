@@ -21,7 +21,7 @@ async def update_application_status(
     db: AsyncSession,
     application_id: UUID,
     new_status: str,
-    current_user_id: int | None = None,
+    current_user_id: UUID | None = None,
 ) -> Application:
     if new_status not in ALLOWED_STATUSES:
         raise ValueError("Invalid application status")

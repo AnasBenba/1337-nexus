@@ -18,7 +18,7 @@ router = APIRouter(prefix="/teams", tags=["teams"])
 
 
 class InviteRequest(BaseModel):
-    user_id: int
+    user_id: UUID
 
 
 class CreateTeamRequest(BaseModel):
@@ -30,13 +30,13 @@ class AcceptRequest(BaseModel):
 
 
 class RemoveRequest(BaseModel):
-    user_id: int
+    user_id: UUID
 
 
 class MemberResponse(BaseModel):
     id: UUID
     team_id: UUID
-    user_id: int
+    user_id: UUID
     status: str
 
     model_config = {"from_attributes": True}
@@ -45,7 +45,7 @@ class MemberResponse(BaseModel):
 class TeamResponse(BaseModel):
     id: UUID
     opportunity_id: UUID
-    founder_id: int
+    founder_id: UUID
 
     model_config = {"from_attributes": True}
 

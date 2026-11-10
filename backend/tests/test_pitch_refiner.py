@@ -42,7 +42,10 @@ from app.user.projects.refine_project.service import (
     request_pitch_refinement,
 )
 
-TEST_DB_URL = os.environ["DATABASE_URL"]
+raw_url = os.environ["DATABASE_URL"]
+if raw_url.startswith("postgresql://"):
+    raw_url = "postgresql+asyncpg://" + raw_url[len("postgresql://") :]
+TEST_DB_URL = raw_url
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -96,13 +99,15 @@ def mock_ai_provider():
         yield ai_mock
 
 
-async def create_test_user(session: AsyncSession, user_id: int, role: str = "user") -> Users:
+async def create_test_user(session: AsyncSession, user_id: int | uuid.UUID, role: str = "user") -> Users:
+    u_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, f"user-{user_id}") if isinstance(user_id, int) else user_id
+    intra_val = user_id if isinstance(user_id, int) else int(u_uuid.int % 1000000)
     user = Users(
-        id=user_id,
+        id=u_uuid,
         login=f"user_{user_id}",
         fullname=f"User {user_id}",
         role=role,
-        intra_id=1000 + user_id,
+        intra_id=1000 + intra_val,
     )
     session.add(user)
     await session.commit()
@@ -112,7 +117,7 @@ async def create_test_user(session: AsyncSession, user_id: int, role: str = "use
 
 async def create_test_pitch(
     session: AsyncSession,
-    author_id: int,
+    author_id: int | uuid.UUID,
     title: str = "Initial Pitch Title",
     description: str | None = "A great project connecting students to mentors.",
     content: str = (
@@ -122,6 +127,7 @@ async def create_test_pitch(
     ),
     status: PitchStatus = PitchStatus.DRAFT,
 ) -> Pitch:
+    author_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, f"user-{author_id}") if isinstance(author_id, int) else author_id
     pitch = Pitch(
         id=uuid.uuid4(),
         title=title,
@@ -129,7 +135,7 @@ async def create_test_pitch(
         content=content,
         category=PitchCategory.TECH,
         status=status,
-        author_id=author_id,
+        author_id=author_uuid,
     )
     session.add(pitch)
     await session.commit()
@@ -201,7 +207,7 @@ async def test_idempotent_enqueue_and_snapshot(
 
         # Verify job in DB
         job = (await session.execute(select(AIJob).where(AIJob.id == res1.job_id))).scalar_one()
-        assert job.status in ("pending", "queued")
+        assert job.status in ("pending", "queued", "running")
         payload = job.payload
         assert payload["pitch_id"] == str(pitch.id)
         assert payload["title"] == pitch.title

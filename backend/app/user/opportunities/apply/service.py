@@ -12,7 +12,7 @@ from .models import Application
 async def apply_to_opportunity(
     db: AsyncSession,
     opportunity_id: UUID,
-    user_id: int,
+    user_id: UUID,
     message: str | None = None,
     candidate_skills: list[str] | None = None,
 ) -> Application:

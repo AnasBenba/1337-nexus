@@ -12,7 +12,7 @@ async def create_opportunity(
     title: str,
     description: str,
     required_skills: list[str],
-    current_user_id: int | None = None,
+    current_user_id: UUID | None = None,
 ) -> Opportunity:
     if current_user_id is not None:
         project = await db.get(Project, project_id)

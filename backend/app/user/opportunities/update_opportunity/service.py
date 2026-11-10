@@ -12,7 +12,7 @@ async def update_opportunity(
     title: str | None = None,
     description: str | None = None,
     required_skills: list[str] | None = None,
-    current_user_id: int | None = None,
+    current_user_id: UUID | None = None,
 ) -> Opportunity:
     opportunity = await db.get(Opportunity, opportunity_id)
 

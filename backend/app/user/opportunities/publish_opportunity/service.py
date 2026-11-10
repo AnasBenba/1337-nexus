@@ -9,7 +9,7 @@ from app.user.projects.models import Project
 async def publish_opportunity(
     db: AsyncSession,
     opportunity_id: UUID,
-    current_user_id: int | None = None,
+    current_user_id: UUID | None = None,
 ) -> Opportunity:
     opportunity = await db.get(Opportunity, opportunity_id)
 

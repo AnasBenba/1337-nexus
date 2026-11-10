@@ -30,8 +30,8 @@ class Application(Base):
         nullable=False,
         index=True,
     )
-    user_id: Mapped[int] = mapped_column(
-        Integer,
+    user_id: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,

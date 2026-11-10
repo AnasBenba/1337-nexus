@@ -124,7 +124,7 @@ async def request_pitch_refinement(
     # 7. Snapshot and enqueue new job
     snapshot_payload = {
         "pitch_id": str(pitch.id),
-        "author_id": current_user.id,
+        "author_id": str(current_user.id),
         "title": pitch.title,
         "description": pitch.description,
         "content": pitch.content,

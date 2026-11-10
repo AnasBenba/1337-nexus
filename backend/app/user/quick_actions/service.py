@@ -9,7 +9,7 @@ from app.user.projects.service import create_project
 
 
 async def quick_create_project(
-    db: AsyncSession, *, owner_id: int, title: str, description: str
+    db: AsyncSession, *, owner_id: UUID, title: str, description: str
 ) -> Project:
     return await create_project(
         db, owner_id=owner_id, title=title, description=description

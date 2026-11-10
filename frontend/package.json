@@ -14,7 +14,8 @@
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.1",
     "react-router-dom": "^6.28.0",
-    "remark-gfm": "^4.0.0"
+    "remark-gfm": "^4.0.0",
+    "socket.io-client": "^4.8.4"
   },
   "devDependencies": {
     "@tailwindcss/container-queries": "^0.1.1",

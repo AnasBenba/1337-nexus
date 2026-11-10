@@ -1,15 +1,17 @@
+from __future__ import annotations
+
 import json
+from uuid import UUID
 
 from fastapi import WebSocket, WebSocketDisconnect
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.collaboration.chat.models import Message
-
 from .socket_manager import manager
 
 
-async def start_chat(websocket: WebSocket, user_id: int, db: AsyncSession):
+async def start_chat(websocket: WebSocket, user_id: UUID, db: AsyncSession) -> None:
     await manager.connect_dm(user_id, websocket)
 
     stmt = (
@@ -23,14 +25,16 @@ async def start_chat(websocket: WebSocket, user_id: int, db: AsyncSession):
     for msg in unread_messages:
         payload = json.dumps(
             {
-                "from": msg.sender_id,
+                "id": str(msg.id),
+                "from": str(msg.sender_id),
+                "to": str(msg.receiver_id),
                 "content": msg.content,
                 "created_at": msg.created_at.isoformat(),
                 "offline_message": True,
             }
         )
         await websocket.send_text(payload)
-        msg.is_read = True
+        msg.is_delivered = True
 
     if unread_messages:
         await db.commit()
@@ -40,19 +44,27 @@ async def start_chat(websocket: WebSocket, user_id: int, db: AsyncSession):
             data = await websocket.receive_text()
             try:
                 payload = json.loads(data)
-                receiver_id = int(payload["receiver_id"])
-                content = payload["content"]
+                receiver_id = UUID(str(payload["receiver_id"]))
+                content = str(payload["content"])
             except (json.JSONDecodeError, KeyError, TypeError, ValueError):
-                await websocket.send_json({"error": "Message must contain receiver_id and content"})
+                await websocket.send_json({"error": "Message must contain valid receiver_id and content"})
                 continue
 
-            live_message = json.dumps({"from": user_id, "content": content})
+            live_message = json.dumps({
+                "from": str(user_id),
+                "to": str(receiver_id),
+                "content": content,
+            })
 
             # Try to push live
             delivered = await manager.send_dm(live_message, receiver_id)
 
             new_message = Message(
-                sender_id=user_id, receiver_id=receiver_id, content=content, is_read=delivered
+                sender_id=user_id,
+                receiver_id=receiver_id,
+                content=content,
+                is_read=False,
+                is_delivered=delivered,
             )
             db.add(new_message)
             await db.commit()

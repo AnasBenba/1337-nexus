@@ -61,18 +61,22 @@ export const Layout: React.FC = () => {
                 3
               </span>
             </button>
-            <button
-              type="button"
+            <NavLink
+              to="/messages"
               aria-label="Direct Messages"
               className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer"
             >
               <span className="material-symbols-outlined text-[20px]">chat</span>
-            </button>
+            </NavLink>
           </div>
 
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-sm text-on-primary">
+          <NavLink
+            to="/profile"
+            aria-label="My Profile"
+            className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-sm text-on-primary hover:opacity-90 transition-opacity"
+          >
             <span className="material-symbols-outlined text-[18px]">person</span>
-          </div>
+          </NavLink>
         </div>
       </header>
 
@@ -172,6 +176,38 @@ export const Layout: React.FC = () => {
             <span className="px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container font-label-code-tag text-[10px]">
               4
             </span>
+          </NavLink>
+
+          <NavLink
+            to="/friends"
+            className={({ isActive }) =>
+              `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all ${
+                isActive
+                  ? 'bg-primary-fixed text-on-primary-fixed font-bold'
+                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+              }`
+            }
+          >
+            <div className="flex items-center gap-space-sm">
+              <span className="material-symbols-outlined text-[20px]">group</span>
+              <span className="font-label-md text-label-md">Friends</span>
+            </div>
+          </NavLink>
+
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all ${
+                isActive
+                  ? 'bg-primary-fixed text-on-primary-fixed font-bold'
+                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+              }`
+            }
+          >
+            <div className="flex items-center gap-space-sm">
+              <span className="material-symbols-outlined text-[20px]">account_circle</span>
+              <span className="font-label-md text-label-md">Profile</span>
+            </div>
           </NavLink>
 
           <NavLink

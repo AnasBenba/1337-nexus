@@ -14,8 +14,8 @@ class Project(Base):
     id: Mapped[UUID] = mapped_column(
         PostgreSQLUUID(as_uuid=True), primary_key=True, default=uuid4, index=True
     )
-    owner_id: Mapped[int] = mapped_column(
-        Integer,
+    owner_id: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,

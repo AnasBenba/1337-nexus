@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +13,14 @@ async def get_current_user(
     request: Request,
     db: AsyncSession = Depends(get_db_session),
 ) -> Users:
+    # 1. Try cookie
     token = request.cookies.get("access_token")
+    # 2. Try Authorization header
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header[7:].strip()
+
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -20,16 +29,30 @@ async def get_current_user(
         )
 
     payload = jwt.verify_access_token(token)
-    try:
-        intra_id = int(payload["sub"])
-    except (KeyError, TypeError, ValueError) as error:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authenticated user",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from error
+    sub = payload.get("sub")
+    user_id_claim = payload.get("user_id")
 
-    user = await db.scalar(select(Users).where(Users.intra_id == intra_id))
+    user: Users | None = None
+
+    # Try UUID lookup first if user_id or sub is a valid UUID
+    for candidate in [user_id_claim, sub]:
+        if candidate:
+            try:
+                candidate_uuid = UUID(str(candidate))
+                user = await db.scalar(select(Users).where(Users.id == candidate_uuid))
+                if user is not None:
+                    break
+            except (ValueError, TypeError):
+                pass
+
+    # Fallback to intra_id lookup if sub is integer
+    if user is None and sub is not None:
+        try:
+            intra_id = int(sub)
+            user = await db.scalar(select(Users).where(Users.intra_id == intra_id))
+        except (ValueError, TypeError):
+            pass
+
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

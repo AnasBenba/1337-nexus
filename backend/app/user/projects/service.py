@@ -7,7 +7,7 @@ from .models import Project
 
 
 async def create_project(
-    db: AsyncSession, *, owner_id: int, title: str, description: str
+    db: AsyncSession, *, owner_id: UUID, title: str, description: str
 ) -> Project:
     project = Project(owner_id=owner_id, title=title, description=description)
     db.add(project)
@@ -16,7 +16,7 @@ async def create_project(
     return project
 
 
-async def list_my_projects(db: AsyncSession, *, owner_id: int) -> list[Project]:
+async def list_my_projects(db: AsyncSession, *, owner_id: UUID) -> list[Project]:
     result = await db.scalars(
         select(Project)
         .where(Project.owner_id == owner_id)
@@ -26,7 +26,7 @@ async def list_my_projects(db: AsyncSession, *, owner_id: int) -> list[Project]:
 
 
 async def list_recommended_projects(
-    db: AsyncSession, *, exclude_owner_id: int | None = None
+    db: AsyncSession, *, exclude_owner_id: UUID | None = None
 ) -> list[Project]:
     statement = select(Project).where(Project.status == "published")
     if exclude_owner_id is not None:
@@ -39,7 +39,7 @@ async def update_project(
     db: AsyncSession,
     *,
     project_id: UUID,
-    owner_id: int,
+    owner_id: UUID,
     title: str | None = None,
     description: str | None = None,
 ) -> Project:
@@ -60,7 +60,7 @@ async def update_project(
 
 
 async def change_project_status(
-    db: AsyncSession, *, project_id: UUID, owner_id: int, status: str
+    db: AsyncSession, *, project_id: UUID, owner_id: UUID, status: str
 ) -> Project:
     project = await db.get(Project, project_id)
     if project is None:
