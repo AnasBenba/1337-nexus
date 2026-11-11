@@ -8,14 +8,18 @@ class Users(base.Base):
     __tablename__ = "users"
     # Same values as app.oauth.permissions.Role; the DB rejects anything else.
     __table_args__ = (
-        CheckConstraint("role IN ('user', 'admin')", name="ck_users_role"),
+        CheckConstraint("role IN ('user', 'admin', 'superadmin')", name="ck_users_role"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     login: Mapped[str] = mapped_column()
     fullname: Mapped[str] = mapped_column()
     role: Mapped[str] = mapped_column(default="user")  # see app.oauth.permissions.Role
-    intra_id: Mapped[int | None] = mapped_column(nullable=True)
+    intra_id: Mapped[int | None] = mapped_column(nullable=True)  # set for 42 accounts
+    # Email/password accounts. Emails are stored lowercase; password_hash is Argon2 (salted),
+    # never the password itself. 42-only accounts have no password_hash.
+    email: Mapped[str | None] = mapped_column(String(254), unique=True, nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     bio: Mapped[str | None] = mapped_column(String(500), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
 

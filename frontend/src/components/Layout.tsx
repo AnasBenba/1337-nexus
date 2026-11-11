@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, Navigate, NavLink, Outlet } from 'react-router-dom';
-import { getMe, logout, type Me } from '@/app/authentication/login/Auth.api';
+import { getMe, isSignedIn, logout, type Me } from '@/app/authentication/login/Auth.api';
 import { Avatar } from '@/components/Avatar';
 import { RoleBadge } from '@/flows/admin/users';
 import { refreshSession } from '@/lib/http';
@@ -15,7 +15,12 @@ export const Layout: React.FC = () => {
   const [me, setMe] = useState<Me | null | undefined>(undefined);
 
   useEffect(() => {
-    getMe().then(setMe).catch(() => setMe(null));
+    // Ask /auth/session first: it never answers 401, so a logged-out visitor's console stays
+    // clean (and an expired access token is renewed there). Only then load my profile.
+    isSignedIn()
+      .then((signedIn) => (signedIn ? getMe() : null))
+      .then(setMe)
+      .catch(() => setMe(null));
   }, []);
 
   // Keep a presence connection open while signed in, so friends see me online.
@@ -147,9 +152,9 @@ export const Layout: React.FC = () => {
               >
                 {me.fullname}
               </Link>
-              <div className="flex items-center gap-1 font-body-sm text-[11px] text-on-surface-variant truncate">
-                @{me.login}
-                {me.role === 'admin' && <RoleBadge />}
+              <div className="flex min-w-0 items-center gap-1 font-body-sm text-[11px] text-on-surface-variant">
+                <span className="truncate">@{me.login}</span>
+                <RoleBadge role={me.role} />
               </div>
               <div className="flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
                 <span className="material-symbols-outlined text-[14px]">location_on</span>
@@ -316,7 +321,7 @@ export const Layout: React.FC = () => {
                   <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
                   <span className="font-label-md text-label-md">Users</span>
                 </div>
-                <RoleBadge />
+                <RoleBadge role={me.role} />
               </NavLink>
             </>
           )}

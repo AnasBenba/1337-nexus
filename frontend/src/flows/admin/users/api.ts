@@ -1,10 +1,10 @@
 import type { UserProfile } from '@/app/authentication/login/Auth.api';
 import { api, authFetch, errorMessage } from '@/lib/http';
-import type { Role } from '@/lib/permissions';
+import type { AssignableRole, Role } from '@/lib/permissions';
 
 export type AdminUserPage = { items: UserProfile[]; total: number; page: number; page_size: number };
 
-export type AdminUserChanges = { fullname?: string; bio?: string; role?: Role };
+export type AdminUserChanges = { fullname?: string; bio?: string; role?: AssignableRole };
 
 const base = '/api/v1/admin/users';
 const json = (body: unknown): RequestInit => ({

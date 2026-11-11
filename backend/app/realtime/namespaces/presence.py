@@ -6,7 +6,6 @@ from typing import Any
 
 import socketio  # type: ignore[import-untyped]
 from fastapi import HTTPException
-from sqlalchemy import select
 
 from app.core.db import SessionLocal
 from app.oauth import jwt
@@ -34,14 +33,13 @@ class PresenceNamespace(socketio.AsyncNamespace):  # type: ignore[misc]
         if not token:
             raise socketio.exceptions.ConnectionRefusedError("Not authenticated")
         try:
-            payload = jwt.verify_access_token(token)
+            user_id = jwt.user_id_from(jwt.verify_access_token(token))
         except HTTPException as exc:
             raise socketio.exceptions.ConnectionRefusedError(exc.detail) from exc
 
         async with SessionLocal() as session:
-            result = await session.execute(select(Users.id).where(Users.intra_id == int(payload["sub"])))
-            user_id = result.scalar_one_or_none()
-        if user_id is None:
+            exists = await session.get(Users, user_id) is not None
+        if not exists:
             raise socketio.exceptions.ConnectionRefusedError("User not found")
 
         await self.save_session(sid, {"user_id": user_id})

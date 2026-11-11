@@ -19,7 +19,6 @@ from app.oauth.user import Users
 from app.user.friends.models import Friendship
 
 PREFIX = f"tadmin_{uuid.uuid4().hex[:6]}_"
-BASE_INTRA_ID = 770000 + os.getpid() % 1000 * 10
 
 
 @pytest_asyncio.fixture
@@ -34,23 +33,26 @@ async def ctx():
 
     fastapi_app.dependency_overrides[get_db_session] = session_override
     async with factory() as s:
-        admin = Users(login=PREFIX + "admin", fullname="Ada Admin", role="admin", intra_id=BASE_INTRA_ID + 1)
-        alice = Users(login=PREFIX + "alice", fullname="Alice", role="user", intra_id=BASE_INTRA_ID + 2, bio="hi")
-        bob = Users(login=PREFIX + "bob", fullname="Bob", role="user", intra_id=BASE_INTRA_ID + 3)
-        s.add_all([admin, alice, bob])
+        users = {
+            "boss": Users(login=PREFIX + "boss", fullname="Sam Super", role="superadmin"),
+            "admin": Users(login=PREFIX + "admin", fullname="Ada Admin", role="admin"),
+            "admin2": Users(login=PREFIX + "admin2", fullname="Abe Admin", role="admin"),
+            "alice": Users(login=PREFIX + "alice", fullname="Alice", role="user", bio="hi"),
+            "bob": Users(login=PREFIX + "bob", fullname="Bob", role="user"),
+        }
+        s.add_all(users.values())
         await s.commit()
-        s.add(Friendship(requester_id=alice.id, addressee_id=bob.id, status="accepted"))
+        s.add(Friendship(requester_id=users["alice"].id, addressee_id=users["bob"].id, status="accepted"))
         await s.commit()
 
     def client(user: Users) -> httpx.AsyncClient:
-        assert user.intra_id is not None
         return httpx.AsyncClient(
             transport=httpx.ASGITransport(app=fastapi_app),
             base_url="http://test/api/v1/admin",
-            cookies={"access_token": create_access_token(user.intra_id)},
+            cookies={"access_token": create_access_token(user.id)},
         )
 
-    yield {"admin": admin, "alice": alice, "bob": bob, "client": client, "factory": factory}
+    yield {**users, "client": client, "factory": factory}
 
     fastapi_app.dependency_overrides.pop(get_db_session, None)
     async with engine.begin() as conn:
@@ -66,16 +68,15 @@ async def test_regular_user_gets_403(ctx) -> None:
 
 async def test_list_search_filter_paginate(ctx) -> None:
     async with ctx["client"](ctx["admin"]) as c:
-        page = (await c.get("/users", params={"q": PREFIX})).json()
-        assert page["total"] == 3
-        only_admins = (await c.get("/users", params={"q": PREFIX, "role": "admin"})).json()
-        assert [u["login"] for u in only_admins["items"]] == [PREFIX + "admin"]
-        first = (await c.get("/users", params={"q": PREFIX, "page_size": 2, "page": 2})).json()
-        assert len(first["items"]) == 1 and first["total"] == 3
+        assert (await c.get("/users", params={"q": PREFIX})).json()["total"] == 5
+        admins = (await c.get("/users", params={"q": PREFIX, "role": "admin"})).json()
+        assert sorted(u["login"] for u in admins["items"]) == [PREFIX + "admin", PREFIX + "admin2"]
+        last = (await c.get("/users", params={"q": PREFIX, "page_size": 2, "page": 3})).json()
+        assert len(last["items"]) == 1 and last["total"] == 5
         assert (await c.get("/users", params={"role": "moderator"})).status_code == 422
 
 
-async def test_view_and_edit_user(ctx) -> None:
+async def test_admin_edits_a_user(ctx) -> None:
     alice = ctx["alice"]
     async with ctx["client"](ctx["admin"]) as c:
         assert (await c.get(f"/users/{alice.id}")).json()["bio"] == "hi"
@@ -87,15 +88,39 @@ async def test_view_and_edit_user(ctx) -> None:
         assert (await c.get("/users/999999999")).status_code == 404
 
 
-async def test_change_role_but_not_your_own(ctx) -> None:
-    alice, admin = ctx["alice"], ctx["admin"]
-    async with ctx["client"](admin) as c:
+async def test_only_superadmin_changes_roles(ctx) -> None:
+    alice, admin2 = ctx["alice"], ctx["admin2"]
+    async with ctx["client"](ctx["admin"]) as c:
+        r = await c.patch(f"/users/{alice.id}", json={"role": "admin"})
+        assert r.status_code == 403 and "superadmin" in r.json()["detail"]
+    async with ctx["client"](ctx["boss"]) as c:
         assert (await c.patch(f"/users/{alice.id}", json={"role": "admin"})).json()["role"] == "admin"
-        r = await c.patch(f"/users/{admin.id}", json={"role": "user"})
-        assert r.status_code == 400
-    # Alice is admin now: the change takes effect on her very next request.
-    async with ctx["client"](alice) as c:
+        assert (await c.patch(f"/users/{admin2.id}", json={"role": "user"})).json()["role"] == "user"
+        # The superadmin role can't be handed out through the API, even by the superadmin.
+        assert (await c.patch(f"/users/{alice.id}", json={"role": "superadmin"})).status_code == 422
+    async with ctx["client"](alice) as c:  # takes effect on her very next request
         assert (await c.get("/users")).status_code == 200
+
+
+async def test_admins_cannot_manage_admins_or_the_superadmin(ctx) -> None:
+    admin2, boss = ctx["admin2"], ctx["boss"]
+    async with ctx["client"](ctx["admin"]) as c:
+        for target in (admin2, boss):
+            assert (await c.patch(f"/users/{target.id}", json={"fullname": "x"})).status_code == 403
+            assert (await c.delete(f"/users/{target.id}/avatar")).status_code == 403
+            assert (await c.delete(f"/users/{target.id}")).status_code == 403
+        own = await c.patch(f"/users/{ctx['admin'].id}", json={"fullname": "x"})
+        assert own.status_code == 403  # not even yourself, here
+
+
+async def test_superadmin_manages_admins_but_is_itself_protected(ctx) -> None:
+    boss, admin2 = ctx["boss"], ctx["admin2"]
+    async with ctx["client"](boss) as c:
+        assert (await c.patch(f"/users/{admin2.id}", json={"fullname": "Abe B."})).status_code == 200
+        assert (await c.delete(f"/users/{admin2.id}")).status_code == 204
+        r = await c.patch(f"/users/{boss.id}", json={"role": "user"})
+        assert r.status_code == 403  # can't demote or delete itself: always one superadmin
+        assert (await c.delete(f"/users/{boss.id}")).status_code == 403
 
 
 async def test_remove_avatar(ctx) -> None:
@@ -108,10 +133,9 @@ async def test_remove_avatar(ctx) -> None:
     assert r.status_code == 200 and r.json()["avatar_url"] is None
 
 
-async def test_delete_user_cascades_but_not_yourself(ctx) -> None:
-    alice, bob, admin = ctx["alice"], ctx["bob"], ctx["admin"]
-    async with ctx["client"](admin) as c:
-        assert (await c.delete(f"/users/{admin.id}")).status_code == 400
+async def test_delete_user_cascades(ctx) -> None:
+    alice, bob = ctx["alice"], ctx["bob"]
+    async with ctx["client"](ctx["admin"]) as c:
         assert (await c.delete(f"/users/{bob.id}")).status_code == 204
         assert (await c.get(f"/users/{bob.id}")).status_code == 404
     async with ctx["factory"]() as s:

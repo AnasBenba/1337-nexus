@@ -39,7 +39,9 @@ from app.user.projects.refine_project.router import (
 )
 
 from .oauth import entrypoint, jwt, manager, refresh_tokens
+from .oauth.user import Users
 from .admin.users.router import router as admin_users_router
+from .oauth.email_auth import router as email_auth_router
 from .user.friends.router import router as friends_router
 from .user.profile.router import router as profile_router
 from .user.copilot.ask.router import router as ask_router
@@ -51,6 +53,33 @@ router = APIRouter()
 HOME_PAGE = Path(__file__).parent / "index.html"
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://localhost:8443/")
 DbSession = Annotated[AsyncSession, Depends(get_db_session)]
+
+
+@router.get("/api/v1/auth/session", tags=["auth"])
+async def auth_session(request: Request, session: DbSession) -> Response:
+    """Am I signed in? Always 200 {"signed_in": bool}, so pages like /login can check
+    without a 401 showing up in the browser console. If the access token has expired but
+    the refresh cookie is still valid, the session is renewed here too."""
+    token = request.cookies.get(refresh_tokens.ACCESS_COOKIE)
+    if token:
+        try:
+            if await session.get(Users, jwt.user_id_from(jwt.verify_access_token(token))):
+                return JSONResponse({"signed_in": True})
+        except HTTPException:
+            pass  # expired or invalid: try the refresh cookie below
+
+    refresh = request.cookies.get(refresh_tokens.REFRESH_COOKIE)
+    if refresh:
+        try:
+            user, new_refresh = await refresh_tokens.rotate(session, refresh)
+        except refresh_tokens.RefreshError:
+            pass
+        else:
+            response = JSONResponse({"signed_in": True})
+            refresh_tokens.set_auth_cookies(response, user, new_refresh)
+            return response
+
+    return JSONResponse({"signed_in": False})
 
 
 @router.post("/api/v1/auth/refresh", tags=["auth"], status_code=204)
@@ -167,3 +196,4 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(profile_router)
     app.include_router(friends_router)
     app.include_router(admin_users_router)
+    app.include_router(email_auth_router)

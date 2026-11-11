@@ -35,6 +35,9 @@ echo "PostgreSQL is reachable. Running migrations..."
     alembic upgrade head
 )
 
+# Create/promote the superadmin from SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD (.env). Skips if unset.
+python -m app.cli.create_superadmin
+
 # unset MIGRATION_DATABASE_URL
 
 echo "Starting FastAPI..."

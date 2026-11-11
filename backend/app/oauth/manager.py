@@ -6,7 +6,7 @@ from sqlalchemy import select
 
 from ..core import base, db
 from . import user
-from .permissions import Role, admin_logins
+from .permissions import Role
 
 
 async def get_user(access_token: str) -> dict:
@@ -78,25 +78,37 @@ async def manage_user(user_data: dict) -> user.Users:
     async with db.migration_engine.begin() as connection:
         await connection.run_sync(base.Base.metadata.create_all)
 
-    async with db.SessionLocal() as session:
-        result = await session.execute(
-            select(user.Users).where(user.Users.login == user_data["login"])
-        )
-        existing = result.scalar_one_or_none()
-        # Bootstrap: logins listed in ADMIN_LOGINS (.env) are promoted to admin on sign-in.
-        is_listed_admin = user_data["login"] in admin_logins()
+    intra_id, intra_login = user_data["id"], user_data["login"]
 
+    async with db.SessionLocal() as session:
+        # Match 42 accounts by their 42 id, never by username: since email sign-up lets
+        # anyone pick a username, matching by login would let someone pre-register
+        # "ofrikel" and get the real ofrikel's 42 account attached to it.
+        existing = await session.scalar(select(user.Users).where(user.Users.intra_id == intra_id))
         if existing is not None:
-            if is_listed_admin and existing.role != Role.ADMIN:
-                existing.role = Role.ADMIN
-                await session.commit()
             return existing
 
+        async def taken(column, value) -> bool:  # noqa: ANN001
+            return value is not None and await session.scalar(select(user.Users.id).where(column == value)) is not None
+
+        # New 42 account. If an email account already uses this username, add a suffix.
+        login = intra_login
+        if await taken(user.Users.login, login):
+            login = f"{intra_login}-42"
+            if await taken(user.Users.login, login):
+                login = f"{intra_login}-42-{intra_id}"
+
+        # Keep the 42 email so nobody can later sign up with it, unless it's already used.
+        email = (user_data.get("email") or "").lower() or None
+        if await taken(user.Users.email, email):
+            email = None
+
         new_user = user.Users(
-            login=user_data["login"],
+            login=login,
             fullname=user_data["displayname"],
-            role=Role.ADMIN if is_listed_admin else Role.USER,
-            intra_id=user_data["id"],
+            role=Role.USER,  # admins are made by the superadmin, never automatically
+            intra_id=intra_id,
+            email=email,
         )
 
         session.add(new_user)

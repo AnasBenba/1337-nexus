@@ -121,7 +121,7 @@ export const AdminUsersPage: React.FC = () => {
                   <div className="min-w-0">
                     <div className="flex items-center gap-space-xs">
                       <span className="truncate font-bold">{user.fullname}</span>
-                      {user.role === 'admin' && <RoleBadge />}
+                      <RoleBadge role={user.role} />
                       {user.id === me.id && <span className="text-[12px] text-on-surface-variant">(you)</span>}
                     </div>
                     <div className="truncate font-label-code-tag text-[12px] text-on-surface-variant">@{user.login}</div>
@@ -182,8 +182,13 @@ export const AdminUsersPage: React.FC = () => {
   );
 };
 
-export const RoleBadge: React.FC = () => (
-  <span className="rounded-full bg-primary px-space-sm py-0.5 font-label-code-tag text-[10px] font-bold uppercase text-on-primary">
-    admin
-  </span>
-);
+/** "admin" / "superadmin" badge; nothing for regular users. */
+export const RoleBadge: React.FC<{ role: string }> = ({ role }) => {
+  if (role !== 'admin' && role !== 'superadmin') return null;
+  const color = role === 'superadmin' ? 'bg-on-surface text-surface' : 'bg-primary text-on-primary';
+  return (
+    <span className={`shrink-0 rounded-full px-space-sm py-0.5 font-label-code-tag text-[10px] font-bold uppercase ${color}`}>
+      {role}
+    </span>
+  );
+};

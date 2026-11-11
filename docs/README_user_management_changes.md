@@ -3,9 +3,13 @@
 Everything changed on the `soufiane` branch for two subject modules (IV.3):
 
 - *Major: Standard user management and authentication* (changes 3–6)
-- *Major: Advanced permissions system* (changes 8–10)
+- *Major: Advanced permissions system* (changes 8–10, 12)
 
-plus the fixes that were needed to get login working (1–2) and refresh tokens (7).
+plus the **mandatory** email/password sign-up and login (11, subject III.3), the fixes
+needed to get login working (1–2), and refresh tokens (7).
+
+> **Current rules in one place:** [Roles today](#roles-today). Sections 8–10 describe how
+> the roles were first built. Change 12 replaced parts of them, and those parts are marked.
 
 All paths are relative to the repository root.
 
@@ -25,6 +29,8 @@ All paths are relative to the repository root.
 | 8 | Roles (`admin`, `user`) and permission checks | `6d82683` |
 | 9 | Admin user-management API (list, edit, roles, delete) | `8062439` |
 | 10 | Role-based UI and the Users management page | `df58645` |
+| 11 | Email + password sign-up and login (Argon2 hashing) | `ea74f3e` |
+| 12 | Protected superadmin created at startup | `000adf6` |
 
 ### Subject checklist (IV.3 Major)
 
@@ -41,10 +47,34 @@ All paths are relative to the repository root.
 | Requirement | Where |
 |---|---|
 | View, edit, and delete users (CRUD) | [Change 9](#9-admin-user-management-api) (API), [Change 10](#10-role-based-ui-and-the-users-management-page) (UI) |
-| Roles management | [Change 8](#8-roles-and-permission-checks) (roles), [Change 9](#9-admin-user-management-api) (changing roles) |
-| Different views and actions based on user role | [Change 10](#10-role-based-ui-and-the-users-management-page) |
+| Roles management (`user`, `admin`, `superadmin`) | [Roles today](#roles-today), [Change 12](#12-protected-superadmin-created-at-startup) |
+| Different views and actions based on user role | [Change 10](#10-role-based-ui-and-the-users-management-page), [Change 12](#12-protected-superadmin-created-at-startup) |
 
-Users are **created** by signing in with 42 (no separate "create user" form).
+Users are **created** by signing up (email/password or 42). The superadmin is created by the startup script.
+
+### Subject checklist (III.3 mandatory: user management)
+
+| Requirement | Where |
+|---|---|
+| Users can sign up and log in securely with email and password | [Change 11](#11-email--password-sign-up-and-login) |
+| Passwords hashed and salted | [Change 11](#11-email--password-sign-up-and-login): Argon2id, random salt per user |
+| Forms validated in both the frontend and backend | [Change 11](#11-email--password-sign-up-and-login), [Change 3](#3-profile-page-with-editable-name-and-bio) |
+| `.env` ignored by Git, with an `.env.example` | [deploy/.env.example](../deploy/.env.example) lists every setting |
+
+### Roles today
+
+| | `user` | `admin` | `superadmin` |
+|---|---|---|---|
+| Own profile, friends | ✅ | ✅ | ✅ |
+| Users page (`/admin/users`) | — | ✅ | ✅ |
+| Edit / delete / remove photo of **users** | — | ✅ | ✅ |
+| Edit / delete / remove photo of **admins** | — | — | ✅ |
+| Make someone admin, or remove admin | — | — | ✅ |
+| Change the **superadmin** in any way | — | — | — (nobody, not even itself) |
+
+- New accounts (email sign-up or 42) are always `user`.
+- Only the startup script creates a superadmin (`SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD`); the API never assigns that role.
+- Nobody manages their own account from the Users page (you edit yourself from your profile), so the superadmin can't remove itself.
 
 ---
 
@@ -275,6 +305,8 @@ Before this, the 15-minute access token expired and you were logged out.
 
 **Commit:** `6d82683`
 
+> **Replaced in part by [change 12](#12-protected-superadmin-created-at-startup):** there are now three roles, `users:manage_roles` belongs only to the superadmin, and `ADMIN_LOGINS` was removed.
+
 Two roles: `user` (default for every 42 login) and `admin`. Endpoints check
 **permissions**, never role names, so adding a role later is a one-line change.
 
@@ -303,6 +335,8 @@ Two roles: `user` (default for every 42 login) and `admin`. Endpoints check
 
 **Commit:** `8062439`
 
+> **Replaced in part by [change 12](#12-protected-superadmin-created-at-startup):** admins now manage only `user` accounts, and only the superadmin manages admins and changes roles. The "own role / delete yourself" checks now return 403 instead of 400.
+
 The CRUD endpoints for admins (see the [API reference](#api-reference-new-and-changed-endpoints)).
 
 **Safety rules:**
@@ -326,6 +360,8 @@ The CRUD endpoints for admins (see the [API reference](#api-reference-new-and-ch
 ## 10. Role-based UI and the Users management page
 
 **Commit:** `df58645`
+
+> **Updated in [change 12](#12-protected-superadmin-created-at-startup):** rows you can't manage show a lock and the reason instead of buttons, the role switch appears only for the superadmin, and the badge also shows `superadmin`.
 
 | | `user` | `admin` |
 |---|---|---|
@@ -351,12 +387,88 @@ Every action asks for confirmation. The UI checks permissions from `/users/me`; 
 
 ---
 
+## 11. Email + password sign-up and login
+
+**Commit:** `ea74f3e`
+
+Mandatory in the subject (III.3). Sign up with email, username, display name and password, then
+log in with email and password. You get the same cookies as with 42 login, so the rest of the
+app works the same either way.
+
+**Security**
+- Passwords are hashed with **Argon2id** (`pwdlib`), with a random salt per user. Only the hash is stored (`$argon2id$v=19$m=65536,t=3,p=4$…`).
+- Unknown email and wrong password get the same message and take the same time, so the login doesn't reveal which emails have accounts.
+- Sign-up can never choose a role (any field other than the four listed is rejected), and some usernames are reserved (`me`, `admin`, …).
+- Passwords must be 8–128 characters. The upper limit stops huge inputs from tying up the hasher.
+- **42 accounts are matched by their 42 id, not their username.** Otherwise someone could sign up by email as `ofrikel` before the real ofrikel used 42 and take over her 42 login. If a new 42 user's username is already taken, their account gets `<login>-42`.
+- Login tokens now identify the app's own user id (`sub = "user:<id>"`) instead of the 42 id, because email users have none. Old tokens get a 401, which the frontend answers with a silent refresh.
+
+**Backend**
+| File | Change |
+|---|---|
+| [backend/app/oauth/email_auth.py](../backend/app/oauth/email_auth.py) | **New.** `POST /api/v1/auth/signup` and `POST /api/v1/auth/login`, with validation. |
+| [backend/app/oauth/passwords.py](../backend/app/oauth/passwords.py) | **New.** `hash_password()` and `verify_password()`, including the equal-time check for unknown emails. |
+| [backend/alembic/versions/c6d7e8f9a0b1_add_email_password_to_users.py](../backend/alembic/versions/c6d7e8f9a0b1_add_email_password_to_users.py) | **New migration**: `users.email` (unique) and `users.password_hash`. |
+| [backend/app/oauth/user.py](../backend/app/oauth/user.py) | `email` and `password_hash` columns. |
+| [backend/app/oauth/jwt.py](../backend/app/oauth/jwt.py) | `create_access_token(user_id)` and `user_id_from(payload)`. |
+| [backend/app/oauth/dependencies.py](../backend/app/oauth/dependencies.py), [backend/app/realtime/namespaces/presence.py](../backend/app/realtime/namespaces/presence.py), [backend/app/oauth/refresh_tokens.py](../backend/app/oauth/refresh_tokens.py) | Look the user up by id from the token. |
+| [backend/app/oauth/manager.py](../backend/app/oauth/manager.py) | 42 users matched by 42 id, the `-42` suffix when a username is taken, and the 42 email saved for new accounts. |
+| [backend/app/api.py](../backend/app/api.py) | Registers the email auth router. |
+| [backend/tests/test_email_auth.py](../backend/tests/test_email_auth.py) | **New.** Sign-up and cookies, salted hashes, duplicates (409), 9 kinds of invalid input (422), login (correct, wrong, unknown email with the same response), a 42-only account can't use password login, and the username-squatting attack. |
+
+**Frontend**
+| File | Change |
+|---|---|
+| [frontend/src/app/authentication/login/Login.tsx](../frontend/src/app/authentication/login/Login.tsx) | Real "Sign in with email", a new **Create account** screen (checks the same rules, errors linked to their fields for screen readers), and the separate "Login as Admin" screen removed (the server decides the role). |
+| [frontend/src/app/authentication/login/Auth.api.ts](../frontend/src/app/authentication/login/Auth.api.ts) | `signupWithEmail()`, `loginWithEmail()`, and the shared validation rules. |
+| [frontend/src/app/authentication/login/Login.css](../frontend/src/app/authentication/login/Login.css) | Styles for field errors, hints and the form error. |
+
+---
+
+## 12. Protected superadmin created at startup
+
+**Commit:** `000adf6`
+
+A third role, `superadmin`, which can't be edited by anyone and is the only role that can make
+or remove admins. It's created by a script that runs on every container start, so
+`docker compose up` is all you need. This replaced `ADMIN_LOGINS`.
+
+**The startup script** (`python -m app.cli.create_superadmin`, also `make seed`) is safe to run on every start:
+| Situation | Result |
+|---|---|
+| `SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD` empty | Skipped; the backend starts normally |
+| No account with that email | Creates it as superadmin (Argon2-hashed password) |
+| An account with that email exists | Makes sure it's superadmin; **never overwrites its password** |
+| Bad config (invalid email, short password, only one of the two set, username taken) | Clear error in the logs and the backend doesn't start, so a broken setup is noticed immediately |
+
+| File | Change |
+|---|---|
+| [backend/app/oauth/permissions.py](../backend/app/oauth/permissions.py) | Three roles, `ASSIGNABLE_ROLES` (`user` / `admin` only), and `can_manage(actor, target)`, which allows acting only on a lower role and never yourself. `users:manage_roles` is superadmin-only. `admin_logins()` removed. |
+| [backend/app/admin/users/router.py](../backend/app/admin/users/router.py) | Edit, remove photo and delete check `can_manage` and return a clear 403 reason. Role changes need `users:manage_roles`. |
+| [backend/app/admin/users/schemas.py](../backend/app/admin/users/schemas.py) | `role` can only be `"user"` or `"admin"`, so `"superadmin"` returns 422. |
+| [backend/app/oauth/manager.py](../backend/app/oauth/manager.py) | `ADMIN_LOGINS` promotion removed; new 42 accounts are `user`. |
+| [backend/app/oauth/user.py](../backend/app/oauth/user.py), [backend/alembic/versions/d7e8f9a0b1c2_add_superadmin_role.py](../backend/alembic/versions/d7e8f9a0b1c2_add_superadmin_role.py) | The DB constraint now allows `superadmin` (**new migration**). |
+| [backend/app/cli/create_superadmin.py](../backend/app/cli/create_superadmin.py) | **New.** The startup script. It uses the same validation as public sign-up and never prints the password. |
+| [backend/entrypoint.sh](../backend/entrypoint.sh) | Runs the script right after the migrations. |
+| [Makefile](../Makefile) | `make seed` runs the script (it used to point at a missing `app.cli.seed`). |
+| [deploy/.env.example](../deploy/.env.example) | `ADMIN_LOGINS` replaced by `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD`, `SUPERADMIN_LOGIN`, `SUPERADMIN_NAME`. |
+| [backend/tests/test_permissions.py](../backend/tests/test_permissions.py) | The "who can manage whom" table, and the superadmin role never being assignable. |
+| [backend/tests/test_admin_users.py](../backend/tests/test_admin_users.py) | Admins get 403 on other admins and the superadmin, only the superadmin changes roles, and the superadmin can't change or delete itself. |
+| [backend/tests/test_create_superadmin.py](../backend/tests/test_create_superadmin.py) | **New.** Skips when unset, bad config, creates then reports unchanged (password kept), promotes an existing account, username conflict. |
+| [frontend/src/lib/permissions.ts](../frontend/src/lib/permissions.ts) | `ROLES` (3), `ASSIGNABLE_ROLES`, and `canManage()`, matching the backend. |
+| [frontend/src/flows/admin/users/AdminUserActions.tsx](../frontend/src/flows/admin/users/AdminUserActions.tsx) | Actions only when you can manage the account, otherwise a lock and the reason. The role switch offers only `user` and `admin`. |
+| [frontend/src/flows/admin/users/AdminUsersPage.tsx](../frontend/src/flows/admin/users/AdminUsersPage.tsx), [frontend/src/components/Layout.tsx](../frontend/src/components/Layout.tsx), [frontend/src/flows/admin/users/api.ts](../frontend/src/flows/admin/users/api.ts) | `RoleBadge` shows `admin` or `superadmin`; the sidebar badge is no longer cut off. |
+
+---
+
 ## API reference (new and changed endpoints)
 
-All endpoints need the login cookie, except `/auth/refresh` and `/auth/logout`, which use the refresh cookie.
+All endpoints need the login cookie, except `/auth/signup` and `/auth/login` (open), and `/auth/refresh` and `/auth/logout` (refresh cookie).
 
 | Method | Path | What |
 |---|---|---|
+| `POST` | `/api/v1/auth/signup` | Create an account `{email, login, fullname, password}` and log in (201) |
+| `POST` | `/api/v1/auth/login` | Log in `{email, password}`; 401 "Invalid email or password." |
 | `GET` | `/api/v1/users/me` | My profile, plus my `permissions` |
 | `PUT` | `/api/v1/users/me` | Update my `fullname` and `bio` |
 | `POST` | `/api/v1/users/me/avatar` | Upload avatar (multipart field `file`) |
@@ -372,11 +484,14 @@ All endpoints need the login cookie, except `/auth/refresh` and `/auth/logout`, 
 | Socket.IO | namespace `/presence` | Event `presence {user_id, online}` sent to friends |
 | `GET` | `/api/v1/admin/users?q=&role=&page=&page_size=` | **Admin.** List users: search, filter by role, pages (20 per page by default, up to 100) |
 | `GET` | `/api/v1/admin/users/{id}` | **Admin.** View one user |
-| `PATCH` | `/api/v1/admin/users/{id}` | **Admin.** Edit `fullname`, `bio`, `role` (only the fields sent) |
+| `PATCH` | `/api/v1/admin/users/{id}` | **Admin.** Edit `fullname`, `bio` (only the fields sent). `role` (`user`/`admin`) is **superadmin only** |
 | `DELETE` | `/api/v1/admin/users/{id}/avatar` | **Admin.** Remove a user's avatar |
 | `DELETE` | `/api/v1/admin/users/{id}` | **Admin.** Delete a user |
 
-Missing permission → `403 {"detail": "Your role (user) is not allowed to do this."}`
+Admin endpoints only work on accounts with a lower role than yours (see [Roles today](#roles-today)).
+
+- Missing permission → `403 {"detail": "Your role (user) is not allowed to do this."}`
+- Account you can't manage → `403` with the reason: `"Only the superadmin can manage admins."`, `"The superadmin account is protected."` or `"You can't manage your own account here; use your profile page."`
 
 Interactive docs: http://localhost:8000/docs
 
@@ -389,8 +504,10 @@ Interactive docs: http://localhost:8000/docs
 | `f3a4b5c6d7e8` | `friendships` table |
 | `a4b5c6d7e8f9` | `refresh_tokens` table |
 | `b5c6d7e8f9a0` | `users.role` limited to `user` / `admin`, default `user` |
+| `c6d7e8f9a0b1` | `users.email` (unique) and `users.password_hash` |
+| `d7e8f9a0b1c2` | `users.role` also allows `superadmin` |
 
-The backend runs migrations automatically on start (`backend/entrypoint.sh`).
+The backend runs migrations automatically on start, then the superadmin script (`backend/entrypoint.sh`).
 
 ---
 
@@ -403,8 +520,11 @@ The backend runs migrations automatically on start (`backend/entrypoint.sh`).
   New volumes get the right owner from the Dockerfile automatically.
 - **Log in again** after pulling change 7 to get a refresh cookie.
 - **`FRONTEND_URL`** must be in your `deploy/.env` if your frontend is not at `https://localhost:8443/`.
-- **`ADMIN_LOGINS`**: add your 42 login(s) to `deploy/.env`, e.g. `ADMIN_LOGINS=ofrikel`,
-  and **sign in again** to become admin. `deploy/.env.example` lists every setting.
+- **Superadmin:** set `SUPERADMIN_EMAIL` and `SUPERADMIN_PASSWORD` (at least 8 characters) in `deploy/.env`,
+  then `docker compose … up -d --force-recreate backend` (`.env` is only read when the container is created).
+  Sign in with "Sign in with email". The email must be a real-looking domain: `.local` is rejected as reserved.
+  Then make teammates admins from the **Users** page. `ADMIN_LOGINS` no longer exists; remove it from your `.env`.
+- `deploy/.env.example` lists every setting.
 
 ## Running the tests
 
@@ -415,7 +535,8 @@ docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml exe
   python -m pytest -o asyncio_mode=auto \
   tests/test_profile.py tests/test_avatar.py tests/test_friends.py \
   tests/test_presence.py tests/test_refresh_tokens.py tests/test_oauth_auth.py \
-  tests/test_permissions.py tests/test_admin_users.py
+  tests/test_permissions.py tests/test_admin_users.py \
+  tests/test_email_auth.py tests/test_create_superadmin.py
 ```
 
 > **Warning:** do **not** run the whole suite against your dev database.
@@ -428,12 +549,15 @@ docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.dev.yml exe
 
 | Item | Why it matters |
 |---|---|
-| Email + password sign-up is not implemented | **Mandatory** in the subject (III.3). Only 42 OAuth exists. |
+| No rate limiting on failed logins | Someone could keep guessing passwords. Add a per-IP or per-email limit. |
+| Email addresses aren't verified | Anyone can sign up with any address. |
+| No "change password" | The superadmin's first password comes from `.env` and can't be changed in the app yet. |
+| A wrong password logs one red 401 line in the console | That's the browser logging the server's correct rejection, not a JavaScript error, but evaluators look at the console. |
 | Cookies are not marked `Secure`; the 42 callback lands on `http://localhost:8000` | The subject requires HTTPS for every connection to the backend. Route the callback through `https://localhost:8443` and set `secure=True` (marked `ponytail:` in `refresh_tokens.py`). |
 | Online presence is stored in memory | Works because the backend runs one process (`--workers 1`). Several workers would need Redis (marked `ponytail:` in `presence.py`). |
 | After more than 15 minutes away, the first request logs one 401 in the console | Silently recovered by the refresh, but evaluators look at the console. |
 | `pitches` decides who you are from an `X-User-Id` header, or takes the first user in the DB | Should use `get_current_user` from `backend/app/oauth/dependencies.py`. |
 | The header search bar is decorative | Its placeholder suggests it searches, but it doesn't. Hide it or wire it up. |
 | Sidebar "Lvl 9.42", "Circle 05", "Benguerir" and the badge counts are hard-coded | Not stored from 42 yet. |
-| Admins listed in `ADMIN_LOGINS` get admin back every time they sign in | Demoting them in the UI only lasts until their next login; also remove them from `ADMIN_LOGINS`. |
-| Only `admin` and `user` roles | Adding a role means adding it to `Role` / `ROLE_PERMISSIONS`, the DB constraint (new migration) and `ROLES` in `frontend/src/lib/permissions.ts`. |
+| A bad `SUPERADMIN_*` config stops the backend from starting | On purpose, so a broken setup is noticed. Change `main()` in `create_superadmin.py` to only warn if you'd rather keep running. |
+| Adding a fourth role | Add it to `Role`, `ROLE_PERMISSIONS` and `_RANK` (backend), the DB constraint (new migration), and `ROLES` / `RANK` in `frontend/src/lib/permissions.ts`. |

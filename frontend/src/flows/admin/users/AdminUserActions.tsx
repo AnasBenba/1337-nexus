@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Me, UserProfile } from '@/app/authentication/login/Auth.api';
-import { can, Permission, ROLES, type Role } from '@/lib/permissions';
+import { ASSIGNABLE_ROLES, can, canManage, Permission, type AssignableRole } from '@/lib/permissions';
 import { deleteUser, removeUserAvatar, updateUser } from './api';
 
 type Props = {
@@ -15,11 +15,31 @@ type Props = {
 const button =
   'flex items-center gap-1 rounded-full px-space-sm py-1 text-[13px] disabled:cursor-not-allowed disabled:opacity-40';
 
-/** Admin controls for one user. Each control only appears if my role has that permission. */
+/** Why I can't act on this account (same rules as the backend). */
+function protectedReason(me: Me, user: UserProfile): string {
+  if (user.id === me.id) return 'This is you: edit yourself from your profile.';
+  if (user.role === 'superadmin') return 'Superadmin: protected account.';
+  return 'Only the superadmin can manage admins.';
+}
+
+/**
+ * Admin controls for one user. Shown only if I outrank them (canManage), and each
+ * control only if my role has that permission. The backend enforces the same rules.
+ */
 export const AdminUserActions: React.FC<Props> = ({ me, user, onChanged, onDeleted, onEdit }) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const isSelf = user.id === me.id;
+
+  if (!canManage(me, user)) {
+    return (
+      <span className="flex items-center gap-1 text-[12px] text-on-surface-variant">
+        <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
+          lock
+        </span>
+        {protectedReason(me, user)}
+      </span>
+    );
+  }
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
@@ -33,9 +53,9 @@ export const AdminUserActions: React.FC<Props> = ({ me, user, onChanged, onDelet
     }
   };
 
-  const changeRole = (role: Role) => {
-    const verb = role === 'admin' ? 'Make' : 'Remove admin from';
-    if (!window.confirm(`${verb} @${user.login}${role === 'admin' ? ' an admin' : ''}?`)) return;
+  const changeRole = (role: AssignableRole) => {
+    const question = role === 'admin' ? `Make @${user.login} an admin?` : `Remove admin from @${user.login}?`;
+    if (!window.confirm(question)) return;
     void run(async () => onChanged(await updateUser(user.id, { role })));
   };
 
@@ -53,13 +73,13 @@ export const AdminUserActions: React.FC<Props> = ({ me, user, onChanged, onDelet
         {can(me, Permission.MANAGE_ROLES) && (
           <select
             aria-label={`Role of @${user.login}`}
-            title={isSelf ? "You can't change your own role" : 'Change role'}
+            title="Change role"
             value={user.role}
-            disabled={busy || isSelf}
-            onChange={(e) => changeRole(e.target.value as Role)}
+            disabled={busy}
+            onChange={(e) => changeRole(e.target.value as AssignableRole)}
             className="rounded-full bg-surface-container px-space-sm py-1 text-[13px] disabled:opacity-40"
           >
-            {ROLES.map((role) => (
+            {ASSIGNABLE_ROLES.map((role) => (
               <option key={role} value={role}>
                 {role}
               </option>
@@ -90,8 +110,8 @@ export const AdminUserActions: React.FC<Props> = ({ me, user, onChanged, onDelet
         {can(me, Permission.DELETE_USERS) && (
           <button
             type="button"
-            disabled={busy || isSelf}
-            title={isSelf ? "You can't delete your own account here" : `Delete @${user.login}`}
+            disabled={busy}
+            title={`Delete @${user.login}`}
             onClick={remove}
             className={`${button} text-error hover:bg-error-container`}
           >

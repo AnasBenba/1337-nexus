@@ -114,10 +114,9 @@ async def revoke(session: AsyncSession, token: str) -> None:
 # ponytail: secure=False because the 42 callback still lands on http://localhost:8000.
 # Flip to True once the whole flow goes through https (nginx).
 def set_auth_cookies(response: Response, user: Users, refresh_token: str | None) -> None:
-    assert user.intra_id is not None
     response.set_cookie(
         ACCESS_COOKIE,
-        jwt.create_access_token(user.intra_id),
+        jwt.create_access_token(user.id),
         max_age=jwt.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path="/",
         httponly=True,

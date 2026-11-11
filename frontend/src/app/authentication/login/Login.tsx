@@ -1,8 +1,18 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { loginWith42 } from './Auth.api';
+import React, { useEffect, useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  LOGIN_PATTERN,
+  PASSWORD_MAX,
+  PASSWORD_MIN,
+  RESERVED_LOGINS,
+  isSignedIn,
+  loginWith42,
+  loginWithEmail,
+  signupWithEmail,
+} from './Auth.api';
 import './Login.css';
 
-type View = 'student' | 'admin' | 'email';
+type View = 'student' | 'email' | 'signup';
 
 /* ---------- background mesh (data-driven) ---------- */
 
@@ -47,24 +57,6 @@ function MeshBackground() {
 
 /* ---------- small pieces ---------- */
 
-function ShieldIcon({ size }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M12 2 4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5l-8-3Z" />
-    </svg>
-  );
-}
-
 function MailIcon({ size }: { size?: number }) {
   return (
     <svg
@@ -98,53 +90,133 @@ function Logo({ admin }: { admin?: boolean }) {
   );
 }
 
-type CredentialsFormProps = {
-  idPrefix: string;
-  emailLabel: string;
-  placeholder: string;
-  submitLabel: string;
-  submitClass: string;
-  onSubmit: (email: string, password: string) => void;
-};
+/* ---------- forms ---------- */
 
-function CredentialsForm({ idPrefix, emailLabel, placeholder, submitLabel, submitClass, onSubmit }: CredentialsFormProps) {
+type FieldProps = {
+  id: string;
+  label: string;
+  error?: string | null;
+  hint?: string;
+} & React.InputHTMLAttributes<HTMLInputElement>;
+
+/** Labelled input with an optional inline error (linked for screen readers). */
+function Field({ id, label, error, hint, ...input }: FieldProps) {
+  const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
+  return (
+    <div className="field-group">
+      <label htmlFor={id}>{label}</label>
+      <input id={id} className={`field${error ? ' invalid' : ''}`} aria-invalid={!!error} aria-describedby={describedBy} {...input} />
+      {error ? (
+        <p id={`${id}-error`} className="field-error">{error}</p>
+      ) : (
+        hint && <p id={`${id}-hint`} className="field-hint">{hint}</p>
+      )}
+    </div>
+  );
+}
+
+function FormError({ message }: { message: string | null }) {
+  return message ? <p role="alert" className="form-error">{message}</p> : null;
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function LoginForm({ onDone }: { onDone: () => void }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    onSubmit(email, password);
+    if (!EMAIL_PATTERN.test(email.trim())) return setError('Enter a valid email address.');
+    if (!password) return setError('Enter your password.');
+    setBusy(true);
+    setError(null);
+    try {
+      await loginWithEmail(email.trim(), password);
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not sign in.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="field-group">
-        <label htmlFor={`${idPrefix}-email`}>{emailLabel}</label>
-        <input
-          id={`${idPrefix}-email`}
-          className="field"
-          type="email"
-          placeholder={placeholder}
-          autoComplete="username"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-      </div>
-      <div className="field-group">
-        <label htmlFor={`${idPrefix}-password`}>Password</label>
-        <input
-          id={`${idPrefix}-password`}
-          className="field"
-          type="password"
-          placeholder="••••••••"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </div>
-      <button type="submit" className={submitClass}>{submitLabel}</button>
+    <form onSubmit={handleSubmit} noValidate>
+      <Field id="login-email" label="Email" type="email" placeholder="you@1337.ma" autoComplete="username"
+        required value={email} onChange={(e) => setEmail(e.target.value)} />
+      <Field id="login-password" label="Password" type="password" placeholder="••••••••" autoComplete="current-password"
+        required maxLength={PASSWORD_MAX} value={password} onChange={(e) => setPassword(e.target.value)} />
+      <FormError message={error} />
+      <button type="submit" className="email-btn" disabled={busy}>{busy ? 'Signing in…' : 'Sign in'}</button>
+    </form>
+  );
+}
+
+type SignupErrors = Partial<Record<'email' | 'login' | 'fullname' | 'password' | 'confirm', string>>;
+
+function validateSignup(d: { email: string; login: string; fullname: string; password: string; confirm: string }): SignupErrors {
+  const errors: SignupErrors = {};
+  if (!EMAIL_PATTERN.test(d.email.trim())) errors.email = 'Enter a valid email address.';
+  if (!LOGIN_PATTERN.test(d.login)) errors.login = '3–20 characters: lowercase letters, digits, - or _.';
+  else if (RESERVED_LOGINS.has(d.login)) errors.login = 'This username is reserved.';
+  if (!d.fullname.trim()) errors.fullname = 'Name is required.';
+  if (d.password.length < PASSWORD_MIN) errors.password = `At least ${PASSWORD_MIN} characters.`;
+  else if (!d.password.trim()) errors.password = "Password can't be only spaces.";
+  if (d.confirm !== d.password) errors.confirm = "Passwords don't match.";
+  return errors;
+}
+
+function SignupForm({ onDone }: { onDone: () => void }) {
+  const [form, setForm] = useState({ email: '', login: '', fullname: '', password: '', confirm: '' });
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // Show field errors only after the first submit attempt, then live as you fix them.
+  const errors = submitted ? validateSignup(form) : {};
+  const set = (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm({ ...form, [key]: key === 'login' ? e.target.value.toLowerCase() : e.target.value });
+
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSubmitted(true);
+    if (Object.keys(validateSignup(form)).length) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await signupWithEmail({
+        email: form.email.trim(),
+        login: form.login,
+        fullname: form.fullname.trim(),
+        password: form.password,
+      });
+      onDone();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create your account.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} noValidate>
+      <Field id="signup-email" label="Email" type="email" placeholder="you@1337.ma" autoComplete="email"
+        required maxLength={254} value={form.email} onChange={set('email')} error={errors.email} />
+      <Field id="signup-login" label="Username" placeholder="e.g. ofrikel" autoComplete="username"
+        required maxLength={20} value={form.login} onChange={set('login')} error={errors.login}
+        hint="Your profile will be at /users/your-username." />
+      <Field id="signup-fullname" label="Display name" placeholder="Your name" autoComplete="name"
+        required maxLength={100} value={form.fullname} onChange={set('fullname')} error={errors.fullname} />
+      <Field id="signup-password" label="Password" type="password" placeholder="••••••••" autoComplete="new-password"
+        required maxLength={PASSWORD_MAX} value={form.password} onChange={set('password')} error={errors.password}
+        hint={`At least ${PASSWORD_MIN} characters.`} />
+      <Field id="signup-confirm" label="Confirm password" type="password" placeholder="••••••••" autoComplete="new-password"
+        required maxLength={PASSWORD_MAX} value={form.confirm} onChange={set('confirm')} error={errors.confirm} />
+      <FormError message={error} />
+      <button type="submit" className="email-btn" disabled={busy}>{busy ? 'Creating account…' : 'Create account'}</button>
     </form>
   );
 }
@@ -155,7 +227,7 @@ function BackLink({ onBack }: { onBack: () => void }) {
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="m15 18-6-6 6-6" />
       </svg>
-      Back to student login
+      Back
     </button>
   );
 }
@@ -179,9 +251,9 @@ function ThemeToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void }
 
 /* ---------- views ---------- */
 
-type StudentViewProps = { onAdmin: () => void; onEmail: () => void; onTerms: () => void };
+type StudentViewProps = { onEmail: () => void; onSignup: () => void; onTerms: () => void };
 
-function StudentView({ onAdmin, onEmail, onTerms }: StudentViewProps) {
+function StudentView({ onEmail, onSignup, onTerms }: StudentViewProps) {
   return (
     <div className="view">
       <div className="card">
@@ -211,13 +283,13 @@ function StudentView({ onAdmin, onEmail, onTerms }: StudentViewProps) {
         <div className="divider"><span>OR</span></div>
 
         <div className="alt-actions">
-          <button type="button" className="ghost-link" onClick={onAdmin}>
-            <ShieldIcon />
-            Login as Admin
-          </button>
           <button type="button" className="ghost-link" onClick={onEmail}>
             <MailIcon />
-            Continue with email
+            Sign in with email
+          </button>
+          <button type="button" className="ghost-link" onClick={onSignup}>
+            <MailIcon />
+            Create an account
           </button>
         </div>
       </div>
@@ -227,60 +299,40 @@ function StudentView({ onAdmin, onEmail, onTerms }: StudentViewProps) {
   );
 }
 
-function AdminView({ onBack }: { onBack: () => void }) {
+type FormViewProps = { onBack: () => void; onSwitch: () => void; onDone: () => void };
+
+function EmailView({ onBack, onSwitch, onDone }: FormViewProps) {
   return (
     <div className="view">
       <div className="card">
-        <Logo admin />
-
-        <div className="icon-badge"><ShieldIcon size={20} /></div>
-
-        <h1 className="view-title">Administrator access</h1>
-        <p className="desc view-desc">Restricted to platform staff only.</p>
-
-        <CredentialsForm
-          idPrefix="admin"
-          emailLabel="Admin email"
-          placeholder="you@1337.ma"
-          submitLabel="Sign in"
-          submitClass="admin-btn"
-          onSubmit={(email) => {
-            console.log('admin login', { email });
-            // TODO: call POST /api/auth/admin/login
-          }}
-        />
+        <Logo />
+        <div className="icon-badge"><MailIcon size={20} /></div>
+        <h1 className="view-title">Sign in with email</h1>
+        <p className="desc view-desc">Use the email and password of your Nexus account.</p>
+        <LoginForm onDone={onDone} />
+        <p className="switch-line">
+          No account yet? <button type="button" className="terms-word" onClick={onSwitch}>Create one</button>
+        </p>
       </div>
-
       <BackLink onBack={onBack} />
       <p className="footnote">1337.nexus · prototype v0.1</p>
     </div>
   );
 }
 
-function EmailView({ onBack }: { onBack: () => void }) {
+function SignupView({ onBack, onSwitch, onDone }: FormViewProps) {
   return (
     <div className="view">
       <div className="card">
         <Logo />
-
         <div className="icon-badge"><MailIcon size={20} /></div>
-
-        <h1 className="view-title">Continue with email</h1>
-        <p className="desc view-desc">Sign in with the email linked to your account.</p>
-
-        <CredentialsForm
-          idPrefix="email"
-          emailLabel="Email"
-          placeholder="you@1337.ma"
-          submitLabel="Continue"
-          submitClass="email-btn"
-          onSubmit={(email) => {
-            console.log('email login', { email });
-            // TODO: call POST /api/auth/login
-          }}
-        />
+        <h1 className="view-title">Create your account</h1>
+        <p className="desc view-desc">Sign up with your email, or use the 42 button on the previous screen.</p>
+        <SignupForm onDone={onDone} />
+        <p className="switch-line">
+          Already have an account? <button type="button" className="terms-word" onClick={onSwitch}>Sign in</button>
+        </p>
       </div>
-
       <BackLink onBack={onBack} />
       <p className="footnote">1337.nexus · prototype v0.1</p>
     </div>
@@ -311,15 +363,36 @@ function TermsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 /* ---------- page ---------- */
 
 export default function Login() {
+  const navigate = useNavigate();
   const [view, setView] = useState<View>('student');
   const [dark, setDark] = useState(false);
   const [termsOpen, setTermsOpen] = useState(false);
+  // Already signed in? Then /login has nothing to offer: go home instead of showing the form.
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    void isSignedIn().then((signedIn) => {
+      if (cancelled) return;
+      if (signedIn) navigate('/', { replace: true });
+      else setChecking(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 
   // The dark-mode CSS variables are keyed on <html class="dark">
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
     return () => document.documentElement.classList.remove('dark');
   }, [dark]);
+
+  // Signed in (cookies set): go into the app.
+  const enterApp = () => navigate('/', { replace: true });
+  const back = () => setView('student');
+
+  if (checking) return null; // a few ms; avoids flashing the form before redirecting
 
   return (
     <main className="login-page">
@@ -328,14 +401,10 @@ export default function Login() {
 
       <div className="wrap">
         {view === 'student' && (
-          <StudentView
-            onAdmin={() => setView('admin')}
-            onEmail={() => setView('email')}
-            onTerms={() => setTermsOpen(true)}
-          />
+          <StudentView onEmail={() => setView('email')} onSignup={() => setView('signup')} onTerms={() => setTermsOpen(true)} />
         )}
-        {view === 'admin' && <AdminView onBack={() => setView('student')} />}
-        {view === 'email' && <EmailView onBack={() => setView('student')} />}
+        {view === 'email' && <EmailView onBack={back} onSwitch={() => setView('signup')} onDone={enterApp} />}
+        {view === 'signup' && <SignupView onBack={back} onSwitch={() => setView('email')} onDone={enterApp} />}
       </div>
 
       <TermsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
