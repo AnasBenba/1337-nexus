@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+    <meta content="web_dashboard" name="shell-type" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+</head>
+
+<body class="bg-surface font-body-md text-body-md text-on-surface antialiased"><svg aria-hidden="true"
+        class="inline-defs-container" style="position:absolute;width:0;height:0;overflow:hidden"></svg>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <meta content="web_dashboard" name="shell-type" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <style>
+        @layer base {
+
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                overscroll-behavior: none;
+            }
+
+            main>:first-child {
+                margin-top: 0 !important;
+            }
+
+            main>:last-child {
+                margin-bottom: 0 !important;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script
+        id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-background": "#131b2e", "on-error-container": "#93000a", "background": "#faf8ff", "on-tertiary-container": "#203039", "surface-bright": "#faf8ff", "surface-container-high": "#e2e7ff", "on-surface": "#131b2e", "inverse-primary": "#9fcaff", "surface-tint": "#0061a5", "outline-variant": "#bfc7d5", "secondary-fixed": "#cce5ff", "on-primary-fixed-variant": "#00497e", "primary-fixed-dim": "#9fcaff", "surface": "#faf8ff", "surface-container": "#eaedff", "tertiary-fixed-dim": "#b7c9d5", "inverse-surface": "#283044", "secondary": "#006398", "on-secondary": "#ffffff", "inverse-on-surface": "#eef0ff", "outline": "#707884", "tertiary-fixed": "#d3e5f1", "on-error": "#ffffff", "secondary-fixed-dim": "#93ccff", "primary": "#0061a5", "on-tertiary-fixed-variant": "#384953", "error": "#ba1a1a", "on-primary-fixed": "#001d36", "primary-container": "#0099ff", "on-secondary-container": "#00476e", "surface-container-highest": "#dae2fd", "on-primary-container": "#002f54", "on-tertiary-fixed": "#0c1e26", "on-secondary-fixed": "#001d31", "surface-container-low": "#f2f3ff", "on-tertiary": "#ffffff", "on-surface-variant": "#3f4753", "primary-fixed": "#d2e4ff", "tertiary": "#50616b", "surface-container-lowest": "#ffffff", "tertiary-container": "#8698a3", "secondary-container": "#5bb8fe", "surface-variant": "#dae2fd", "on-primary": "#ffffff", "surface-dim": "#d2d9f4", "on-secondary-fixed-variant": "#004b73", "error-container": "#ffdad6" }, "borderRadius": { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" }, "spacing": { "space-md": "1rem", "margin-mobile": "1rem", "gutter": "1.5rem", "space-2xl": "3rem", "space-lg": "1.5rem", "margin": "2rem", "space-xl": "2rem", "gutter-mobile": "1rem", "space-sm": "0.5rem", "space-xs": "0.25rem" }, "fontFamily": { "headline-lg-mobile": ["Plus Jakarta Sans"], "label-sm": ["Plus Jakarta Sans"], "body-lg": ["Plus Jakarta Sans"], "headline-sm": ["Plus Jakarta Sans"], "label-code-tag": ["JetBrains Mono"], "body-sm": ["Plus Jakarta Sans"], "headline-lg": ["Plus Jakarta Sans"], "display-hero-mobile": ["Plus Jakarta Sans"], "display-hero": ["Plus Jakarta Sans"], "body-md": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"], "headline-md": ["Plus Jakarta Sans"] }, "fontSize": { "headline-lg-mobile": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "700" }], "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "600" }], "body-lg": ["16px", { "lineHeight": "26px", "letterSpacing": "-0.005em", "fontWeight": "400" }], "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "label-code-tag": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }], "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "display-hero-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800" }], "display-hero": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.03em", "fontWeight": "800" }], "body-md": ["14px", { "lineHeight": "22px", "fontWeight": "400" }], "label-md": ["14px", { "lineHeight": "20px", "fontWeight": "600" }], "headline-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.015em", "fontWeight": "700" }] } } } };</script>
+    <header
+        class="fixed top-0 left-0 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl z-50 flex items-center justify-between px-margin shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+        <div class="flex items-center gap-space-sm w-64 shrink-0">
+            <div class="w-9 h-9 rounded-DEFAULT bg-primary flex items-center justify-center text-on-primary shadow-sm">
+                <span class="material-symbols-outlined text-[20px]">hub</span></div><span
+                class="font-headline-sm text-headline-sm font-bold tracking-tight text-on-surface">1337<span
+                    class="text-primary-container font-extrabold">.Nexus</span></span>
+        </div>
+        <div class="hidden md:flex items-center flex-1 max-w-2xl mx-space-lg">
+            <div
+                class="flex items-center w-full bg-surface-container-low px-space-md py-space-xs rounded-full gap-space-sm">
+                <span class="material-symbols-outlined text-outline text-[18px]">search</span><input
+                    class="w-full bg-transparent border-0 outline-none font-body-sm text-body-sm text-on-surface placeholder:text-outline"
+                    placeholder="Search projects, people, stack, or campus..." type="text" /><span
+                    class="font-label-code-tag text-label-code-tag bg-surface-container px-space-xs py-0.5 rounded text-on-surface-variant font-mono">⌘K</span>
+                <div class="h-4 w-[1px] bg-surface-container-highest"></div><button
+                    class="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant shrink-0 hover:text-on-surface transition-colors"><span>Benguerir</span><span
+                        class="material-symbols-outlined text-[16px]">expand_more</span></button>
+            </div>
+        </div>
+        <div class="flex items-center gap-space-md">
+            <div
+                class="hidden lg:flex items-center gap-space-xs font-label-code-tag text-label-code-tag px-space-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed">
+                <span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span><span>1337 Benguerir</span>
+            </div>
+            <div class="flex items-center gap-space-xs text-on-surface-variant"><button aria-label="Theme Switcher"
+                    class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container hover:text-on-surface transition-colors"><span
+                        class="material-symbols-outlined text-[20px]">dark_mode</span></button><button
+                    aria-label="Notifications"
+                    class="relative w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container hover:text-on-surface transition-colors"><span
+                        class="material-symbols-outlined text-[20px]">notifications</span><span
+                        class="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-error text-on-error font-label-code-tag text-[10px] flex items-center justify-center font-bold">3</span></button><button
+                    aria-label="Direct Messages"
+                    class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container hover:text-on-surface transition-colors"><span
+                        class="material-symbols-outlined text-[20px]">chat</span></button></div>
+            <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-sm"><span
+                    class="material-symbols-outlined text-on-primary text-[18px]">person</span></div>
+        </div>
+    </header>
+    <aside
+        class="fixed left-0 top-16 bottom-0 w-64 bg-surface-container-lowest z-40 flex flex-col p-space-md shadow-[0_1px_8px_rgba(0,0,0,0.03)] overflow-y-auto">
+        <div class="bg-surface-container-low rounded-DEFAULT p-space-md mb-space-md relative overflow-hidden">
+            <div class="h-10 -mx-space-md -mt-space-md bg-secondary-fixed mb-space-sm opacity-80"></div>
+            <div class="flex items-center gap-space-sm">
+                <div
+                    class="w-11 h-11 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-md text-label-md font-bold shrink-0">
+                    SE</div>
+                <div class="overflow-hidden">
+                    <div class="font-label-md text-label-md text-on-surface truncate font-bold">Soufiane El B.</div>
+                    <div class="flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant"><span
+                            class="material-symbols-outlined text-[14px]">location_on</span><span
+                            class="text-[11px]">Benguerir</span></div>
+                </div>
+            </div>
+            <div class="mt-space-sm flex items-center justify-between font-label-code-tag text-label-code-tag"><span
+                    class="px-space-xs py-0.5 rounded bg-surface-container-highest text-on-primary-container font-semibold">Lvl
+                    9.42</span><span class="text-outline text-[11px]">Circle 05</span></div>
+        </div>
+        <nav class="flex-1 flex flex-col gap-space-xs"
+            data-active-classes="bg-primary-fixed text-on-primary-fixed font-bold rounded-DEFAULT"><a
+                class="flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"
+                data-path="home" href="#">
+                <div class="flex items-center gap-space-sm"><span
+                        class="material-symbols-outlined text-[20px]">dashboard</span><span
+                        class="font-label-md text-label-md">Home</span></div>
+            </a><a
+                class="flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"
+                data-path="discover" href="#">
+                <div class="flex items-center gap-space-sm"><span
+                        class="material-symbols-outlined text-[20px]">explore</span><span
+                        class="font-label-md text-label-md">Discover</span></div>
+            </a><a
+                class="flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"
+                data-path="my-projects" href="#">
+                <div class="flex items-center gap-space-sm"><span
+                        class="material-symbols-outlined text-[20px]">folder_open</span><span
+                        class="font-label-md text-label-md">My Projects</span></div><span
+                    class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-code-tag text-[10px]">2</span>
+            </a><a
+                class="flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"
+                data-path="messages" href="#">
+                <div class="flex items-center gap-space-sm"><span
+                        class="material-symbols-outlined text-[20px]">chat_bubble</span><span
+                        class="font-label-md text-label-md">Messages</span></div><span
+                    class="px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container font-label-code-tag text-[10px]">4</span>
+            </a>
+            <div class="my-space-sm h-[1px] bg-surface-container-high"></div><a
+                class="flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all group"
+                data-path="ai-copilot" href="#">
+                <div class="flex items-center gap-space-sm"><span
+                        class="material-symbols-outlined text-[20px] text-primary-container group-hover:rotate-12 transition-transform">auto_awesome</span><span
+                        class="font-label-md text-label-md">AI-Copilot</span></div><span
+                    class="font-label-code-tag text-[9px] uppercase px-1.5 py-0.5 rounded bg-primary-fixed text-on-primary-fixed-variant font-bold">PROMPT</span>
+            </a>
+        </nav>
+        <div class="pt-space-md border-t border-surface-container-high">
+            <div
+                class="flex items-center justify-between px-space-sm py-space-xs rounded-DEFAULT bg-surface-container-low">
+                <div
+                    class="flex items-center gap-space-xs font-label-code-tag text-label-code-tag text-on-surface-variant">
+                    <span class="w-2 h-2 rounded-full bg-secondary-container"></span><span>Intra Connected</span></div>
+                <span class="material-symbols-outlined text-[16px] text-primary">verified</span>
+            </div>
+        </div>
+    </aside>
+    <div class="pl-64">
+        <main class="w-full min-h-screen pt-16 bg-surface p-margin">
+            <div class="flex flex-col w-full">
+                <!-- Interactive Toast Notification container (client-side dynamic) -->
+                <div class="fixed bottom-6 right-8 z-[250] pointer-events-none transition-all duration-300 opacity-0 translate-y-3 flex items-center gap-space-sm px-space-md py-space-sm bg-inverse-surface text-inverse-on-surface rounded-DEFAULT shadow-2xl"
+                    id="spec-toast">
+                    <span class="material-symbols-outlined text-[18px] text-primary-container">check_circle</span>
+                    <span class="font-label-sm text-label-sm font-semibold" id="spec-toast-msg">Value copied to
+                        clipboard</span>
+                </div>
+                <!-- SECTION 1: SPEC OVERVIEW HEADER -->
+                <header
+                    class="w-full bg-surface-container-lowest rounded-lg p-space-xl mb-space-xl shadow-sm relative overflow-hidden">
+                    <!-- Subtle cyan backlighting aura -->
+                    <div
+                        class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary-container/10 blur-3xl pointer-events-none">
+                    </div>
+                    <div
+                        class="absolute top-0 right-0 w-48 h-full bg-gradient-to-l from-primary-fixed/20 to-transparent pointer-events-none">
+                    </div>
+                    <div
+                        class="relative z-10 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-space-lg">
+                        <div class="space-y-space-xs max-w-3xl">
+                            <div class="flex flex-wrap items-center gap-space-xs">
+                                <span
+                                    class="font-label-code-tag text-label-code-tag px-space-sm py-0.5 rounded-full bg-primary-fixed text-on-primary-fixed uppercase tracking-wider font-bold">
+                                    SPEC // NEXUS-WB-01
+                                </span>
+                                <span
+                                    class="font-label-code-tag text-label-code-tag px-space-sm py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-mono">
+                                    v1.0.4-rc
+                                </span>
+                                <span
+                                    class="font-label-code-tag text-label-code-tag px-space-sm py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                    Virtual Viewport / 2D Infinite Pan-Zoom
+                                </span>
+                                <span
+                                    class="font-label-code-tag text-label-code-tag px-space-sm py-0.5 rounded-full bg-surface-container text-on-surface-variant">
+                                    Light Mode Default
+                                </span>
+                            </div>
+                            <h1
+                                class="font-headline-lg text-headline-lg text-on-surface tracking-tight font-extrabold pt-1">
+                                Whiteboard Engineering Design Spec
+                            </h1>
+                            <p class="font-body-md text-body-md text-on-surface-variant max-w-2xl leading-relaxed">
+                                Pixel-accurate implementation manual for the <span
+                                    class="font-semibold text-on-surface">1337.Nexus</span> collaborative canvas engine.
+                                Defines coordinate transformation matrix conventions, real-time peer presence
+                                indicators, hit-test bounding geometry, and atomic token bindings.
+                            </p>
+                        </div>
+                        <!-- Action Cluster -->
+                        <div class="flex flex-wrap items-center gap-space-sm shrink-0">
+                            <button
+                                class="flex items-center gap-space-xs px-space-md py-space-sm rounded-DEFAULT bg-surface-container-low hover:bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold transition-all duration-150"
+                                onclick="copyAllTokens()">
+                                <span class="material-symbols-outlined text-[18px] text-primary">data_object</span>
+                                <span>Copy Tokens JSON</span>
+                            </button>
+                            <button
+                                class="flex items-center gap-space-xs px-space-md py-space-sm rounded-DEFAULT bg-primary text-on-primary hover:bg-primary-container shadow-md hover:shadow-lg font-label-md text-label-md font-bold transition-all duration-150"
+                                onclick="copyCssVars()">
+                                <span class="material-symbols-outlined text-[18px]">terminal</span>
+                                <span>Copy CSS Variables</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Quick spec metric row -->
+                    <div
+                        class="mt-space-lg pt-space-md bg-surface-container-low rounded-DEFAULT p-space-md grid grid-cols-2 md:grid-cols-4 gap-space-md">
+                        <div>
+                            <div class="font-label-code-tag text-[11px] text-outline uppercase tracking-wider">Canvas
+                                Coordinate Space</div>
+                            <div class="font-headline-sm text-headline-sm text-on-surface font-mono font-bold">Infinite
+                                ℝ²</div>
+                            <div class="font-body-sm text-[12px] text-on-surface-variant">Origin (0,0) centered at world
+                                root</div>
+                        </div>
+                        <div>
+                            <div class="font-label-code-tag text-[11px] text-outline uppercase tracking-wider">Zoom
+                                Transform Limits</div>
+                            <div class="font-headline-sm text-headline-sm text-on-surface font-mono font-bold">10% –
+                                500%</div>
+                            <div class="font-body-sm text-[12px] text-on-surface-variant">Scale factor: 0.10x → 5.00x
+                            </div>
+                        </div>
+                        <div>
+                            <div class="font-label-code-tag text-[11px] text-outline uppercase tracking-wider">Subpixel
+                                Precision</div>
+                            <div class="font-headline-sm text-headline-sm text-on-surface font-mono font-bold">Float32
+                            </div>
+                            <div class="font-body-sm text-[12px] text-on-surface-variant">4 decimal places for matrix
+                                sync</div>
+                        </div>
+                        <div>
+                            <div class="font-label-code-tag text-[11px] text-outline uppercase tracking-wider">Presence
+                                Sync Rate</div>
+                            <div class="font-headline-sm text-headline-sm text-on-surface font-mono font-bold">60 Hz /
+                                16ms</div>
+                            <div class="font-body-sm text-[12px] text-on-surface-variant">Interpolated with cubic
+                                hermite splines</div>
+                        </div>
+                    </div>
+                </header>
+                <!-- SECTION 2: DIMENSIONS & SPACING TOKENS (REDLINE SPEC) -->
+                <section class="mb-space-xl">
+                    <div class="flex items-center justify-between mb-space-md">
+                        <div>
+                            <div
+                                class="font-label-code-tag text-label-code-tag text-primary uppercase font-bold tracking-widest">
+                                Section 01 // Redlines &amp; Hitboxes</div>
+                            <h2 class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">
+                                Dimensions &amp; Interaction Geometry</h2>
+                        </div>
+                        <span
+                            class="font-label-code-tag text-label-code-tag px-space-sm py-1 rounded bg-surface-container text-on-surface-variant">
+                            Scale: 1:1 Pixel Match
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+                        <!-- 2.A: Sticky Note Visual Redline Diagram -->
+                        <div
+                            class="lg:col-span-6 bg-surface-container-lowest rounded-lg p-space-lg shadow-sm flex flex-col justify-between">
+                            <div class="flex items-center justify-between mb-space-md">
+                                <div class="flex items-center gap-space-xs">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-primary-container"></span>
+                                    <span class="font-label-md text-label-md font-bold text-on-surface">Sticky Note Node
+                                        Blueprint</span>
+                                </div>
+                                <span
+                                    class="font-label-code-tag text-label-code-tag px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-mono">200px
+                                    × 200px</span>
+                            </div>
+                            <!-- Canvas viewport simulation containing redlined sticky -->
+                            <div class="relative w-full h-[360px] bg-slate-50 rounded-DEFAULT overflow-hidden flex items-center justify-center select-none"
+                                style="background-image: radial-gradient(#CBD5E1 1.5px, transparent 1.5px); background-size: 24px 24px;">
+                                <!-- 24px grid callout -->
+                                <div
+                                    class="absolute top-3 left-3 bg-surface-container-lowest/90 backdrop-blur px-2.5 py-1 rounded shadow-sm flex items-center gap-1.5 font-label-code-tag text-[10px] text-outline">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-[#CBD5E1]"></span>
+                                    <span>Grid: 24px × 24px | Dot: Ø2px (#CBD5E1)</span>
+                                </div>
+                                <!-- The 200x200 Sticky Note with active redlines -->
+                                <div
+                                    class="relative w-[200px] h-[200px] bg-[#FEF08A] rounded-[12px] p-4 flex flex-col justify-between shadow-[0_4px_12px_-2px_rgba(0,0,0,0.06),0_2px_6px_-1px_rgba(0,0,0,0.04)] ring-1 ring-[#FDE047]">
+                                    <!-- Redline dimension arrows (CSS overlay) -->
+                                    <!-- Width line top -->
+                                    <div
+                                        class="absolute -top-7 left-0 right-0 flex items-center justify-between text-[10px] font-mono text-error font-bold">
+                                        <span
+                                            class="material-symbols-outlined text-[12px] rotate-90 text-error">straighten</span>
+                                        <span class="bg-surface-container-lowest px-1 rounded shadow-xs">w: 200px</span>
+                                        <span
+                                            class="material-symbols-outlined text-[12px] -rotate-90 text-error">straighten</span>
+                                    </div>
+                                    <!-- Height line right -->
+                                    <div
+                                        class="absolute -right-8 top-0 bottom-0 flex flex-col items-center justify-between text-[10px] font-mono text-error font-bold">
+                                        <span class="material-symbols-outlined text-[12px] text-error">straighten</span>
+                                        <span
+                                            class="bg-surface-container-lowest px-1 rounded shadow-xs rotate-90 my-auto">h:
+                                            200px</span>
+                                        <span
+                                            class="material-symbols-outlined text-[12px] rotate-180 text-error">straighten</span>
+                                    </div>
+                                    <!-- Internal text box boundary preview -->
+                                    <div class="w-full h-[168px] overflow-hidden flex flex-col justify-between">
+                                        <div class="space-y-1">
+                                            <div
+                                                class="font-label-code-tag text-[10px] text-on-surface-variant/70 uppercase">
+                                                #AUTH-POOL-09</div>
+                                            <p
+                                                class="font-body-md text-slate-800 text-[13px] leading-relaxed line-clamp-4">
+                                                Refactor OAuth callback flow to handle Benguerir intra SSO token
+                                                exchange with fallback mesh peer discovery.
+                                            </p>
+                                        </div>
+                                        <div class="flex items-center justify-between pt-2">
+                                            <span
+                                                class="font-label-code-tag text-[10px] text-slate-600">@soufiane</span>
+                                            <span class="text-[10px] font-mono text-slate-500">14:22</span>
+                                        </div>
+                                    </div>
+                                    <!-- Corner radius annotation tag -->
+                                    <div
+                                        class="absolute -bottom-6 -left-2 bg-inverse-surface text-inverse-on-surface px-1.5 py-0.5 rounded font-mono text-[9px]">
+                                        r: 12px (rounded-xl)
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Sticky Note spec ledger -->
+                            <div
+                                class="mt-space-md grid grid-cols-2 sm:grid-cols-4 gap-space-xs font-label-code-tag text-[11px]">
+                                <div class="bg-surface-container-low p-space-xs rounded">
+                                    <span class="text-outline block">Box Shadow</span>
+                                    <span class="font-bold text-on-surface">Soft Dual Lift</span>
+                                </div>
+                                <div class="bg-surface-container-low p-space-xs rounded">
+                                    <span class="text-outline block">Padding</span>
+                                    <span class="font-bold text-on-surface">16px (p-4)</span>
+                                </div>
+                                <div class="bg-surface-container-low p-space-xs rounded">
+                                    <span class="text-outline block">Font Stack</span>
+                                    <span class="font-bold text-on-surface">Plus Jakarta / Inter</span>
+                                </div>
+                                <div class="bg-surface-container-low p-space-xs rounded">
+                                    <span class="text-outline block">Text Scroll Max</span>
+                                    <span class="font-bold text-on-surface">168px internal</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 2.B: Selection Handles, Bounding Box & Marquee Specs -->
+                        <div
+                            class="lg:col-span-6 bg-surface-container-lowest rounded-lg p-space-lg shadow-sm flex flex-col justify-between">
+                            <div class="flex items-center justify-between mb-space-md">
+                                <div class="flex items-center gap-space-xs">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-primary"></span>
+                                    <span class="font-label-md text-label-md font-bold text-on-surface">Transform
+                                        Handles &amp; Hitboxes</span>
+                                </div>
+                                <span
+                                    class="font-label-code-tag text-label-code-tag px-2 py-0.5 rounded bg-primary-fixed text-on-primary-fixed font-mono font-bold">1.5px
+                                    #0099FF</span>
+                            </div>
+                            <!-- Interactive visual canvas of selection handle anatomy -->
+                            <div
+                                class="relative w-full h-[360px] bg-surface-container-low rounded-DEFAULT flex items-center justify-center overflow-hidden">
+                                <!-- Marquee demo area -->
+                                <div class="absolute inset-4 rounded-DEFAULT pointer-events-none opacity-40"
+                                    style="background-image: radial-gradient(#dae2fd 1px, transparent 1px); background-size: 16px 16px;">
+                                </div>
+                                <!-- Selected Mock Element with Transform Frame -->
+                                <div
+                                    class="relative w-56 h-40 bg-surface-container-lowest rounded-xl shadow-md p-space-sm flex flex-col justify-between select-none">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-3 h-3 rounded-full bg-secondary-container"></span>
+                                        <span class="font-label-sm text-label-sm font-bold text-on-surface">Canvas Card
+                                            #39</span>
+                                    </div>
+                                    <div class="space-y-1.5 opacity-50">
+                                        <div class="h-2 bg-surface-container-highest rounded w-3/4"></div>
+                                        <div class="h-2 bg-surface-container-highest rounded w-1/2"></div>
+                                    </div>
+                                    <div class="font-label-code-tag text-[10px] text-outline">x: 480, y: 1240, rot: 0°
+                                    </div>
+                                    <!-- PRIMARY BOUNDING BOX OVERLAY (STROKE 1.5px #0099FF) -->
+                                    <div
+                                        class="absolute -inset-1 border-[1.5px] border-primary-container pointer-events-none rounded-[14px]">
+                                        <!-- Rotation stem line + handle -->
+                                        <div
+                                            class="absolute -top-[25px] left-1/2 -translate-x-1/2 w-[1.5px] h-[24px] bg-primary-container pointer-events-auto flex items-start justify-center">
+                                            <!-- Rotation pill handle: 10px circular pill -->
+                                            <div class="w-[10px] h-[10px] -mt-[5px] rounded-full bg-white border-[1.5px] border-primary-container shadow-xs hover:scale-125 transition-transform cursor-grab"
+                                                title="Rotate (0°)"></div>
+                                        </div>
+                                        <!-- 8 Resize handles (9px × 9px, white fill, 1.5px #0099FF, -4.5px offset) -->
+                                        <!-- Top-Left (NW) -->
+                                        <div
+                                            class="absolute -top-[4.5px] -left-[4.5px] w-[9px] h-[9px] bg-white border-[1.5px] border-primary-container cursor-nwse-resize shadow-xs">
+                                        </div>
+                                        <!-- Top-Center (N) -->
+                                        <div
+                                            class="absolute -top-[4.5px] left-1/2 -translate-x-1/2 w-[9px] h-[9px] bg-white border-[1.5px] border-primary-container cursor-ns-resize shadow-xs">
+                                        </div>
+                                        <!-- Top-Right (NE) -->
+                                        <div
+                                            class="absolute -top-[4.5px] -right-[4.5px] w-[9px] h-[9px] bg-white border-[1.5px] border-primary-container cursor-nesw-resize shadow-xs">
+                                        </div>
+                                        <!-- Middle-Left (W) -->
+                                        <div
+                                            class="absolute top-1/2 -left-[4.5px] -translate-y-1/2 w-[9px] h-[9px] bg-white border-[1.5px] border-primary-container cursor-ew-resize shadow-xs">
+                                        </div>
+                                        <!-- Middle-Right (E) -->
+                                        <div
+                                            class="absolute top-1/2 -right-[4.5px] -translate-y-1/2 w-[9px] h-[9px] bg-white border-[1.5px] border-primary-container cursor-ew-resize shadow-xs">
+                                        </div>
+                                        <!-- Bottom-Left (SW) -->
+                                        <div
+                                            class="absolute -bottom-[4.5px] -left-[4.5px] w-[9px] h-[9px] bg-white border-[1.5px] border-primary-container cursor-nesw-resize shadow-xs">
+                                        </div>
+                                        <!-- Bottom-Center (S) -->
+                                        <div
+                                            class="absolute -bottom-[4.5px] left-1/2 -translate-x-1/2 w-[9px] h-[9px] bg-white border-[1.5px] border-primary-container cursor-ns-resize shadow-xs">
+                                        </div>
+                                        <!-- Bottom-Right (SE) -->
+                                        <div
+                                            class="absolute -bottom-[4.5px] -right-[4.5px] w-[9px] h-[9px] bg-white border-[1.5px] border-primary-container cursor-nwse-resize shadow-xs">
+                                        </div>
+                                    </div>
+                                    <!-- Annotation Callout Pills -->
+                                    <div
+                                        class="absolute -left-28 top-6 bg-surface-container-highest/90 backdrop-blur text-on-surface px-2 py-0.5 rounded text-[10px] font-mono shadow-xs">
+                                        9×9px square
+                                    </div>
+                                    <div
+                                        class="absolute -right-28 -top-4 bg-primary-fixed text-on-primary-fixed px-2 py-0.5 rounded text-[10px] font-mono shadow-xs">
+                                        20px stem stem-y
+                                    </div>
+                                </div>
+                                <!-- Multi-selection marquee preview snippet -->
+                                <div
+                                    class="absolute right-4 bottom-4 w-36 h-20 border-[1.5px] border-dashed border-primary-container bg-primary-container/5 rounded flex items-center justify-center font-label-code-tag text-[9px] text-primary font-bold">
+                                    Marquee (5% cyan)
+                                </div>
+                            </div>
+                            <!-- Selection Specs Ledger -->
+                            <div
+                                class="mt-space-md grid grid-cols-2 sm:grid-cols-4 gap-space-xs font-label-code-tag text-[11px]">
+                                <div class="bg-surface-container-low p-space-xs rounded">
+                                    <span class="text-outline block">Handle Stroke</span>
+                                    <span class="font-bold text-on-surface">1.5px #0099FF</span>
+                                </div>
+                                <div class="bg-surface-container-low p-space-xs rounded">
+                                    <span class="text-outline block">Stem Offset</span>
+                                    <span class="font-bold text-on-surface">20px length</span>
+                                </div>
+                                <div class="bg-surface-container-low p-space-xs rounded">
+                                    <span class="text-outline block">Handle Geometry</span>
+                                    <span class="font-bold text-on-surface">9px × 9px square</span>
+                                </div>
+                                <div class="bg-surface-container-low p-space-xs rounded">
+                                    <span class="text-outline block">Rotate Handle</span>
+                                    <span class="font-bold text-on-surface">10px circular pill</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 2.C: Remote Peer Selection & Real-Time Cursors Redline -->
+                    <div class="mt-space-lg bg-surface-container-lowest rounded-lg p-space-lg shadow-sm">
+                        <div class="flex items-center justify-between mb-space-md">
+                            <div>
+                                <span
+                                    class="font-label-code-tag text-label-code-tag text-primary uppercase font-bold tracking-widest">Presence
+                                    Engine</span>
+                                <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Remote Peer
+                                    Cursors &amp; Locking Bounding Box</h3>
+                            </div>
+                            <span
+                                class="font-label-code-tag text-label-code-tag px-space-sm py-1 rounded bg-secondary-fixed text-on-secondary-fixed-variant">
+                                60Hz Spline Smooth
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-space-lg">
+                            <!-- Remote Bounding Box Spec -->
+                            <div
+                                class="bg-surface-container-low rounded-DEFAULT p-space-md flex flex-col justify-between">
+                                <div class="font-label-md text-label-md font-bold text-on-surface mb-2">Remote Peer
+                                    Selection Box</div>
+                                <div
+                                    class="relative w-full h-44 bg-surface-container-lowest rounded-lg flex items-center justify-center overflow-hidden">
+                                    <!-- Simulated remote card locked by Sara (#E11D48) -->
+                                    <div
+                                        class="relative w-44 h-24 bg-surface-container-low rounded-xl p-3 flex flex-col justify-between">
+                                        <span class="font-label-sm text-[11px] font-bold text-on-surface">API Pipeline
+                                            Flowchart</span>
+                                        <div class="h-1.5 w-16 bg-surface-container-highest rounded"></div>
+                                        <!-- Remote lock highlight border: 2px dashed #E11D48 with 4px glow -->
+                                        <div
+                                            class="absolute -inset-1 border-2 border-dashed border-[#E11D48] rounded-[14px] shadow-[0_0_8px_rgba(225,29,72,0.35)] pointer-events-none">
+                                            <!-- Peer Attached Name Pill at top center -->
+                                            <div
+                                                class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-[#E11D48] text-white px-2 py-0.5 rounded-md font-mono text-[10px] font-bold shadow-sm flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-[10px]">lock</span>
+                                                <span>Sara El Fassi</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="font-body-sm text-[12px] text-on-surface-variant mt-3">
+                                    Peers lock nodes with a <span class="font-mono font-bold text-[#E11D48]">2px
+                                        dashed</span> boundary matching their assigned presence color.
+                                    No transform handles rendered for unowned selections.
+                                </p>
+                            </div>
+                            <!-- Remote Cursor Anatomy -->
+                            <div
+                                class="bg-surface-container-low rounded-DEFAULT p-space-md flex flex-col justify-between">
+                                <div class="font-label-md text-label-md font-bold text-on-surface mb-2">Angled Vector
+                                    Pointer &amp; Pill</div>
+                                <div
+                                    class="relative w-full h-44 bg-surface-container-lowest rounded-lg flex items-center justify-center overflow-hidden">
+                                    <!-- Simulated Cursor for Youssef (#059669) -->
+                                    <div class="relative flex flex-col items-start">
+                                        <!-- 18px x 18px cursor SVG -->
+                                        <svg class="drop-shadow-md" fill="none" height="22" viewbox="0 0 24 24"
+                                            width="22">
+                                            <path d="M4 2L20 10L12 12L10 20L4 2Z" fill="#059669" stroke="#FFFFFF"
+                                                stroke-linejoin="round" stroke-width="1.5"></path>
+                                        </svg>
+                                        <!-- Name label badge (11px, py-0.5 px-2, rounded-md, shadow) -->
+                                        <div
+                                            class="ml-4 -mt-1 bg-[#059669] text-white px-2 py-0.5 rounded-md shadow-md font-mono text-[11px] font-semibold tracking-wide flex items-center gap-1">
+                                            <span>Youssef B.</span>
+                                            <span class="text-[9px] opacity-75">lvl 8.2</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="font-body-sm text-[12px] text-on-surface-variant mt-3">
+                                    Cursor SVG: 18px × 18px angled arrow with 1.5px white protective outer stroke. Label
+                                    pill offset +14px X / -4px Y from tip.
+                                </p>
+                            </div>
+                            <!-- Truncation & Collision Offset Spec -->
+                            <div
+                                class="bg-surface-container-low rounded-DEFAULT p-space-md flex flex-col justify-between">
+                                <div class="font-label-md text-label-md font-bold text-on-surface mb-2">Collision &amp;
+                                    Overflow Rules</div>
+                                <div
+                                    class="relative w-full h-44 bg-surface-container-lowest rounded-lg p-3 flex flex-col justify-center gap-2 overflow-hidden">
+                                    <!-- Collision stacking illustration -->
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="font-label-code-tag text-[10px] text-outline w-12 text-right">Label:</span>
+                                        <div class="max-w-[130px] truncate bg-[#8B5CF6] text-white px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold"
+                                            title="Abdelmoughit Benjelloun (Benguerir)">
+                                            Abdelmoughit Benjelloun
+                                        </div>
+                                        <span class="font-label-code-tag text-[9px] text-error font-mono">max 130px
+                                            ellipsis</span>
+                                    </div>
+                                    <!-- Stacked Leader Line Offset -->
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="font-label-code-tag text-[10px] text-outline w-12 text-right">Offset:</span>
+                                        <div
+                                            class="h-6 flex items-center border-l-2 border-primary-container pl-2 font-mono text-[10px] text-on-surface">
+                                            Δy = 14px on label collision
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="font-label-code-tag text-[10px] text-outline w-12 text-right">Native:</span>
+                                        <span
+                                            class="font-mono text-[11px] text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">crosshair
+                                            / default</span>
+                                    </div>
+                                </div>
+                                <p class="font-body-sm text-[12px] text-on-surface-variant mt-3">
+                                    When peers congregate over single cluster, presence pills apply dynamic <span
+                                        class="font-mono font-bold">14px vertical displacement</span>
+                                    to prevent occluding overlapping text.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- SECTION 3: EXACT COLOR PALETTES & HEX SWATCHES -->
+                <section class="mb-space-xl">
+                    <div class="flex items-center justify-between mb-space-md">
+                        <div>
+                            <div
+                                class="font-label-code-tag text-label-code-tag text-primary uppercase font-bold tracking-widest">
+                                Section 02 // Color Architecture</div>
+                            <h2 class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">
+                                Canonical Whiteboard Palettes</h2>
+                        </div>
+                        <span class="font-label-code-tag text-label-code-tag text-outline">Click any swatch to copy
+                            HEX</span>
+                    </div>
+                    <!-- 3.A: 8 Presence Colors -->
+                    <div class="bg-surface-container-lowest rounded-lg p-space-lg shadow-sm mb-space-lg">
+                        <div class="flex items-center justify-between mb-space-md">
+                            <div>
+                                <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">1. Peer Presence
+                                    Colors (8 Assigned Slots)</h3>
+                                <p class="font-body-sm text-body-sm text-on-surface-variant">Deterministic hash
+                                    assignment based on student intranet UID for remote cursors &amp; selections.</p>
+                            </div>
+                            <span
+                                class="font-label-code-tag text-label-code-tag px-2 py-0.5 rounded bg-surface-container text-on-surface-variant">
+                                tokens.presence.*
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-space-sm">
+                            <!-- Color 1: Primary Electric Blue -->
+                            <div class="group cursor-pointer bg-surface-container-low hover:bg-surface-container-high p-space-xs rounded-DEFAULT transition-all duration-150 flex flex-col"
+                                onclick="copyText('#0099FF')">
+                                <div class="w-full h-16 rounded-md mb-2 relative shadow-xs"
+                                    style="background-color: #0099FF;">
+                                    <span
+                                        class="absolute bottom-1 right-1 font-mono text-[9px] bg-black/30 text-white px-1 rounded">01</span>
+                                </div>
+                                <div class="font-label-sm text-[12px] font-bold text-on-surface truncate">Electric Blue
+                                </div>
+                                <div
+                                    class="font-label-code-tag text-[11px] text-primary font-mono group-hover:underline">
+                                    #0099FF</div>
+                                <div class="font-body-sm text-[10px] text-outline truncate">You / Primary</div>
+                            </div>
+                            <!-- Color 2: Coral Red -->
+                            <div class="group cursor-pointer bg-surface-container-low hover:bg-surface-container-high p-space-xs rounded-DEFAULT transition-all duration-150 flex flex-col"
+                                onclick="copyText('#E11D48')">
+                                <div class="w-full h-16 rounded-md mb-2 relative shadow-xs"
+                                    style="background-color: #E11D48;">
+                                    <span
+                                        class="absolute bottom-1 right-1 font-mono text-[9px] bg-black/30 text-white px-1 rounded">02</span>
+                                </div>
+                                <div class="font-label-sm text-[12px] font-bold text-on-surface truncate">Coral Red
+                                </div>
+                                <div
+                                    class="font-label-code-tag text-[11px] text-primary font-mono group-hover:underline">
+                                    #E11D48</div>
+                                <div class="font-body-sm text-[10px] text-outline truncate">Sara</div>
+                            </div>
+                            <!-- Color 3: Emerald Green -->
+                            <div class="group cursor-pointer bg-surface-container-low hover:bg-surface-container-high p-space-xs rounded-DEFAULT transition-all duration-150 flex flex-col"
+                                onclick="copyText('#059669')">
+                                <div class="w-full h-16 rounded-md mb-2 relative shadow-xs"
+                                    style="background-color: #059669;">
+                                    <span
+                                        class="absolute bottom-1 right-1 font-mono text-[9px] bg-black/30 text-white px-1 rounded">03</span>
+                                </div>
+                                <div class="font-label-sm text-[12px] font-bold text-on-surface truncate">Emerald Green
+                                </div>
+                                <div
+                                    class="font-label-code-tag text-[11px] text-primary font-mono group-hover:underline">
+                                    #059669</div>
+                                <div class="font-body-sm text-[10px] text-outline truncate">Youssef</div>
+                            </div>
+                            <!-- Color 4: Violet / Purple -->
+                            <div class="group cursor-pointer bg-surface-container-low hover:bg-surface-container-high p-space-xs rounded-DEFAULT transition-all duration-150 flex flex-col"
+                                onclick="copyText('#8B5CF6')">
+                                <div class="w-full h-16 rounded-md mb-2 relative shadow-xs"
+                                    style="background-color: #8B5CF6;">
+                                    <span
+                                        class="absolute bottom-1 right-1 font-mono text-[9px] bg-black/30 text-white px-1 rounded">04</span>
+                                </div>
+                                <div class="font-label-sm text-[12px] font-bold text-on-surface truncate">Violet</div>
+                                <div
+                                    class="font-label-code-tag text-[11px] text-primary font-mono group-hover:underline">
+                                    #8B5CF6</div>
+                                <div class="font-body-sm text-[10px] text-outline truncate">Imane</div>
+                            </div>
+                            <!-- Color 5: Amber Gold -->
+                            <div class="group cursor-pointer bg-surface-container-low hover:bg-surface-container-high p-space-xs rounded-DEFAULT transition-all duration-150 flex flex-col"
+                                onclick="copyText('#D97706')">
+                                <div class="w-full h-16 rounded-md mb-2 relative shadow-xs"
+                                    style="background-color: #D97706;">
+                                    <span
+                                        class="absolute bottom-1 right-1 font-mono text-[9px] bg-black/30 text-white px-1 rounded">05</span>
+                                </div>
+                                <div class="font-label-sm text-[12px] font-bold text-on-surface truncate">Amber Gold
+                                </div>
+                                <div
+                                    class="font-label-code-tag text-[11px] text-primary font-mono group-hover:underline">
+                                    #D97706</div>
+                                <div class="font-body-sm text-[10px] text-outline truncate">Karim</div>
+                            </div>
+                            <!-- Color 6: Teal -->
+                            <div class="group cursor-pointer bg-surface-container-low hover:bg-surface-container-high p-space-xs rounded-DEFAULT transition-all duration-150 flex flex-col"
+                                onclick="copyText('#0D9488')">
+                                <div class="w-full h-16 rounded-md mb-2 relative shadow-xs"
+                                    style="background-color: #0D9488;">
+                                    <span
+                                        class="absolute bottom-1 right-1 font-mono text-[9px] bg-black/30 text-white px-1 rounded">06</span>
+                                </div>
+                                <div class="font-label-sm text-[12px] font-bold text-on-surface truncate">Teal</div>
+                                <div
+                                    class="font-label-code-tag text-[11px] text-primary font-mono group-hover:underline">
+                                    #0D9488</div>
+                                <div class="font-body-sm text-[10px] text-outline truncate">Abdelmoughit</div>
+                            </div>
+                            <!-- Color 7: Pink -->
+                            <div class="group cursor-pointer bg-surface-container-low hover:bg-surface-container-high p-space-xs rounded-DEFAULT transition-all duration-150 flex flex-col"
+                                onclick="copyText('#EC4899')">
+                                <div class="w-full h-16 rounded-md mb-2 relative shadow-xs"
+                                    style="background-color: #EC4899;">
+                                    <span
+                                        class="absolute bottom-1 right-1 font-mono text-[9px] bg-black/30 text-white px-1 rounded">07</span>
+                                </div>
+                                <div class="font-label-sm text-[12px] font-bold text-on-surface truncate">Pink</div>
+                                <div
+                                    class="font-label-code-tag text-[11px] text-primary font-mono group-hover:underline">
+                                    #EC4899</div>
+                                <div class="font-body-sm text-[10px] text-outline truncate">Salma</div>
+                            </div>
+                            <!-- Color 8: Cool Gray -->
+                            <div class="group cursor-pointer bg-surface-container-low hover:bg-surface-container-high p-space-xs rounded-DEFAULT transition-all duration-150 flex flex-col"
+                                onclick="copyText('#475569')">
+                                <div class="w-full h-16 rounded-md mb-2 relative shadow-xs"
+                                    style="background-color: #475569;">
+                                    <span
+                                        class="absolute bottom-1 right-1 font-mono text-[9px] bg-black/30 text-white px-1 rounded">08</span>
+                                </div>
+                                <div class="font-label-sm text-[12px] font-bold text-on-surface truncate">Cool Slate
+                                </div>
+                                <div
+                                    class="font-label-code-tag text-[11px] text-primary font-mono group-hover:underline">
+                                    #475569</div>
+                                <div class="font-body-sm text-[10px] text-outline truncate">Guest / Idle</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 3.B: 6 Ink Colors & 3.C: 8 Sticky Note Colors -->
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+                        <!-- 6 INK COLORS -->
+                        <div class="lg:col-span-5 bg-surface-container-lowest rounded-lg p-space-lg shadow-sm">
+                            <div class="flex items-center justify-between mb-space-md">
+                                <div>
+                                    <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">2. Ink &amp;
+                                        Pen Colors</h3>
+                                    <p class="font-body-sm text-body-sm text-on-surface-variant">Vector stroke fill
+                                        tokens for freehand pencil &amp; connectors.</p>
+                                </div>
+                                <span
+                                    class="font-label-code-tag text-label-code-tag px-2 py-0.5 rounded bg-surface-container font-mono">tokens.ink.*</span>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 gap-space-sm">
+                                <!-- Ink 1 -->
+                                <div class="group cursor-pointer p-space-xs bg-surface-container-low hover:bg-surface-container rounded-DEFAULT transition-all flex flex-col"
+                                    onclick="copyText('#0F172A')">
+                                    <div class="h-12 w-full rounded mb-1.5 shadow-xs"
+                                        style="background-color: #0F172A;"></div>
+                                    <span class="font-label-sm text-[11px] font-bold text-on-surface">Deep Slate</span>
+                                    <span
+                                        class="font-mono text-[10px] text-primary group-hover:underline">#0F172A</span>
+                                    <span class="text-[9px] text-outline">Default Pen</span>
+                                </div>
+                                <!-- Ink 2 -->
+                                <div class="group cursor-pointer p-space-xs bg-surface-container-low hover:bg-surface-container rounded-DEFAULT transition-all flex flex-col"
+                                    onclick="copyText('#475569')">
+                                    <div class="h-12 w-full rounded mb-1.5 shadow-xs"
+                                        style="background-color: #475569;"></div>
+                                    <span class="font-label-sm text-[11px] font-bold text-on-surface">Medium
+                                        Slate</span>
+                                    <span
+                                        class="font-mono text-[10px] text-primary group-hover:underline">#475569</span>
+                                    <span class="text-[9px] text-outline">Wireframes</span>
+                                </div>
+                                <!-- Ink 3 -->
+                                <div class="group cursor-pointer p-space-xs bg-surface-container-low hover:bg-surface-container rounded-DEFAULT transition-all flex flex-col"
+                                    onclick="copyText('#0099FF')">
+                                    <div class="h-12 w-full rounded mb-1.5 shadow-xs"
+                                        style="background-color: #0099FF;"></div>
+                                    <span class="font-label-sm text-[11px] font-bold text-on-surface">Nexus Blue</span>
+                                    <span
+                                        class="font-mono text-[10px] text-primary group-hover:underline">#0099FF</span>
+                                    <span class="text-[9px] text-outline">Primary Accent</span>
+                                </div>
+                                <!-- Ink 4 -->
+                                <div class="group cursor-pointer p-space-xs bg-surface-container-low hover:bg-surface-container rounded-DEFAULT transition-all flex flex-col"
+                                    onclick="copyText('#059669')">
+                                    <div class="h-12 w-full rounded mb-1.5 shadow-xs"
+                                        style="background-color: #059669;"></div>
+                                    <span class="font-label-sm text-[11px] font-bold text-on-surface">Forest
+                                        Green</span>
+                                    <span
+                                        class="font-mono text-[10px] text-primary group-hover:underline">#059669</span>
+                                    <span class="text-[9px] text-outline">Success / Passed</span>
+                                </div>
+                                <!-- Ink 5 -->
+                                <div class="group cursor-pointer p-space-xs bg-surface-container-low hover:bg-surface-container rounded-DEFAULT transition-all flex flex-col"
+                                    onclick="copyText('#EA580C')">
+                                    <div class="h-12 w-full rounded mb-1.5 shadow-xs"
+                                        style="background-color: #EA580C;"></div>
+                                    <span class="font-label-sm text-[11px] font-bold text-on-surface">Vibrant
+                                        Orange</span>
+                                    <span
+                                        class="font-mono text-[10px] text-primary group-hover:underline">#EA580C</span>
+                                    <span class="text-[9px] text-outline">Warnings</span>
+                                </div>
+                                <!-- Ink 6 -->
+                                <div class="group cursor-pointer p-space-xs bg-surface-container-low hover:bg-surface-container rounded-DEFAULT transition-all flex flex-col"
+                                    onclick="copyText('#DC2626')">
+                                    <div class="h-12 w-full rounded mb-1.5 shadow-xs"
+                                        style="background-color: #DC2626;"></div>
+                                    <span class="font-label-sm text-[11px] font-bold text-on-surface">Signal Red</span>
+                                    <span
+                                        class="font-mono text-[10px] text-primary group-hover:underline">#DC2626</span>
+                                    <span class="text-[9px] text-outline">Blockers / Bug</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 8 STICKY NOTE PASTEL FILL & BORDER PAIRS -->
+                        <div class="lg:col-span-7 bg-surface-container-lowest rounded-lg p-space-lg shadow-sm">
+                            <div class="flex items-center justify-between mb-space-md">
+                                <div>
+                                    <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">3. Sticky
+                                        Note Pastels (Fill + Border Pairs)</h3>
+                                    <p class="font-body-sm text-body-sm text-on-surface-variant">Calibrated
+                                        high-contrast fills for dark text readability with matching perimeter tints.</p>
+                                </div>
+                                <span
+                                    class="font-label-code-tag text-label-code-tag px-2 py-0.5 rounded bg-surface-container font-mono">tokens.sticky.*</span>
+                            </div>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-space-sm">
+                                <!-- Sticky 1: Yellow -->
+                                <div class="p-2.5 rounded-DEFAULT cursor-pointer hover:scale-[1.02] transition-transform shadow-xs"
+                                    onclick="copyText('#FEF08A')"
+                                    style="background-color: #FEF08A; border: 1.5px solid #FDE047;">
+                                    <div class="flex justify-between items-center text-slate-800 font-bold text-[11px]">
+                                        <span>Classic Yellow</span>
+                                        <span class="material-symbols-outlined text-[14px]">push_pin</span>
+                                    </div>
+                                    <div class="mt-2 font-mono text-[10px] text-slate-700">F: #FEF08A</div>
+                                    <div class="font-mono text-[9px] text-slate-500">B: #FDE047</div>
+                                </div>
+                                <!-- Sticky 2: Peach / Rose -->
+                                <div class="p-2.5 rounded-DEFAULT cursor-pointer hover:scale-[1.02] transition-transform shadow-xs"
+                                    onclick="copyText('#FECDD3')"
+                                    style="background-color: #FECDD3; border: 1.5px solid #FDA4AF;">
+                                    <div class="flex justify-between items-center text-slate-800 font-bold text-[11px]">
+                                        <span>Rose Peach</span>
+                                        <span class="material-symbols-outlined text-[14px]">push_pin</span>
+                                    </div>
+                                    <div class="mt-2 font-mono text-[10px] text-slate-700">F: #FECDD3</div>
+                                    <div class="font-mono text-[9px] text-slate-500">B: #FDA4AF</div>
+                                </div>
+                                <!-- Sticky 3: Sky Blue -->
+                                <div class="p-2.5 rounded-DEFAULT cursor-pointer hover:scale-[1.02] transition-transform shadow-xs"
+                                    onclick="copyText('#BAE6FD')"
+                                    style="background-color: #BAE6FD; border: 1.5px solid #7DD3FC;">
+                                    <div class="flex justify-between items-center text-slate-800 font-bold text-[11px]">
+                                        <span>Sky Blue</span>
+                                        <span class="material-symbols-outlined text-[14px]">push_pin</span>
+                                    </div>
+                                    <div class="mt-2 font-mono text-[10px] text-slate-700">F: #BAE6FD</div>
+                                    <div class="font-mono text-[9px] text-slate-500">B: #7DD3FC</div>
+                                </div>
+                                <!-- Sticky 4: Mint -->
+                                <div class="p-2.5 rounded-DEFAULT cursor-pointer hover:scale-[1.02] transition-transform shadow-xs"
+                                    onclick="copyText('#BBF7D0')"
+                                    style="background-color: #BBF7D0; border: 1.5px solid #86EFAC;">
+                                    <div class="flex justify-between items-center text-slate-800 font-bold text-[11px]">
+                                        <span>Mint Green</span>
+                                        <span class="material-symbols-outlined text-[14px]">push_pin</span>
+                                    </div>
+                                    <div class="mt-2 font-mono text-[10px] text-slate-700">F: #BBF7D0</div>
+                                    <div class="font-mono text-[9px] text-slate-500">B: #86EFAC</div>
+                                </div>
+                                <!-- Sticky 5: Lavender -->
+                                <div class="p-2.5 rounded-DEFAULT cursor-pointer hover:scale-[1.02] transition-transform shadow-xs"
+                                    onclick="copyText('#E9D5FF')"
+                                    style="background-color: #E9D5FF; border: 1.5px solid #D8B4FE;">
+                                    <div class="flex justify-between items-center text-slate-800 font-bold text-[11px]">
+                                        <span>Lavender</span>
+                                        <span class="material-symbols-outlined text-[14px]">push_pin</span>
+                                    </div>
+                                    <div class="mt-2 font-mono text-[10px] text-slate-700">F: #E9D5FF</div>
+                                    <div class="font-mono text-[9px] text-slate-500">B: #D8B4FE</div>
+                                </div>
+                                <!-- Sticky 6: Apricot -->
+                                <div class="p-2.5 rounded-DEFAULT cursor-pointer hover:scale-[1.02] transition-transform shadow-xs"
+                                    onclick="copyText('#FED7AA')"
+                                    style="background-color: #FED7AA; border: 1.5px solid #FDBA74;">
+                                    <div class="flex justify-between items-center text-slate-800 font-bold text-[11px]">
+                                        <span>Apricot</span>
+                                        <span class="material-symbols-outlined text-[14px]">push_pin</span>
+                                    </div>
+                                    <div class="mt-2 font-mono text-[10px] text-slate-700">F: #FED7AA</div>
+                                    <div class="font-mono text-[9px] text-slate-500">B: #FDBA74</div>
+                                </div>
+                                <!-- Sticky 7: Pastel Pink -->
+                                <div class="p-2.5 rounded-DEFAULT cursor-pointer hover:scale-[1.02] transition-transform shadow-xs"
+                                    onclick="copyText('#FBCFE8')"
+                                    style="background-color: #FBCFE8; border: 1.5px solid #F472B6;">
+                                    <div class="flex justify-between items-center text-slate-800 font-bold text-[11px]">
+                                        <span>Coral Blush</span>
+                                        <span class="material-symbols-outlined text-[14px]">push_pin</span>
+                                    </div>
+                                    <div class="mt-2 font-mono text-[10px] text-slate-700">F: #FBCFE8</div>
+                                    <div class="font-mono text-[9px] text-slate-500">B: #F472B6</div>
+                                </div>
+                                <!-- Sticky 8: Soft Slate -->
+                                <div class="p-2.5 rounded-DEFAULT cursor-pointer hover:scale-[1.02] transition-transform shadow-xs"
+                                    onclick="copyText('#E2E8F0')"
+                                    style="background-color: #E2E8F0; border: 1.5px solid #CBD5E1;">
+                                    <div class="flex justify-between items-center text-slate-800 font-bold text-[11px]">
+                                        <span>Slate Gray</span>
+                                        <span class="material-symbols-outlined text-[14px]">push_pin</span>
+                                    </div>
+                                    <div class="mt-2 font-mono text-[10px] text-slate-700">F: #E2E8F0</div>
+                                    <div class="font-mono text-[9px] text-slate-500">B: #CBD5E1</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- SECTION 4: STROKE WIDTHS & CONNECTORS -->
+                <section class="mb-space-xl">
+                    <div class="flex items-center justify-between mb-space-md">
+                        <div>
+                            <div
+                                class="font-label-code-tag text-label-code-tag text-primary uppercase font-bold tracking-widest">
+                                Section 03 // Vector Dynamics</div>
+                            <h2 class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">
+                                Stroke Widths &amp; Vector Profiles</h2>
+                        </div>
+                        <span
+                            class="font-label-code-tag text-label-code-tag px-space-sm py-1 rounded bg-surface-container text-on-surface-variant">
+                            SVG stroke-width tokens
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+                        <!-- Stroke 1: 2px Fine -->
+                        <div
+                            class="bg-surface-container-lowest rounded-lg p-space-md shadow-sm flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span
+                                        class="font-headline-sm text-headline-sm font-mono font-bold text-on-surface">2px</span>
+                                    <span
+                                        class="font-label-code-tag text-label-code-tag px-2 py-0.5 rounded bg-surface-container text-outline">tokens.stroke.fine</span>
+                                </div>
+                                <div class="font-label-md text-label-md font-bold text-on-surface">Fine / Connectors
+                                </div>
+                                <p class="font-body-sm text-[12px] text-on-surface-variant mt-1">High-density
+                                    architectural diagrams, arrow links, orthogonal router lines, and sub-annotations.
+                                </p>
+                            </div>
+                            <div class="mt-space-lg pt-space-md border-t border-surface-container-high">
+                                <!-- Visual stroke rendering demo -->
+                                <div
+                                    class="h-16 flex items-center justify-center bg-surface-container-low rounded-DEFAULT px-4">
+                                    <div class="w-full h-[2px] bg-primary rounded-full"></div>
+                                </div>
+                                <div class="mt-2 font-mono text-[10px] text-outline text-center">stroke-width="2"
+                                    stroke-linecap="round"</div>
+                            </div>
+                        </div>
+                        <!-- Stroke 2: 4px Standard (DEFAULT) -->
+                        <div
+                            class="bg-surface-container-lowest rounded-lg p-space-md shadow-sm flex flex-col justify-between ring-2 ring-primary">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span
+                                        class="font-headline-sm text-headline-sm font-mono font-bold text-primary">4px</span>
+                                    <span
+                                        class="font-label-code-tag text-label-code-tag px-2 py-0.5 rounded bg-primary-fixed text-on-primary-fixed font-bold">DEFAULT</span>
+                                </div>
+                                <div class="font-label-md text-label-md font-bold text-on-surface">Standard / Freehand
+                                    Ink</div>
+                                <p class="font-body-sm text-[12px] text-on-surface-variant mt-1">Standard freehand pen
+                                    tool, primitive shape outlines (rectangles, diamonds, ellipses), and general
+                                    wireframes.</p>
+                            </div>
+                            <div class="mt-space-lg pt-space-md border-t border-surface-container-high">
+                                <!-- Visual stroke rendering demo -->
+                                <div
+                                    class="h-16 flex items-center justify-center bg-surface-container-low rounded-DEFAULT px-4">
+                                    <div class="w-full h-[4px] bg-primary rounded-full"></div>
+                                </div>
+                                <div class="mt-2 font-mono text-[10px] text-primary text-center font-bold">
+                                    stroke-width="4" stroke-linecap="round"</div>
+                            </div>
+                        </div>
+                        <!-- Stroke 3: 8px Bold -->
+                        <div
+                            class="bg-surface-container-lowest rounded-lg p-space-md shadow-sm flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span
+                                        class="font-headline-sm text-headline-sm font-mono font-bold text-on-surface">8px</span>
+                                    <span
+                                        class="font-label-code-tag text-label-code-tag px-2 py-0.5 rounded bg-surface-container text-outline">tokens.stroke.bold</span>
+                                </div>
+                                <div class="font-label-md text-label-md font-bold text-on-surface">Bold / Emphasized
+                                    Flows</div>
+                                <p class="font-body-sm text-[12px] text-on-surface-variant mt-1">Section cluster
+                                    borders, sprint grouping frames, milestone callout pointers, and visual headers.</p>
+                            </div>
+                            <div class="mt-space-lg pt-space-md border-t border-surface-container-high">
+                                <!-- Visual stroke rendering demo -->
+                                <div
+                                    class="h-16 flex items-center justify-center bg-surface-container-low rounded-DEFAULT px-4">
+                                    <div class="w-full h-[8px] bg-primary rounded-full"></div>
+                                </div>
+                                <div class="mt-2 font-mono text-[10px] text-outline text-center">stroke-width="8"
+                                    stroke-linecap="round"</div>
+                            </div>
+                        </div>
+                        <!-- Stroke 4: 14px Marker -->
+                        <div
+                            class="bg-surface-container-lowest rounded-lg p-space-md shadow-sm flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span
+                                        class="font-headline-sm text-headline-sm font-mono font-bold text-on-surface">14px</span>
+                                    <span
+                                        class="font-label-code-tag text-label-code-tag px-2 py-0.5 rounded bg-surface-container text-outline">tokens.stroke.marker</span>
+                                </div>
+                                <div class="font-label-md text-label-md font-bold text-on-surface">Marker / Highlighting
+                                </div>
+                                <p class="font-body-sm text-[12px] text-on-surface-variant mt-1">Translucent highlighter
+                                    pen (mix-blend-mode: multiply, opacity 0.4), critical bug circle callouts.</p>
+                            </div>
+                            <div class="mt-space-lg pt-space-md border-t border-surface-container-high">
+                                <!-- Visual stroke rendering demo -->
+                                <div
+                                    class="h-16 flex items-center justify-center bg-surface-container-low rounded-DEFAULT px-4">
+                                    <div class="w-full h-[14px] bg-primary/40 rounded-full"></div>
+                                </div>
+                                <div class="mt-2 font-mono text-[10px] text-outline text-center">stroke-width="14"
+                                    opacity="0.4"</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- SECTION 5: FLOATING TOOLBAR & POPOVER DIMENSIONS -->
+                <section class="mb-space-xl">
+                    <div class="flex items-center justify-between mb-space-md">
+                        <div>
+                            <div
+                                class="font-label-code-tag text-label-code-tag text-primary uppercase font-bold tracking-widest">
+                                Section 04 // Chrome &amp; Floating HUD</div>
+                            <h2 class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">
+                                Floating Toolbar &amp; Popover Dimensions</h2>
+                        </div>
+                        <span
+                            class="font-label-code-tag text-label-code-tag px-space-sm py-1 rounded bg-primary-fixed text-on-primary-fixed font-bold">
+                            Fixed Viewport Overlays
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+                        <!-- 5.A: Main Left Vertical Toolbar & Properties Popover -->
+                        <div class="lg:col-span-8 bg-surface-container-lowest rounded-lg p-space-lg shadow-sm">
+                            <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold mb-space-xs">Chrome
+                                HUD Interactive Architecture</h3>
+                            <p class="font-body-sm text-body-sm text-on-surface-variant mb-space-lg">Exact bounding
+                                geometry for the 48px main tool stack, contextual properties flyout, and bottom-right
+                                zoom pill.</p>
+                            <div
+                                class="relative w-full min-h-[380px] bg-surface-container-low rounded-lg p-space-lg overflow-hidden flex flex-wrap items-start justify-center gap-space-xl">
+                                <!-- Floating Main Left Toolbar (Width: 48px, padding: 6px, rounded-2xl, shadow-lg) -->
+                                <div class="relative flex flex-col items-center">
+                                    <!-- Annotation tag top -->
+                                    <div
+                                        class="absolute -top-7 left-1/2 -translate-x-1/2 font-mono text-[10px] text-primary font-bold bg-surface-container-lowest px-2 py-0.5 rounded shadow-xs whitespace-nowrap">
+                                        w: 48px | pad: 6px
+                                    </div>
+                                    <div
+                                        class="w-[48px] bg-surface-container-lowest border border-surface-container-high rounded-2xl p-[6px] shadow-lg flex flex-col items-center gap-[4px]">
+                                        <!-- Tool 1: Select (Active) -->
+                                        <button
+                                            class="w-[36px] h-[36px] rounded-xl bg-primary text-on-primary flex items-center justify-center shadow-xs transition-transform active:scale-95"
+                                            title="Select Pointer (V)">
+                                            <span class="material-symbols-outlined text-[19px]">near_me</span>
+                                        </button>
+                                        <!-- Tool 2: Hand/Pan -->
+                                        <button
+                                            class="w-[36px] h-[36px] rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface flex items-center justify-center transition-colors"
+                                            title="Pan Hand (H)">
+                                            <span class="material-symbols-outlined text-[19px]">pan_tool</span>
+                                        </button>
+                                        <!-- Tool 3: Sticky Note -->
+                                        <button
+                                            class="w-[36px] h-[36px] rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface flex items-center justify-center transition-colors"
+                                            title="Sticky Note (S)">
+                                            <span class="material-symbols-outlined text-[19px]">sticky_note_2</span>
+                                        </button>
+                                        <!-- Tool 4: Pen / Ink -->
+                                        <button
+                                            class="w-[36px] h-[36px] rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface flex items-center justify-center transition-colors"
+                                            title="Pencil / Draw (P)">
+                                            <span class="material-symbols-outlined text-[19px]">draw</span>
+                                        </button>
+                                        <!-- Tool 5: Shapes -->
+                                        <button
+                                            class="w-[36px] h-[36px] rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface flex items-center justify-center transition-colors"
+                                            title="Shapes (R)">
+                                            <span class="material-symbols-outlined text-[19px]">category</span>
+                                        </button>
+                                        <!-- Tool 6: Text -->
+                                        <button
+                                            class="w-[36px] h-[36px] rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface flex items-center justify-center transition-colors"
+                                            title="Text Label (T)">
+                                            <span class="material-symbols-outlined text-[19px]">title</span>
+                                        </button>
+                                        <div class="w-6 h-[1px] bg-surface-container-high my-1"></div>
+                                        <!-- Tool 7: AI Copilot -->
+                                        <button
+                                            class="w-[36px] h-[36px] rounded-xl bg-primary-fixed text-on-primary-fixed hover:bg-primary-fixed-dim flex items-center justify-center transition-transform hover:scale-105"
+                                            title="AI Diagram Copilot">
+                                            <span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+                                        </button>
+                                    </div>
+                                    <div class="mt-2 font-mono text-[9px] text-outline">Target: 36×36px</div>
+                                </div>
+                                <!-- Properties Popover (Width: 260px, rounded-2xl, shadow-xl, p-16, gap-12) -->
+                                <div
+                                    class="relative w-[260px] bg-surface-container-lowest border border-surface-container-high rounded-2xl p-space-md shadow-xl flex flex-col gap-space-sm select-none">
+                                    <!-- Dimension callout badge -->
+                                    <div
+                                        class="absolute -top-7 right-4 font-mono text-[10px] text-primary font-bold bg-surface-container-lowest px-2 py-0.5 rounded shadow-xs">
+                                        w: 260px | shadow-xl
+                                    </div>
+                                    <!-- Popover Header -->
+                                    <div
+                                        class="flex items-center justify-between pb-2 border-b border-surface-container-high">
+                                        <span class="font-label-md text-label-md font-bold text-on-surface">Stroke
+                                            Properties</span>
+                                        <span class="font-label-code-tag text-[10px] text-primary">#SELECTED</span>
+                                    </div>
+                                    <!-- Stroke Weight Selector -->
+                                    <div>
+                                        <span
+                                            class="font-label-sm text-[11px] font-semibold text-outline uppercase tracking-wider block mb-1.5">Stroke
+                                            Weight</span>
+                                        <div
+                                            class="grid grid-cols-4 gap-1.5 bg-surface-container-low p-1 rounded-DEFAULT">
+                                            <button
+                                                class="py-1 rounded font-mono text-[11px] text-on-surface-variant hover:bg-surface-container-lowest">2px</button>
+                                            <button
+                                                class="py-1 rounded font-mono text-[11px] bg-primary text-on-primary font-bold shadow-xs">4px</button>
+                                            <button
+                                                class="py-1 rounded font-mono text-[11px] text-on-surface-variant hover:bg-surface-container-lowest">8px</button>
+                                            <button
+                                                class="py-1 rounded font-mono text-[11px] text-on-surface-variant hover:bg-surface-container-lowest">14px</button>
+                                        </div>
+                                    </div>
+                                    <!-- Color Palette Swatch Selector -->
+                                    <div>
+                                        <span
+                                            class="font-label-sm text-[11px] font-semibold text-outline uppercase tracking-wider block mb-1.5">Ink
+                                            Color</span>
+                                        <div class="flex items-center justify-between">
+                                            <div
+                                                class="w-6 h-6 rounded-full bg-[#0F172A] ring-2 ring-offset-2 ring-primary">
+                                            </div>
+                                            <div class="w-6 h-6 rounded-full bg-[#475569]"></div>
+                                            <div class="w-6 h-6 rounded-full bg-[#0099FF]"></div>
+                                            <div class="w-6 h-6 rounded-full bg-[#059669]"></div>
+                                            <div class="w-6 h-6 rounded-full bg-[#EA580C]"></div>
+                                            <div class="w-6 h-6 rounded-full bg-[#DC2626]"></div>
+                                        </div>
+                                    </div>
+                                    <!-- Opacity Slider -->
+                                    <div class="pt-1">
+                                        <div class="flex justify-between items-center text-[11px] font-mono mb-1">
+                                            <span class="text-outline">Opacity</span>
+                                            <span class="font-bold text-on-surface">100%</span>
+                                        </div>
+                                        <div
+                                            class="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+                                            <div class="h-full bg-primary-container rounded-full w-full"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Bottom Right Zoom Controls Dock Preview -->
+                                <div class="relative flex flex-col items-center">
+                                    <div
+                                        class="absolute -top-7 font-mono text-[10px] text-primary font-bold bg-surface-container-lowest px-2 py-0.5 rounded shadow-xs whitespace-nowrap">
+                                        h: 36px | rounded-full
+                                    </div>
+                                    <div
+                                        class="h-[36px] bg-surface-container-lowest border border-surface-container-high rounded-full px-2 py-1 shadow-md flex items-center gap-1 select-none">
+                                        <button
+                                            class="w-6 h-6 rounded-full hover:bg-surface-container flex items-center justify-center text-on-surface-variant">
+                                            <span class="material-symbols-outlined text-[16px]">remove</span>
+                                        </button>
+                                        <button
+                                            class="px-2 font-mono text-[12px] font-bold text-on-surface hover:text-primary">
+                                            100%
+                                        </button>
+                                        <button
+                                            class="w-6 h-6 rounded-full hover:bg-surface-container flex items-center justify-center text-on-surface-variant">
+                                            <span class="material-symbols-outlined text-[16px]">add</span>
+                                        </button>
+                                        <div class="h-4 w-[1px] bg-surface-container-high mx-1"></div>
+                                        <button
+                                            class="w-6 h-6 rounded-full hover:bg-surface-container flex items-center justify-center text-on-surface-variant"
+                                            title="Reset View (Shift + 1)">
+                                            <span class="material-symbols-outlined text-[15px]">fit_screen</span>
+                                        </button>
+                                    </div>
+                                    <div class="mt-2 font-mono text-[9px] text-outline">Zoom Dock (Bottom-Right)</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 5.B: Presence Stack Overflow Popover (Width: 240px, max-h: 320px) -->
+                        <div
+                            class="lg:col-span-4 bg-surface-container-lowest rounded-lg p-space-lg shadow-sm flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-space-xs">
+                                    <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">
+                                        Collaborators Sheet</h3>
+                                    <span
+                                        class="font-label-code-tag text-label-code-tag px-2 py-0.5 rounded bg-surface-container font-mono">w:
+                                        240px</span>
+                                </div>
+                                <p class="font-body-sm text-[12px] text-on-surface-variant mb-space-md">Top engine
+                                    navigation avatar overflow popover for active room peers.</p>
+                                <!-- Mock Popover Container -->
+                                <div
+                                    class="w-full bg-surface-container-low border border-surface-container-high rounded-xl p-space-sm shadow-md flex flex-col gap-1 max-h-[300px] overflow-y-auto">
+                                    <!-- Row 1 (You) -->
+                                    <div
+                                        class="h-[36px] px-2 rounded-lg bg-surface-container-lowest flex items-center justify-between">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-2.5 h-2.5 rounded-full bg-[#0099FF]"></span>
+                                            <span class="font-label-sm text-label-sm font-bold text-on-surface">You
+                                                (Soufiane)</span>
+                                        </div>
+                                        <span class="font-mono text-[10px] text-primary">Benguerir</span>
+                                    </div>
+                                    <!-- Row 2 (Sara) -->
+                                    <div
+                                        class="h-[36px] px-2 rounded-lg hover:bg-surface-container-lowest flex items-center justify-between transition-colors">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-2.5 h-2.5 rounded-full bg-[#E11D48]"></span>
+                                            <span class="font-label-sm text-label-sm text-on-surface">Sara El
+                                                Fassi</span>
+                                        </div>
+                                        <span class="font-mono text-[10px] text-outline">Lvl 9.1</span>
+                                    </div>
+                                    <!-- Row 3 (Youssef) -->
+                                    <div
+                                        class="h-[36px] px-2 rounded-lg hover:bg-surface-container-lowest flex items-center justify-between transition-colors">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-2.5 h-2.5 rounded-full bg-[#059669]"></span>
+                                            <span class="font-label-sm text-label-sm text-on-surface">Youssef B.</span>
+                                        </div>
+                                        <span class="font-mono text-[10px] text-outline">Khouribga</span>
+                                    </div>
+                                    <!-- Row 4 (Imane) -->
+                                    <div
+                                        class="h-[36px] px-2 rounded-lg hover:bg-surface-container-lowest flex items-center justify-between transition-colors">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-2.5 h-2.5 rounded-full bg-[#8B5CF6]"></span>
+                                            <span class="font-label-sm text-label-sm text-on-surface">Imane K.</span>
+                                        </div>
+                                        <span class="font-mono text-[10px] text-outline">Tetouan</span>
+                                    </div>
+                                    <!-- Row 5 (Karim) -->
+                                    <div
+                                        class="h-[36px] px-2 rounded-lg hover:bg-surface-container-lowest flex items-center justify-between transition-colors">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-2.5 h-2.5 rounded-full bg-[#D97706]"></span>
+                                            <span class="font-label-sm text-label-sm text-on-surface">Karim Ch.</span>
+                                        </div>
+                                        <span class="font-mono text-[10px] text-outline">Lvl 6.8</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div
+                                class="mt-space-md pt-space-xs text-[11px] font-label-code-tag text-outline flex items-center justify-between">
+                                <span>Row height: 36px</span>
+                                <span>Max height: 320px</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- SECTION 6: Z-ORDER LAYERING HIERARCHY -->
+                <section class="mb-space-xl">
+                    <div class="flex items-center justify-between mb-space-md">
+                        <div>
+                            <div
+                                class="font-label-code-tag text-label-code-tag text-primary uppercase font-bold tracking-widest">
+                                Section 05 // Compositing Engine</div>
+                            <h2 class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">
+                                Z-Order Stacking Hierarchy</h2>
+                        </div>
+                        <span
+                            class="font-label-code-tag text-label-code-tag px-space-sm py-1 rounded bg-surface-container text-on-surface-variant font-mono">
+                            CSS Stacking Contexts
+                        </span>
+                    </div>
+                    <div class="bg-surface-container-lowest rounded-lg p-space-lg shadow-sm">
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-center">
+                            <!-- Visual Isometric/Stacked Layer Representation -->
+                            <div
+                                class="lg:col-span-5 bg-surface-container-low rounded-DEFAULT p-space-lg flex flex-col justify-center gap-2 relative overflow-hidden">
+                                <div
+                                    class="font-label-code-tag text-[11px] text-outline uppercase tracking-wider mb-2 font-bold">
+                                    Visual Depth Stack</div>
+                                <!-- Layer 8 -->
+                                <div
+                                    class="w-full bg-inverse-surface text-inverse-on-surface p-2.5 rounded-md shadow-md flex items-center justify-between font-mono text-[11px] translate-x-3 transition-transform hover:translate-x-1">
+                                    <span class="font-bold">Layer 8: Modals / Overlays</span>
+                                    <span class="bg-primary px-1.5 py-0.5 rounded text-white text-[10px]">z-200</span>
+                                </div>
+                                <!-- Layer 7 -->
+                                <div
+                                    class="w-full bg-surface-container-lowest text-on-surface border border-surface-container-high p-2.5 rounded-md shadow-md flex items-center justify-between font-mono text-[11px] translate-x-2.5 transition-transform hover:translate-x-1">
+                                    <span class="font-bold">Layer 7: Fixed Viewport HUD</span>
+                                    <span
+                                        class="bg-primary-container px-1.5 py-0.5 rounded text-white text-[10px]">z-100</span>
+                                </div>
+                                <!-- Layer 6 -->
+                                <div
+                                    class="w-full bg-[#059669]/15 border border-[#059669]/40 p-2.5 rounded-md flex items-center justify-between font-mono text-[11px] text-[#059669] font-bold translate-x-2">
+                                    <span>Layer 6: Peer Cursors &amp; Pills</span>
+                                    <span class="bg-[#059669] text-white px-1.5 py-0.5 rounded text-[10px]">z-50</span>
+                                </div>
+                                <!-- Layer 5 -->
+                                <div
+                                    class="w-full bg-primary-fixed text-on-primary-fixed border border-primary-container p-2.5 rounded-md flex items-center justify-between font-mono text-[11px] font-bold translate-x-1.5">
+                                    <span>Layer 5: Local Selection Bounding Box</span>
+                                    <span class="bg-primary text-white px-1.5 py-0.5 rounded text-[10px]">z-40</span>
+                                </div>
+                                <!-- Layer 4 -->
+                                <div
+                                    class="w-full bg-[#E11D48]/10 border border-[#E11D48]/30 p-2.5 rounded-md flex items-center justify-between font-mono text-[11px] text-[#E11D48] font-bold translate-x-1">
+                                    <span>Layer 4: Remote Selections &amp; Focus</span>
+                                    <span class="bg-[#E11D48] text-white px-1.5 py-0.5 rounded text-[10px]">z-30</span>
+                                </div>
+                                <!-- Layer 3 -->
+                                <div
+                                    class="w-full bg-[#FEF08A]/60 border border-[#FDE047] p-2.5 rounded-md flex items-center justify-between font-mono text-[11px] text-slate-800 font-bold translate-x-0.5">
+                                    <span>Layer 3: Sticky Notes &amp; Cards</span>
+                                    <span class="bg-slate-700 text-white px-1.5 py-0.5 rounded text-[10px]">z-20</span>
+                                </div>
+                                <!-- Layer 2 -->
+                                <div
+                                    class="w-full bg-surface-container-high p-2.5 rounded-md flex items-center justify-between font-mono text-[11px] text-on-surface-variant font-bold">
+                                    <span>Layer 2: Shapes, Connectors, Ink</span>
+                                    <span class="bg-outline text-white px-1.5 py-0.5 rounded text-[10px]">z-10</span>
+                                </div>
+                                <!-- Layer 1 -->
+                                <div
+                                    class="w-full bg-slate-200 p-2.5 rounded-md flex items-center justify-between font-mono text-[11px] text-slate-600 font-bold -translate-x-0.5">
+                                    <span>Layer 1: Dot Grid &amp; Canvas Base</span>
+                                    <span class="bg-slate-400 text-white px-1.5 py-0.5 rounded text-[10px]">z-0</span>
+                                </div>
+                            </div>
+                            <!-- Detailed Specifications Table -->
+                            <div class="lg:col-span-7 overflow-x-auto">
+                                <table class="w-full text-left font-body-sm text-[13px]">
+                                    <thead>
+                                        <tr
+                                            class="border-b border-surface-container-high font-label-code-tag text-[11px] text-outline uppercase tracking-wider">
+                                            <th class="pb-3 font-semibold">Layer</th>
+                                            <th class="pb-3 font-semibold">Z-Index</th>
+                                            <th class="pb-3 font-semibold">Entity Type</th>
+                                            <th class="pb-3 font-semibold">Hit-Testing Behavior</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-surface-container-high">
+                                        <tr>
+                                            <td class="py-2.5 font-mono font-bold text-primary">L8</td>
+                                            <td class="py-2.5 font-mono text-outline">200</td>
+                                            <td class="py-2.5 font-semibold text-on-surface">Modals, Collaboration
+                                                Sheet, Toasts</td>
+                                            <td class="py-2.5 text-on-surface-variant">Modal backdrop traps touch/wheel
+                                                events</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-2.5 font-mono font-bold text-primary">L7</td>
+                                            <td class="py-2.5 font-mono text-outline">100</td>
+                                            <td class="py-2.5 font-semibold text-on-surface">Fixed Viewport HUD
+                                                (Toolbars, Zoom Dock)</td>
+                                            <td class="py-2.5 text-on-surface-variant">Blocks canvas pan while clicking
+                                                buttons</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-2.5 font-mono font-bold text-primary">L6</td>
+                                            <td class="py-2.5 font-mono text-outline">50</td>
+                                            <td class="py-2.5 font-semibold text-on-surface">Remote Cursors &amp; Peer
+                                                Name Pills</td>
+                                            <td class="py-2.5 text-error font-mono text-[11px]">pointer-events: none
+                                                (Crucial)</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-2.5 font-mono font-bold text-primary">L5</td>
+                                            <td class="py-2.5 font-mono text-outline">40</td>
+                                            <td class="py-2.5 font-semibold text-on-surface">Local Selection &amp; 8
+                                                Resize Handles</td>
+                                            <td class="py-2.5 text-on-surface-variant">Active handles capture mouse drag
+                                                vector</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-2.5 font-mono font-bold text-primary">L4</td>
+                                            <td class="py-2.5 font-mono text-outline">30</td>
+                                            <td class="py-2.5 font-semibold text-on-surface">Remote Selections &amp;
+                                                Peer Lock Frames</td>
+                                            <td class="py-2.5 text-error font-mono text-[11px]">pointer-events: none
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-2.5 font-mono font-bold text-primary">L3</td>
+                                            <td class="py-2.5 font-mono text-outline">20</td>
+                                            <td class="py-2.5 font-semibold text-on-surface">Sticky Notes &amp; Rich
+                                                Text Cards</td>
+                                            <td class="py-2.5 text-on-surface-variant">Single-click selects;
+                                                Double-click edits text</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-2.5 font-mono font-bold text-primary">L2</td>
+                                            <td class="py-2.5 font-mono text-outline">10</td>
+                                            <td class="py-2.5 font-semibold text-on-surface">Vectors, Shapes, Orthogonal
+                                                Links, Ink</td>
+                                            <td class="py-2.5 text-on-surface-variant">Convex polygon &amp; Bezier
+                                                ray-casting check</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-2.5 font-mono font-bold text-primary">L1</td>
+                                            <td class="py-2.5 font-mono text-outline">0</td>
+                                            <td class="py-2.5 font-semibold text-on-surface">Infinite Canvas Grid
+                                                (#F8FAFC + SVG Dots)</td>
+                                            <td class="py-2.5 text-on-surface-variant">Captures Pan (middle-click /
+                                                spacebar) &amp; Zoom</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- SECTION 7: IMPLEMENTATION CODE SNIPPETS (CSS & TAILWIND) -->
+                <section class="mb-space-xl">
+                    <div class="flex items-center justify-between mb-space-md">
+                        <div>
+                            <div
+                                class="font-label-code-tag text-label-code-tag text-primary uppercase font-bold tracking-widest">
+                                Section 06 // Developer Handoff</div>
+                            <h2 class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">CSS
+                                &amp; Tailwind Implementation Snippets</h2>
+                        </div>
+                        <span
+                            class="font-label-code-tag text-label-code-tag px-space-sm py-1 rounded bg-surface-container text-on-surface-variant">
+                            Copy-Paste Ready
+                        </span>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-space-lg">
+                        <!-- Snippet 1: CSS Variables Definition -->
+                        <div
+                            class="bg-surface-container-lowest rounded-lg p-space-lg shadow-sm flex flex-col justify-between">
+                            <div class="flex items-center justify-between mb-space-sm">
+                                <div class="flex items-center gap-space-xs">
+                                    <span class="material-symbols-outlined text-primary text-[18px]">css</span>
+                                    <span
+                                        class="font-label-md text-label-md font-bold text-on-surface">whiteboard-tokens.css</span>
+                                </div>
+                                <button
+                                    class="font-label-code-tag text-label-code-tag text-primary hover:underline flex items-center gap-1"
+                                    onclick="copySnippet('css-block')">
+                                    <span class="material-symbols-outlined text-[14px]">content_copy</span>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
+                            <pre class="bg-slate-900 text-slate-100 p-space-md rounded-DEFAULT font-mono text-[11px] leading-relaxed overflow-x-auto select-all"
+                                id="css-block">:root {
+  /* Canvas Background &amp; Dot Grid */
+  --wb-canvas-bg: #F8FAFC;
+  --wb-grid-dot-color: #CBD5E1;
+  --wb-grid-spacing: 24px;
+  --wb-grid-dot-size: 2px;
+
+  /* Sticky Dimensions */
+  --wb-sticky-size: 200px;
+  --wb-sticky-radius: 12px;
+  --wb-sticky-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+
+  /* Bounding Box &amp; Handles */
+  --wb-selection-stroke: 1.5px solid #0099FF;
+  --wb-handle-size: 9px;
+  --wb-handle-offset: -4.5px;
+  --wb-rotate-pill-size: 10px;
+  --wb-rotate-stem-len: 20px;
+  --wb-marquee-bg: rgba(0, 153, 255, 0.05);
+
+  /* Presence Z-Indexes */
+  --wb-z-base: 0;
+  --wb-z-shapes: 10;
+  --wb-z-stickies: 20;
+  --wb-z-remote-select: 30;
+  --wb-z-local-select: 40;
+  --wb-z-cursors: 50;
+  --wb-z-viewport-hud: 100;
+  --wb-z-modals: 200;
+}</pre>
+                        </div>
+                        <!-- Snippet 2: Tailwind Canvas & Component Classes -->
+                        <div
+                            class="bg-surface-container-lowest rounded-lg p-space-lg shadow-sm flex flex-col justify-between">
+                            <div class="flex items-center justify-between mb-space-sm">
+                                <div class="flex items-center gap-space-xs">
+                                    <span
+                                        class="material-symbols-outlined text-primary-container text-[18px]">code</span>
+                                    <span class="font-label-md text-label-md font-bold text-on-surface">Tailwind
+                                        Component Presets</span>
+                                </div>
+                                <button
+                                    class="font-label-code-tag text-label-code-tag text-primary hover:underline flex items-center gap-1"
+                                    onclick="copySnippet('tailwind-block')">
+                                    <span class="material-symbols-outlined text-[14px]">content_copy</span>
+                                    <span>Copy</span>
+                                </button>
+                            </div>
+                            <pre class="bg-slate-900 text-slate-100 p-space-md rounded-DEFAULT font-mono text-[11px] leading-relaxed overflow-x-auto select-all"
+                                id="tailwind-block">&lt;!-- Infinite Pan/Zoom Canvas Surface --&gt;
+&lt;div class="w-full h-screen bg-[#F8FAFC] overflow-hidden relative"
+     style="background-image: radial-gradient(#CBD5E1 1.5px, transparent 1.5px);
+            background-size: 24px 24px;"&gt;
+
+  &lt;!-- 200x200 Sticky Note Component --&gt;
+  &lt;div class="w-[200px] h-[200px] p-4 rounded-[12px] bg-[#FEF08A] 
+              border border-[#FDE047] shadow-[0_4px_12px_-2px_rgba(0,0,0,0.06),0_2px_6px_-1px_rgba(0,0,0,0.04)]
+              font-body-md text-slate-800 flex flex-col justify-between"&gt;
+    &lt;div class="max-h-[168px] overflow-y-auto scrollbar-thin"&gt;
+      ... Content ...
+    &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- Remote Cursor Component (Youssef: #059669) --&gt;
+  &lt;div class="absolute pointer-events-none z-50 flex flex-col items-start"&gt;
+    &lt;svg width="18" height="18" viewBox="0 0 24 24"&gt;
+      &lt;path d="M4 2L20 10L12 12L10 20L4 2Z" fill="#059669" stroke="#FFF" stroke-width="1.5"/&gt;
+    &lt;/svg&gt;
+    &lt;span class="ml-3.5 -mt-1 bg-[#059669] text-white px-2 py-0.5 rounded-md font-mono text-[11px] font-semibold truncate max-w-[130px] shadow-sm"&gt;
+      Youssef
+    &lt;/span&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</pre>
+                        </div>
+                    </div>
+                </section>
+                <!-- Interactive Client-Side Logic for Toast and Token Copy -->
+                <script>
+                    function showToast(msg) {
+                        const toast = document.getElementById('spec-toast');
+                        const toastMsg = document.getElementById('spec-toast-msg');
+                        if (toast && toastMsg) {
+                            toastMsg.innerText = msg;
+                            toast.classList.remove('opacity-0', 'translate-y-3');
+                            toast.classList.add('opacity-100', 'translate-y-0');
+                            setTimeout(() => {
+                                toast.classList.remove('opacity-100', 'translate-y-0');
+                                toast.classList.add('opacity-0', 'translate-y-3');
+                            }, 2200);
+                        }
+                    }
+
+                    function copyText(hex) {
+                        if (navigator.clipboard) {
+                            navigator.clipboard.writeText(hex).then(() => {
+                                showToast('Copied token ' + hex + ' to clipboard');
+                            });
+                        } else {
+                            showToast('Token: ' + hex);
+                        }
+                    }
+
+                    function copySnippet(elementId) {
+                        const el = document.getElementById(elementId);
+                        if (el && navigator.clipboard) {
+                            navigator.clipboard.writeText(el.innerText).then(() => {
+                                showToast('Code snippet copied to clipboard');
+                            });
+                        }
+                    }
+
+                    function copyCssVars() {
+                        const el = document.getElementById('css-block');
+                        if (el && navigator.clipboard) {
+                            navigator.clipboard.writeText(el.innerText).then(() => {
+                                showToast('CSS Variables copied to clipboard');
+                            });
+                        }
+                    }
+
+                    function copyAllTokens() {
+                        const tokens = {
+                            name: "1337.Nexus Collaborative Whiteboard Spec",
+                            version: "1.0",
+                            canvas: {
+                                background: "#F8FAFC",
+                                dotColor: "#CBD5E1",
+                                dotSpacingPx: 24,
+                                dotDiameterPx: 2
+                            },
+                            sticky: {
+                                widthPx: 200,
+                                heightPx: 200,
+                                paddingPx: 16,
+                                radiusPx: 12,
+                                shadow: "0 4px 12px -2px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.04)"
+                            },
+                            presence: {
+                                electricBlue: "#0099FF",
+                                coralRed: "#E11D48",
+                                emeraldGreen: "#059669",
+                                violet: "#8B5CF6",
+                                amberGold: "#D97706",
+                                teal: "#0D9488",
+                                pink: "#EC4899",
+                                coolSlate: "#475569"
+                            },
+                            strokes: {
+                                fine: 2,
+                                standard: 4,
+                                bold: 8,
+                                marker: 14
+                            },
+                            zLayers: {
+                                base: 0,
+                                vectors: 10,
+                                stickies: 20,
+                                remoteSelect: 30,
+                                localSelect: 40,
+                                cursors: 50,
+                                hud: 100,
+                                modals: 200
+                            }
+                        };
+
+                        if (navigator.clipboard) {
+                            navigator.clipboard.writeText(JSON.stringify(tokens, null, 2)).then(() => {
+                                showToast('Full token JSON bundle copied');
+                            });
+                        }
+                    }
+                </script>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

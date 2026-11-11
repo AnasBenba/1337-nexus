@@ -6,6 +6,7 @@ import { CopilotPage } from '@/flows/user/copilot/ask';
 import { RefineProjectDemoPage } from '@/flows/user/projects/refine_project';
 import { ChatPage } from '@/flows/user/chat/ChatPage';
 import { DiscoverPage } from '@/flows/user/opportunities/DiscoverPage';
+import { WhiteboardPage } from '@/flows/user/canvas';
 import { ProfilePage } from '@/flows/user/profile/ProfilePage';
 import { TermsPage } from '@/flows/legal/TermsPage';
 import { PrivacyPage } from '@/flows/legal/PrivacyPage';
@@ -18,6 +19,8 @@ export const App: React.FC = () => {
           <Route path="/" element={<Layout />}>
             <Route index element={<Navigate to="/discover" replace />} />
             <Route path="discover" element={<DiscoverPage />} />
+            <Route path="whiteboard" element={<WhiteboardPage />} />
+            <Route path="canvas" element={<WhiteboardPage />} />
             <Route path="refine-project" element={<RefineProjectDemoPage />} />
             <Route path="projects/refine-project" element={<RefineProjectDemoPage />} />
             <Route path="copilot" element={<CopilotPage />} />

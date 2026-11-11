@@ -176,6 +176,28 @@ export const Layout: React.FC = () => {
             </span>
           </NavLink>
 
+          {/* Collaborative Whiteboard [CV-403] */}
+          <NavLink
+            to="/whiteboard"
+            className={({ isActive }) =>
+              `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all group ${
+                isActive
+                  ? 'bg-primary-fixed text-on-primary-fixed font-bold'
+                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+              }`
+            }
+          >
+            <div className="flex items-center gap-space-sm">
+              <span className="material-symbols-outlined text-[20px] text-primary">
+                draw
+              </span>
+              <span className="font-label-md text-label-md">Whiteboard</span>
+            </div>
+            <span className="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-code-tag text-[9px] font-bold">
+              CRDT
+            </span>
+          </NavLink>
+
           <NavLink
             to="/messages"
             className={({ isActive }) =>
