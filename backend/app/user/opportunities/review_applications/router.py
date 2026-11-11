@@ -20,6 +20,11 @@ router = APIRouter(tags=["opportunities"])
     "/opportunities/{opportunity_id}/applications",
     response_model=list[ReviewedApplicationResponse],
 )
+@router.get(
+    "/api/v1/opportunities/{opportunity_id}/applications",
+    response_model=list[ReviewedApplicationResponse],
+    include_in_schema=False,
+)
 async def list_applications(
     opportunity_id: UUID,
     db: AsyncSession = Depends(get_db_session),

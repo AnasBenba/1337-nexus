@@ -6,3 +6,4 @@ from app.core.db import engine
 async def cleanup_db_engine():
     yield
     await engine.dispose()
+

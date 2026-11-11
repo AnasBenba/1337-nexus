@@ -16,6 +16,12 @@ router = APIRouter(tags=["opportunities"])
     response_model=ApplyResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@router.post(
+    "/api/v1/opportunities/{opportunity_id}/apply",
+    response_model=ApplyResponse,
+    status_code=status.HTTP_201_CREATED,
+    include_in_schema=False,
+)
 async def apply(
     request: ApplyRequest,
     opportunity_id: UUID,

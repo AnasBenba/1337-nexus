@@ -15,6 +15,11 @@ router = APIRouter(tags=["opportunities"])
     "/opportunities/{opportunity_id}/applications/match-scoring",
     response_model=list[MatchScoreResponse],
 )
+@router.get(
+    "/api/v1/opportunities/{opportunity_id}/applications/match-scoring",
+    response_model=list[MatchScoreResponse],
+    include_in_schema=False,
+)
 async def match_score_applications(
     opportunity_id: UUID,
     db: AsyncSession = Depends(get_db_session),

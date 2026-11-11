@@ -16,6 +16,12 @@ router = APIRouter(tags=["opportunities"])
     response_model=OpportunityResponse,
     status_code=status.HTTP_200_OK,
 )
+@router.post(
+    "/api/v1/opportunities/{opportunity_id}/publish",
+    response_model=OpportunityResponse,
+    status_code=status.HTTP_200_OK,
+    include_in_schema=False,
+)
 async def publish(
     opportunity_id: UUID,
     db: AsyncSession = Depends(get_db_session),

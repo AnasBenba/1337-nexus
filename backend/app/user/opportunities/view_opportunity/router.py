@@ -17,6 +17,11 @@ router = APIRouter(tags=["opportunities"])
     "/opportunities/{opportunity_id}",
     response_model=OpportunityResponse,
 )
+@router.get(
+    "/api/v1/opportunities/{opportunity_id}",
+    response_model=OpportunityResponse,
+    include_in_schema=False,
+)
 async def view_opportunity(
     opportunity_id: UUID,
     db: AsyncSession = Depends(get_db_session),

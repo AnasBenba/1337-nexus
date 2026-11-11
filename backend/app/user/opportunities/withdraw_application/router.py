@@ -15,6 +15,11 @@ router = APIRouter(tags=["opportunities"])
     "/opportunities/{opportunity_id}/withdraw",
     status_code=status.HTTP_204_NO_CONTENT,
 )
+@router.delete(
+    "/api/v1/opportunities/{opportunity_id}/withdraw",
+    status_code=status.HTTP_204_NO_CONTENT,
+    include_in_schema=False,
+)
 async def withdraw(
     request: WithdrawApplicationRequest,
     opportunity_id: UUID,
