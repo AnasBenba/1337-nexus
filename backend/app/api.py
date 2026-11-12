@@ -248,6 +248,24 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(recommended_projects_router)
     app.include_router(edit_project_router)
     app.include_router(publish_project_router)
+
+    for api_router in (
+        opportunities_router,
+        create_opportunity_router,
+        update_opportunity_router,
+        publish_opportunity_router,
+        match_scoring_router,
+        review_applications_router,
+        view_opportunity_router,
+        apply_router,
+        withdraw_application_router,
+        create_project_router,
+        my_projects_router,
+        recommended_projects_router,
+        edit_project_router,
+        publish_project_router,
+    ):
+        app.include_router(api_router, prefix="/api")
     app.include_router(archive_project_router)
     app.include_router(quick_actions_router)
     app.include_router(teams_router)

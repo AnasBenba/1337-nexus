@@ -96,8 +96,14 @@ async def create_pitch_endpoint(
 )
 async def list_pitches_endpoint(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: Annotated[Users, Depends(get_current_user)],
 ) -> list[Pitch]:
-    result = await db.execute(select(Pitch).order_by(Pitch.created_at.desc()).limit(40))
+    result = await db.execute(
+        select(Pitch)
+        .where(Pitch.author_id == current_user.id)
+        .order_by(Pitch.created_at.desc())
+        .limit(40)
+    )
     return list(result.scalars().all())
 
 

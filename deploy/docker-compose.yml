@@ -125,6 +125,7 @@ services:
     image: ${POSTGRES_EXPORTER_IMAGE:-prometheuscommunity/postgres-exporter:v0.16.0}
     restart: unless-stopped
     command:
+      - "--config.file=/etc/postgres_exporter/postgres_exporter.yml"
       - "--no-collector.stat_bgwriter"
     environment:
       DATA_SOURCE_URI: postgres:5432/${POSTGRES_DB}?sslmode=disable
@@ -135,6 +136,8 @@ services:
         condition: service_healthy
     expose:
       - "9187"
+    volumes:
+      - ./monitoring/postgres_exporter.yml:/etc/postgres_exporter/postgres_exporter.yml:ro
     mem_limit: 64m
     networks:
       - nexus
@@ -163,6 +166,7 @@ services:
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
+      - /run/udev/data:/run/udev/data:ro
       - /:/rootfs:ro
     expose:
       - "9100"

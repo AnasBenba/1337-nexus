@@ -72,12 +72,16 @@ export async function authFetch(
 ): Promise<Response> {
   const token = getAuthToken();
   const headers = new Headers(init?.headers || {});
+  const requestInput =
+    typeof input === 'string' && /^\/(projects|opportunities)(?:\/|$)/.test(input)
+      ? `/api${input}`
+      : input;
 
   if (token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  return fetch(input, {
+  return fetch(requestInput, {
     ...init,
     headers,
     credentials: 'include',
