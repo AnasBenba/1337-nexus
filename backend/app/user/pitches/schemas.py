@@ -4,6 +4,22 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 
+class VoteDirection(str, Enum):
+    UP = "up"
+    DOWN = "down"
+
+
+class PitchVoteRequest(BaseModel):
+    direction: VoteDirection
+
+
+class PitchVoteResponse(BaseModel):
+    pitch_id: UUID
+    upvotes: int
+    downvotes: int
+    my_vote: VoteDirection | None
+
+
 class PitchStatus(str, Enum):
     DRAFT = "draft"
     PUBLISHED = "published"

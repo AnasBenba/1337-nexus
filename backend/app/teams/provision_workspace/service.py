@@ -5,12 +5,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.user.opportunities.apply.models import Application
+from app.user.pitches.models import Pitch
 
 from ..models import (
     WorkspaceBoard,
     WorkspaceCanvasDocument,
     WorkspaceChannel,
     WorkspaceTeam,
+    WorkspaceTeamMember,
 )
 
 
@@ -43,9 +45,7 @@ async def provision_workspace(
             )
         )
         channel = await db.scalar(
-            select(WorkspaceChannel).where(
-                WorkspaceChannel.team_id == existing_team.id
-            )
+            select(WorkspaceChannel).where(WorkspaceChannel.team_id == existing_team.id)
         )
         if board is None or canvas is None or channel is None:
             raise ValueError("Workspace is incomplete")
@@ -73,3 +73,61 @@ async def provision_workspace_for_application(
         opportunity_id=application.opportunity_id,
         founder_id=application.user_id,
     )
+
+
+async def provision_workspace_for_pitch(
+    db: AsyncSession,
+    pitch: Pitch,
+) -> WorkspaceProvisioningResult:
+    if pitch.author_id is None:
+        raise ValueError("A pitch must have an author to create its team")
+
+    team = await db.scalar(
+        select(WorkspaceTeam).where(WorkspaceTeam.pitch_id == pitch.id)
+    )
+    if team is None:
+        team = WorkspaceTeam(
+            pitch_id=pitch.id,
+            founder_id=pitch.author_id,
+        )
+        board = WorkspaceBoard(team=team)
+        canvas = WorkspaceCanvasDocument(team=team)
+        channel = WorkspaceChannel(team=team)
+        membership = WorkspaceTeamMember(
+            team=team,
+            user_id=pitch.author_id,
+            role="admin",
+        )
+        db.add_all([team, board, canvas, channel, membership])
+        await db.flush()
+        return WorkspaceProvisioningResult(team, board, canvas, channel)
+
+    board = await db.scalar(select(WorkspaceBoard).where(WorkspaceBoard.team_id == team.id))
+    canvas = await db.scalar(
+        select(WorkspaceCanvasDocument).where(
+            WorkspaceCanvasDocument.team_id == team.id
+        )
+    )
+    channel = await db.scalar(
+        select(WorkspaceChannel).where(WorkspaceChannel.team_id == team.id)
+    )
+    if board is None or canvas is None or channel is None:
+        raise ValueError("Workspace is incomplete")
+
+    founder_membership = await db.get(
+        WorkspaceTeamMember,
+        (team.id, pitch.author_id),
+    )
+    if founder_membership is None:
+        db.add(
+            WorkspaceTeamMember(
+                team_id=team.id,
+                user_id=pitch.author_id,
+                role="admin",
+            )
+        )
+        await db.flush()
+    elif founder_membership.role != "admin":
+        founder_membership.role = "admin"
+
+    return WorkspaceProvisioningResult(team, board, canvas, channel)

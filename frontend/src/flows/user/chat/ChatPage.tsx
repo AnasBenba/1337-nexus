@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
+import { TeamChatPanel } from './TeamChatPanel';
 
 type ChatMessage = {
   id: string;
@@ -439,6 +440,8 @@ export const ChatPage = () => {
           {error}
         </p>
       )}
+
+      <TeamChatPanel />
     </section>
   );
 };

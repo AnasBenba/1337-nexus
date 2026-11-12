@@ -6,8 +6,8 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from app.user.opportunities.apply.service import apply_to_opportunity
 from app.user.opportunities.apply.models import Application
+from app.user.opportunities.apply.service import apply_to_opportunity
 from app.user.opportunities.browse_opportunities.models import Opportunity
 from app.user.opportunities.browse_opportunities.service import browse_opportunities
 from app.user.opportunities.create_opportunity.schemas import CreateOpportunityRequest

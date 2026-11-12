@@ -1,14 +1,113 @@
 import uuid
+from collections.abc import Sequence
 from uuid import UUID
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shared.ai.client import get_ai_provider
-from app.user.pitches.models import Pitch
-from app.user.pitches.schemas import PitchCreate
+from app.user.pitches.models import Pitch, PitchVote
+from app.user.pitches.schemas import (
+    PitchCreate,
+    PitchVoteResponse,
+    VoteDirection,
+)
 from app.user.pitches.utils import render_and_sanitize
+
+
+async def get_pitch_votes(
+    db: AsyncSession,
+    pitch_id: UUID,
+    user_id: UUID | None = None,
+) -> PitchVoteResponse:
+    await get_one_pitch(db, pitch_id)
+    counts_result = await db.execute(
+        select(
+            func.count(PitchVote.id)
+            .filter(PitchVote.is_upvote.is_(True))
+            .label("upvotes"),
+            func.count(PitchVote.id)
+            .filter(PitchVote.is_upvote.is_(False))
+            .label("downvotes"),
+        ).where(PitchVote.pitch_id == pitch_id)
+    )
+    counts = counts_result.one()
+
+    my_vote = None
+    if user_id is not None:
+        vote_result = await db.execute(
+            select(PitchVote.is_upvote).where(
+                PitchVote.pitch_id == pitch_id,
+                PitchVote.user_id == user_id,
+            )
+        )
+        is_upvote = vote_result.scalar_one_or_none()
+        if is_upvote is not None:
+            my_vote = VoteDirection.UP if is_upvote else VoteDirection.DOWN
+
+    return PitchVoteResponse(
+        pitch_id=pitch_id,
+        upvotes=counts.upvotes,
+        downvotes=counts.downvotes,
+        my_vote=my_vote,
+    )
+
+
+async def get_user_vote(
+    db: AsyncSession,
+    pitch_id: UUID,
+    user_id: UUID,
+) -> dict[str, bool | None]:
+    await get_one_pitch(db, pitch_id)
+    result = await db.execute(
+        select(PitchVote.is_upvote).where(
+            PitchVote.pitch_id == pitch_id,
+            PitchVote.user_id == user_id,
+        )
+    )
+    is_upvote = result.scalar_one_or_none()
+    if is_upvote is None:
+        return {"has_voted": False, "is_upvote": None}
+    return {"has_voted": True, "is_upvote": is_upvote}
+
+
+async def user_vote_on_pitch(
+    db: AsyncSession,
+    pitch_id: UUID,
+    user_id: UUID,
+    is_upvote: bool,
+) -> PitchVoteResponse:
+    await get_one_pitch(db, pitch_id)
+    statement = pg_insert(PitchVote).values(
+        pitch_id=pitch_id,
+        user_id=user_id,
+        is_upvote=is_upvote,
+    )
+    statement = statement.on_conflict_do_update(
+        constraint="uq_pitch_votes_pitch_user",
+        set_={"is_upvote": is_upvote},
+    )
+    await db.execute(statement)
+    await db.commit()
+    return await get_pitch_votes(db, pitch_id, user_id)
+
+
+async def remove_user_vote(
+    db: AsyncSession,
+    pitch_id: UUID,
+    user_id: UUID,
+) -> PitchVoteResponse:
+    await get_one_pitch(db, pitch_id)
+    await db.execute(
+        delete(PitchVote).where(
+            PitchVote.pitch_id == pitch_id,
+            PitchVote.user_id == user_id,
+        )
+    )
+    await db.commit()
+    return await get_pitch_votes(db, pitch_id, user_id)
 
 
 async def search_pitches(

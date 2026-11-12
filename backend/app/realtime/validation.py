@@ -27,4 +27,3 @@ def validate_payload_size(
         raise ValueError(msg)
 
     return raw_bytes
-

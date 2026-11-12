@@ -1,12 +1,44 @@
 import uuid
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Column, DateTime, Enum, ForeignKey, String, Text, func
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.shared.ai.config import EMBEDDING_DIMENSIONS
 from app.shared.models import Base
 from app.user.pitches.schemas import PitchCategory, PitchStatus
+
+
+class PitchVote(Base):
+    __tablename__ = "pitch_votes"
+    __table_args__ = (
+        UniqueConstraint("pitch_id", "user_id", name="uq_pitch_votes_pitch_user"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    pitch_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("pitches.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    is_upvote = Column(Boolean, nullable=False)
 
 
 class Pitch(Base):

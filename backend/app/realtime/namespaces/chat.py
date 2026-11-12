@@ -9,8 +9,8 @@ from sqlalchemy import select
 from app.collaboration.chat.models import Message
 from app.core.db import SessionLocal
 from app.oauth.user import Users, get_user_by_intra_id
-
 from app.oauth.jwt import verify_access_token
+from app.teams.models import WorkspaceTeamMember
 
 class ChatNamespace(socketio.AsyncNamespace):
     def __init__(self, namespace: str = "/chat") -> None:
@@ -186,3 +186,114 @@ class ChatNamespace(socketio.AsyncNamespace):
             )
 
         return {"status": "ok", "message_id": message_id}
+
+    async def on_join_team(self, sid: str, data: Any) -> dict[str, Any]:
+        if not isinstance(data, dict):
+            return {"status": "error", "message": "Invalid payload"}
+
+        try:
+            team_id = UUID(str(data.get("team_id")))
+        except (TypeError, ValueError):
+            return {"status": "error", "message": "team_id must be a valid UUID"}
+
+        session = await self.get_session(sid)
+        user_id = session.get("user_id") if session else None
+        if not isinstance(user_id, UUID):
+            return {"status": "error", "message": "User is not authenticated"}
+
+        async with SessionLocal() as db:
+            membership = await db.get(WorkspaceTeamMember, (team_id, user_id))
+            if membership is None:
+                return {"status": "error", "message": "You are not a member of this team"}
+            role = membership.role
+
+        await self.enter_room(sid, f"team:{team_id}")
+        return {"status": "ok", "team_id": str(team_id), "role": role}
+
+    async def on_leave_team(self, sid: str, data: Any) -> dict[str, Any]:
+        if not isinstance(data, dict):
+            return {"status": "error", "message": "Invalid payload"}
+
+        try:
+            team_id = UUID(str(data.get("team_id")))
+        except (TypeError, ValueError):
+            return {"status": "error", "message": "team_id must be a valid UUID"}
+
+        await self.leave_room(sid, f"team:{team_id}")
+        return {"status": "ok", "team_id": str(team_id)}
+
+    async def on_send_team_message(self, sid: str, data: Any) -> dict[str, Any]:
+        if not isinstance(data, dict):
+            return {"status": "error", "message": "Invalid payload"}
+
+        try:
+            team_id = UUID(str(data.get("team_id")))
+        except (TypeError, ValueError):
+            return {"status": "error", "message": "team_id must be a valid UUID"}
+
+        content = data.get("content")
+        if not isinstance(content, str) or not content.strip():
+            return {"status": "error", "message": "content is required"}
+        if len(content.strip()) > 4000:
+            return {"status": "error", "message": "content cannot exceed 4000 characters"}
+
+        session = await self.get_session(sid)
+        sender_id = session.get("user_id") if session else None
+        if not isinstance(sender_id, UUID):
+            return {"status": "error", "message": "User is not authenticated"}
+
+        async with SessionLocal() as db:
+            membership = await db.get(WorkspaceTeamMember, (team_id, sender_id))
+            if membership is None:
+                return {"status": "error", "message": "You are not a member of this team"}
+
+            message = Message(
+                sender_id=sender_id,
+                team_id=team_id,
+                receiver_id=None,
+                content=content.strip(),
+                is_read=False,
+                is_delivered=False,
+            )
+            db.add(message)
+            await db.commit()
+            await db.refresh(message)
+
+            member_ids = set(
+                (
+                    await db.scalars(
+                        select(WorkspaceTeamMember.user_id).where(
+                            WorkspaceTeamMember.team_id == team_id
+                        )
+                    )
+                ).all()
+            )
+
+        payload = {
+            "id": str(message.id),
+            "team_id": str(team_id),
+            "sender_id": str(sender_id),
+            "content": message.content,
+            "created_at": message.created_at.isoformat(),
+        }
+        participants = self.server.manager.get_participants(
+            self.namespace,
+            f"team:{team_id}",
+        )
+        for participant_sid, _ in participants:
+            participant_session = await self.get_session(participant_sid)
+            participant_id = (
+                participant_session.get("user_id") if participant_session else None
+            )
+            if participant_id in member_ids:
+                await self.emit(
+                    "receive_team_message",
+                    payload,
+                    to=participant_sid,
+                )
+
+        return {
+            "status": "ok",
+            "message_id": str(message.id),
+            "team_id": str(team_id),
+        }

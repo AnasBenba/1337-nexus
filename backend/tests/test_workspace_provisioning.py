@@ -9,8 +9,12 @@ from app.teams.models import (
     WorkspaceCanvasDocument,
     WorkspaceChannel,
     WorkspaceTeam,
+    WorkspaceTeamMember,
 )
-from app.teams.provision_workspace.service import provision_workspace
+from app.teams.provision_workspace.service import (
+    provision_workspace,
+    provision_workspace_for_pitch,
+)
 from app.user.opportunities.review_applications.service import (
     update_application_status,
 )
@@ -72,6 +76,57 @@ async def test_provision_workspace_reuses_complete_existing_workspace():
 
 
 @pytest.mark.asyncio
+async def test_provision_pitch_workspace_creates_owner_as_admin():
+    pitch = SimpleNamespace(id=uuid4(), author_id=uuid4())
+    db = MagicMock()
+    db.scalar = AsyncMock(return_value=None)
+    db.add_all = MagicMock()
+    db.flush = AsyncMock()
+
+    result = await provision_workspace_for_pitch(db, pitch)
+
+    entities = db.add_all.call_args.args[0]
+    assert len(entities) == 5
+    assert result.team.pitch_id == pitch.id
+    assert result.team.founder_id == pitch.author_id
+    assert result.board.team is result.team
+    assert result.canvas.team is result.team
+    assert result.channel.team is result.team
+    owner_membership = entities[-1]
+    assert isinstance(owner_membership, WorkspaceTeamMember)
+    assert owner_membership.team is result.team
+    assert owner_membership.user_id == pitch.author_id
+    assert owner_membership.role == "admin"
+    db.flush.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_existing_pitch_workspace_keeps_owner_admin():
+    pitch = SimpleNamespace(id=uuid4(), author_id=uuid4())
+    team = WorkspaceTeam(pitch_id=pitch.id, founder_id=pitch.author_id)
+    board = WorkspaceBoard(team=team)
+    canvas = WorkspaceCanvasDocument(team=team)
+    channel = WorkspaceChannel(team=team)
+    membership = WorkspaceTeamMember(
+        team_id=team.id,
+        user_id=pitch.author_id,
+        role="member",
+    )
+    db = MagicMock()
+    db.scalar = AsyncMock(side_effect=[team, board, canvas, channel])
+    db.get = AsyncMock(return_value=membership)
+    db.add = MagicMock()
+    db.flush = AsyncMock()
+
+    result = await provision_workspace_for_pitch(db, pitch)
+
+    assert result.team is team
+    assert membership.role == "admin"
+    db.add.assert_not_called()
+    db.flush.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_acceptance_provisions_workspace_in_same_commit(
     monkeypatch: pytest.MonkeyPatch,
 ):
@@ -83,8 +138,7 @@ async def test_acceptance_provisions_workspace_in_same_commit(
     )
     provision = AsyncMock()
     monkeypatch.setattr(
-        "app.user.opportunities.review_applications.service."
-        "provision_workspace_for_application",
+        "app.user.opportunities.review_applications.service.provision_workspace_for_application",
         provision,
     )
     db = MagicMock()
@@ -117,8 +171,7 @@ async def test_acceptance_rolls_back_status_when_provisioning_fails(
     )
     provision = AsyncMock(side_effect=RuntimeError("channel bootstrap failed"))
     monkeypatch.setattr(
-        "app.user.opportunities.review_applications.service."
-        "provision_workspace_for_application",
+        "app.user.opportunities.review_applications.service.provision_workspace_for_application",
         provision,
     )
     db = MagicMock()

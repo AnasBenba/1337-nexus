@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from ..core import base
 
 
-class Users(base.Base):  # type: ignore[misc]
+class Users(base.Base):
     __tablename__ = "users"
     id: Mapped[UUID] = mapped_column(
         Uuid(as_uuid=True),
@@ -16,7 +16,7 @@ class Users(base.Base):  # type: ignore[misc]
     )
     login: Mapped[str] = mapped_column()
     fullname: Mapped[str] = mapped_column()
-    role: Mapped[str] = mapped_column()  # either user || admin
+    role: Mapped[str] = mapped_column()
     intra_id: Mapped[int | None] = mapped_column(nullable=True)
 
 
