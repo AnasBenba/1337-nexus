@@ -36,8 +36,6 @@ services:
     build:
       context: ..
       dockerfile: backend/Dockerfile
-      args:
-        PYTHON_IMAGE: ${PYTHON_IMAGE}
 
     restart: unless-stopped
     
