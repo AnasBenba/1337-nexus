@@ -1,0 +1,1 @@
+export { OpportunitiesPage } from './OpportunitiesPage';

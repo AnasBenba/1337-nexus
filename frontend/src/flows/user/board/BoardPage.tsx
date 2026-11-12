@@ -43,6 +43,9 @@ export const BoardPage: React.FC = () => {
   const [cardDesc, setCardDesc] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
+  const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [movingCardId, setMovingCardId] = useState<string | null>(null);
 
   const fetchBoard = async () => {
     if (!boardId) return;
@@ -131,14 +134,16 @@ export const BoardPage: React.FC = () => {
     }
   };
 
-  const handleMoveCard = async (cardId: string, destColId: string) => {
+  const handleMoveCard = async (cardId: string, destColId: string, beforeCardId?: string) => {
     if (!board) return;
+    setMovingCardId(cardId);
     try {
       const res = await authFetch(`/boards/${board.id}/cards/${cardId}/move`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           destination_column_id: destColId,
+          before_card_id: beforeCardId ?? null,
           board_revision: board.board_revision,
         }),
       });
@@ -151,7 +156,34 @@ export const BoardPage: React.FC = () => {
       }
     } catch {
       alert('Network error while moving card');
+    } finally {
+      setMovingCardId(null);
     }
+  };
+
+  const handleCardDragStart = (event: React.DragEvent<HTMLDivElement>, cardId: string) => {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', cardId);
+    setDraggedCardId(cardId);
+  };
+
+  const handleCardDragEnd = () => {
+    setDraggedCardId(null);
+    setDropTarget(null);
+  };
+
+  const handleCardDrop = async (
+    event: React.DragEvent<HTMLDivElement>,
+    destinationColumnId: string,
+    beforeCardId?: string,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const cardId = event.dataTransfer.getData('text/plain') || draggedCardId;
+    setDropTarget(null);
+    if (!cardId || cardId === beforeCardId || movingCardId) return;
+    await handleMoveCard(cardId, destinationColumnId, beforeCardId);
+    handleCardDragEnd();
   };
 
   const handleDeleteColumn = async (colId: string) => {
@@ -276,16 +308,42 @@ export const BoardPage: React.FC = () => {
             </div>
 
             {/* Column Cards */}
-            <div className="p-3 flex-1 overflow-y-auto space-y-2.5">
+            <div
+              className={`p-3 flex-1 overflow-y-auto space-y-2.5 transition-colors ${
+                dropTarget === col.id ? 'bg-primary/5' : ''
+              }`}
+              onDragOver={(event) => {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+                setDropTarget(col.id);
+              }}
+              onDrop={(event) => void handleCardDrop(event, col.id)}
+            >
               {col.cards.length === 0 ? (
-                <div className="text-center py-8 text-[11px] text-outline border border-dashed border-outline-variant/40 rounded-xl">
+                <div className="text-center py-8 text-[11px] text-outline border border-dashed border-outline-variant/40 rounded-xl pointer-events-none">
                   No cards in this stage
                 </div>
               ) : (
                 col.cards.map((card) => (
                   <div
                     key={card.id}
-                    className="p-3.5 bg-surface rounded-xl border border-outline-variant/60 shadow-sm hover:border-primary/40 transition-all"
+                    draggable={movingCardId !== card.id}
+                    onDragStart={(event) => handleCardDragStart(event, card.id)}
+                    onDragEnd={handleCardDragEnd}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      event.dataTransfer.dropEffect = 'move';
+                      setDropTarget(card.id);
+                    }}
+                    onDrop={(event) => void handleCardDrop(event, col.id, card.id)}
+                    className={`p-3.5 bg-surface rounded-xl border shadow-sm transition-all cursor-grab active:cursor-grabbing ${
+                      draggedCardId === card.id
+                        ? 'opacity-40 border-primary ring-2 ring-primary/20'
+                        : dropTarget === card.id
+                          ? 'border-primary ring-2 ring-primary/20'
+                          : 'border-outline-variant/60 hover:border-primary/40'
+                    }`}
                   >
                     <div className="font-semibold text-xs text-on-surface leading-snug">{card.title}</div>
                     {card.description && (
@@ -302,6 +360,7 @@ export const BoardPage: React.FC = () => {
                         {colIdx > 0 && (
                           <button
                             type="button"
+                            disabled={movingCardId !== null}
                             onClick={() => void handleMoveCard(card.id, board.columns[colIdx - 1].id)}
                             className="p-1 rounded hover:bg-surface-container text-outline hover:text-on-surface"
                             title={`Move to ${board.columns[colIdx - 1].name}`}
@@ -312,6 +371,7 @@ export const BoardPage: React.FC = () => {
                         {colIdx < board.columns.length - 1 && (
                           <button
                             type="button"
+                            disabled={movingCardId !== null}
                             onClick={() => void handleMoveCard(card.id, board.columns[colIdx + 1].id)}
                             className="p-1 rounded hover:bg-surface-container text-outline hover:text-on-surface"
                             title={`Move to ${board.columns[colIdx + 1].name}`}

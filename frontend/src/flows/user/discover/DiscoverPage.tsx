@@ -50,6 +50,8 @@ export const DiscoverPage: React.FC = () => {
   const [newSkills, setNewSkills] = useState('');
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [createdOpportunity, setCreatedOpportunity] = useState<Opportunity | null>(null);
+  const [publishingOpportunity, setPublishingOpportunity] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -146,6 +148,8 @@ export const DiscoverPage: React.FC = () => {
         const err = await res.json().catch(() => ({}));
         setCreateError(err.detail || 'Failed to create opportunity');
       } else {
+        const created = (await res.json()) as Opportunity;
+        setCreatedOpportunity(created);
         setShowCreateModal(false);
         setNewTitle('');
         setNewDesc('');
@@ -156,6 +160,26 @@ export const DiscoverPage: React.FC = () => {
       setCreateError('Network error while creating opportunity');
     } finally {
       setCreateLoading(false);
+    }
+  };
+
+  const handlePublishOpportunity = async () => {
+    if (!createdOpportunity) return;
+    setPublishingOpportunity(true);
+    setCreateError(null);
+    try {
+      const res = await authFetch(`/opportunities/${createdOpportunity.id}/publish`, { method: 'POST' });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Failed to publish opportunity');
+      }
+      const published = (await res.json()) as Opportunity;
+      setCreatedOpportunity(published);
+      setOpportunities((current) => [published, ...current.filter((item) => item.id !== published.id)]);
+    } catch (reason) {
+      setCreateError(reason instanceof Error ? reason.message : 'Failed to publish opportunity');
+    } finally {
+      setPublishingOpportunity(false);
     }
   };
 
@@ -209,6 +233,22 @@ export const DiscoverPage: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {createdOpportunity && (
+        <div className="p-4 rounded-2xl bg-primary/10 border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-bold text-on-surface">{createdOpportunity.title} is saved as a draft.</p>
+            <p className="text-xs text-on-surface-variant mt-1">Publish it now so students can discover and apply.</p>
+          </div>
+          {createdOpportunity.status === 'draft' ? (
+            <button type="button" onClick={() => void handlePublishOpportunity()} disabled={publishingOpportunity} className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold disabled:opacity-50">
+              {publishingOpportunity ? 'Publishing...' : 'Publish opportunity'}
+            </button>
+          ) : (
+            <span className="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-bold">Published</span>
+          )}
+        </div>
+      )}
 
       {/* Tabs and Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-outline-variant/60 pb-4">

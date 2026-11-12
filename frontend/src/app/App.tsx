@@ -4,7 +4,11 @@ import { Layout } from '@/components/Layout';
 import { Login } from '@/app/authentication/login/Login';
 import { HomePage } from '@/flows/user/home/HomePage';
 import { DiscoverPage } from '@/flows/user/discover/DiscoverPage';
-import { ProjectsPage } from '@/flows/user/projects/ProjectsPage';
+import { MyProjectsPage } from '@/flows/user/projects/my_projects/MyProjectsPage';
+import { RecommendedProjectsPage } from '@/flows/user/projects/recommended_projects/RecommendedProjectsPage';
+import { ProjectFormPage } from '@/flows/user/projects/create_project/ProjectFormPage';
+import { RecruitmentReviewPage } from '@/flows/user/projects/RecruitmentReviewPage';
+import { OpportunitiesPage } from '@/flows/user/opportunities/OpportunitiesPage';
 import { BoardPage } from '@/flows/user/board/BoardPage';
 import { CopilotPage } from '@/flows/user/copilot/ask';
 import { RefineProjectDemoPage } from '@/flows/user/projects/refine_project';
@@ -20,7 +24,12 @@ export const App: React.FC = () => {
         <Route path="/" element={<Layout />}>
           <Route index element={<HomePage />} />
           <Route path="discover" element={<DiscoverPage />} />
-          <Route path="projects" element={<ProjectsPage />} />
+          <Route path="opportunities" element={<OpportunitiesPage />} />
+          <Route path="projects" element={<MyProjectsPage />} />
+          <Route path="projects/new" element={<ProjectFormPage />} />
+          <Route path="projects/recommended" element={<RecommendedProjectsPage />} />
+          <Route path="projects/:projectId/edit" element={<ProjectFormPage />} />
+          <Route path="projects/:projectId/recruitment" element={<RecruitmentReviewPage />} />
           <Route path="boards/:boardId" element={<BoardPage />} />
           <Route path="copilot" element={<CopilotPage />} />
           <Route path="user/copilot/ask" element={<CopilotPage />} />

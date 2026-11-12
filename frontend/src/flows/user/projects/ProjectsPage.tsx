@@ -153,6 +153,13 @@ export const ProjectsPage: React.FC = () => {
                     Recruit Peers →
                   </Link>
                 </div>
+                <Link
+                  to={`/projects/${proj.id}/recruitment`}
+                  className="w-full text-center px-3 py-2 rounded-xl border border-outline-variant/60 text-xs font-semibold text-on-surface-variant hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <span className="material-symbols-outlined text-base">rate_review</span>
+                  Review applicants
+                </Link>
               </div>
             </div>
           ))}

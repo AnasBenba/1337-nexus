@@ -98,6 +98,8 @@ docker compose \
 
 - Interactive OpenAPI Docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 - Health Probe: [http://localhost:8000/health/live](http://localhost:8000/health/live)
+- Frontend over HTTP: [http://localhost:8080](http://localhost:8080) (redirects to HTTPS)
+- Frontend over HTTPS: [https://localhost:8443](https://localhost:8443)
 
 ---
 

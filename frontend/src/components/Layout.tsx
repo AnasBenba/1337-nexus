@@ -237,6 +237,22 @@ export const Layout: React.FC = () => {
           </NavLink>
 
           <NavLink
+            to="/opportunities"
+            className={({ isActive }) =>
+              `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all ${
+                isActive
+                  ? 'bg-primary-fixed text-on-primary-fixed font-bold'
+                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+              }`
+            }
+          >
+            <div className="flex items-center gap-space-sm">
+              <span className="material-symbols-outlined text-[20px]">groups</span>
+              <span className="font-label-md text-label-md">Opportunities</span>
+            </div>
+          </NavLink>
+
+          <NavLink
             to="/projects"
             className={({ isActive }) =>
               `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all ${
