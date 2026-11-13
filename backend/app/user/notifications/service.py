@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import exists, or_, select
+from sqlalchemy import exists, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.collaboration.chat.models import Message
@@ -41,3 +41,25 @@ async def has_unread_activity(db: AsyncSession, user_id: UUID) -> bool:
         select(or_(unread_notification_exists, unread_direct_message_exists))
     )
     return result.scalar_one()
+
+
+async def count_unread_notifications(db: AsyncSession, user_id: UUID) -> int:
+    result = await db.execute(
+        select(func.count(Notification.id)).where(
+            Notification.recipient_id == user_id,
+            Notification.is_read.is_(False),
+        )
+    )
+    return int(result.scalar_one() or 0)
+
+
+async def count_unread_direct_messages(db: AsyncSession, user_id: UUID) -> int:
+    result = await db.execute(
+        select(func.count(Message.id)).where(
+            Message.receiver_id == user_id,
+            Message.team_id.is_(None),
+            Message.is_read.is_(False),
+        )
+    )
+    return int(result.scalar_one() or 0)
+

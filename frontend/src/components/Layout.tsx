@@ -1,7 +1,42 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 
 export const Layout: React.FC = () => {
+  const [unreadMessages, setUnreadMessages] = useState<number>(0);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchCounts = async () => {
+      try {
+        const res = await fetch('/messages/unread-count', { credentials: 'include' });
+        if (res.ok) {
+          const data = (await res.json()) as { unread_messages?: number };
+          if (isMounted && typeof data.unread_messages === 'number') {
+            setUnreadMessages(data.unread_messages);
+          }
+        }
+      } catch {
+        // Dev / offline fallback
+      }
+    };
+
+    void fetchCounts();
+
+    const handleUpdate = () => {
+      void fetchCounts();
+    };
+
+    window.addEventListener('messages:unread-updated', handleUpdate);
+    const interval = setInterval(fetchCounts, 15000);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('messages:unread-updated', handleUpdate);
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-surface font-body-md text-body-md text-on-surface antialiased">
       {/* Top Header */}
@@ -50,16 +85,6 @@ export const Layout: React.FC = () => {
               className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer"
             >
               <span className="material-symbols-outlined text-[20px]">dark_mode</span>
-            </button>
-            <button
-              type="button"
-              aria-label="Notifications"
-              className="relative w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[20px]">notifications</span>
-              <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-error text-on-error font-label-code-tag text-[10px] flex items-center justify-center font-bold">
-                3
-              </span>
             </button>
             <button
               type="button"
@@ -150,9 +175,6 @@ export const Layout: React.FC = () => {
               <span className="material-symbols-outlined text-[20px]">folder_open</span>
               <span className="font-label-md text-label-md">My Projects</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-code-tag text-[10px]">
-              2
-            </span>
           </NavLink>
 
           <NavLink
@@ -185,8 +207,14 @@ export const Layout: React.FC = () => {
               <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
               <span className="font-label-md text-label-md">Messages</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container font-label-code-tag text-[10px]">
-              4
+            <span
+              className={`px-2 py-0.5 rounded-full font-label-code-tag text-[10px] ${
+                unreadMessages > 0
+                  ? 'bg-primary-container text-on-primary-container font-bold'
+                  : 'bg-surface-container text-outline'
+              }`}
+            >
+              {unreadMessages}
             </span>
           </NavLink>
 

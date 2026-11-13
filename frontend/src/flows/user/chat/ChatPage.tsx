@@ -213,6 +213,7 @@ export const ChatPage = () => {
       const message = parseMessage(payload);
       if (message) {
         setMessages((current) => mergeMessages(current, [message]));
+        window.dispatchEvent(new CustomEvent('messages:unread-updated'));
       }
     });
 
@@ -391,6 +392,8 @@ export const ChatPage = () => {
         (timeoutError: Error | null, ack: ReadAck) => {
           if (timeoutError || ack.status !== 'ok') {
             readMessageIds.current.delete(msg.id);
+          } else {
+            window.dispatchEvent(new CustomEvent('messages:unread-updated'));
           }
         },
       );

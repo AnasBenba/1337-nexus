@@ -7,7 +7,7 @@ from fastapi import (
     Request,
     status,
 )
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.collaboration.chat.models import Message
@@ -67,6 +67,24 @@ async def get_current_user_profile(
         "role": user.role,
         "intra_id": user.intra_id,
     }
+
+
+@router.get("/api/v1/messages/unread-count")
+@router.get("/messages/unread-count")
+async def get_unread_messages_count(
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+) -> dict[str, int]:
+    """Return total count of unread direct messages for the current user."""
+    user = await resolve_current_user(request, db)
+    stmt = select(func.count(Message.id)).where(
+        Message.receiver_id == user.id,
+        Message.team_id.is_(None),
+        Message.is_read.is_(False),
+    )
+    result = await db.execute(stmt)
+    count = result.scalar_one() or 0
+    return {"unread_messages": int(count)}
 
 
 @router.get("/api/v1/users")
