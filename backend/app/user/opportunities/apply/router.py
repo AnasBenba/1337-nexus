@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
+from app.oauth.user import Users
+from app.oauth.dependencies import get_authenticated_user as get_current_user
 
 from .schemas import ApplyRequest, ApplyResponse
 from .service import apply_to_opportunity
@@ -20,12 +22,13 @@ async def apply(
     request: ApplyRequest,
     opportunity_id: UUID,
     db: AsyncSession = Depends(get_db_session),
+    current_user: Users = Depends(get_current_user),
 ):
     try:
         return await apply_to_opportunity(
             db=db,
             opportunity_id=opportunity_id,
-            user_id=request.user_id,
+            user_id=current_user.id,
             message=request.message,
             candidate_skills=request.candidate_skills,
         )

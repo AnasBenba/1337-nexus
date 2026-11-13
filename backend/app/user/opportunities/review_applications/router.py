@@ -4,6 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
+from app.oauth.user import Users
+from app.oauth.dependencies import get_authenticated_user as get_current_user
+from app.user.projects.models import Project
 from app.user.opportunities.browse_opportunities.models import Opportunity
 from app.user.opportunities.match_scoring.service import (
     calculate_match_score,
@@ -23,13 +26,20 @@ router = APIRouter(tags=["opportunities"])
 async def list_applications(
     opportunity_id: UUID,
     db: AsyncSession = Depends(get_db_session),
+    current_user: Users = Depends(get_current_user),
 ) -> list[ReviewedApplicationResponse]:
     try:
+        opportunity = await db.get(Opportunity, opportunity_id)
+        if opportunity is None:
+            raise HTTPException(status_code=404, detail="Opportunity not found")
+        project = await db.get(Project, opportunity.project_id)
+        if project is None or project.owner_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Only the project owner can review applications")
         applications = await score_opportunity_applications(
             db=db,
             opportunity_id=opportunity_id,
         )
-    except ValueError as error:
+    except (ValueError, PermissionError) as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=str(error),
@@ -52,20 +62,24 @@ async def change_application_status(
     application_id: UUID,
     request: UpdateApplicationStatusRequest,
     db: AsyncSession = Depends(get_db_session),
+    current_user: Users = Depends(get_current_user),
 ) -> ReviewedApplicationResponse:
     try:
         application = await update_application_status(
             db=db,
             application_id=application_id,
             new_status=request.status,
+            current_user_id=current_user.id,
         )
-    except ValueError as error:
+    except (ValueError, PermissionError) as error:
         detail = str(error)
         error_status = (
             status.HTTP_404_NOT_FOUND
             if detail == "Application not found"
             else status.HTTP_409_CONFLICT
         )
+        if isinstance(error, PermissionError):
+            error_status = status.HTTP_403_FORBIDDEN
         if detail == "Invalid application status":
             error_status = status.HTTP_422_UNPROCESSABLE_ENTITY
         raise HTTPException(status_code=error_status, detail=detail) from error

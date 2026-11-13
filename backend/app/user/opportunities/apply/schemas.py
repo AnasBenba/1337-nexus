@@ -5,7 +5,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ApplyRequest(BaseModel):
-    user_id: UUID
     message: str | None = Field(default=None, max_length=5000)
     candidate_skills: list[str] = Field(default_factory=list)
 
@@ -15,7 +14,7 @@ class ApplyResponse(BaseModel):
 
     id: UUID
     opportunity_id: UUID
-    user_id: UUID
+    user_id: int
     status: str
     message: str | None
     candidate_skills: list[str]

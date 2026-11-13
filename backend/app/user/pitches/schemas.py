@@ -45,6 +45,7 @@ class PitchCreate(BaseModel):
     content: str
     category: PitchCategory
     description: str | None = None
+    status: PitchStatus = PitchStatus.DRAFT
 
 
 class PitchResponse(BaseModel):

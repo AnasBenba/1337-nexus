@@ -45,6 +45,18 @@ def test_pitch_schemas_validation() -> None:
     assert pitch_in.title == "Peer Code Review Network"
     assert pitch_in.category == PitchCategory.EDUCATION
     assert pitch_in.description == "A student platform for reviews"
+    assert pitch_in.status == PitchStatus.DRAFT
+
+
+def test_pitch_schema_accepts_published_status() -> None:
+    pitch_in = PitchCreate(
+        title="Peer Code Review Network",
+        content="## Summary\nA network for 1337 peer code reviews.",
+        category=PitchCategory.EDUCATION,
+        status=PitchStatus.PUBLISHED,
+    )
+
+    assert pitch_in.status == PitchStatus.PUBLISHED
 
 
 def test_pitch_model_instantiation() -> None:

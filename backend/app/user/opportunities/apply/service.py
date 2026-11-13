@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.user.opportunities.browse_opportunities.models import Opportunity
@@ -11,7 +12,7 @@ from .models import Application
 async def apply_to_opportunity(
     db: AsyncSession,
     opportunity_id: UUID,
-    user_id: UUID,
+    user_id: int,
     message: str | None = None,
     candidate_skills: list[str] | None = None,
 ) -> Application:
@@ -39,7 +40,11 @@ async def apply_to_opportunity(
         candidate_skills=candidate_skills or [],
     )
     db.add(application)
-    await db.commit()
+    try:
+        await db.commit()
+    except IntegrityError as error:
+        await db.rollback()
+        raise ValueError("You have already applied to this opportunity") from error
     await db.refresh(application)
 
     return application

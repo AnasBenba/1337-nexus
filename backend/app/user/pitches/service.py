@@ -182,6 +182,9 @@ async def update_pitch(
 
     pitch_data = pitch.model_dump()
     pitch_data["rendered_content"] = render_and_sanitize(pitch_data["content"])
+    if "status" not in pitch.model_fields_set:
+        pitch_data.pop("status")
+
     for field, value in pitch_data.items():
         setattr(existing_pitch, field, value)
     existing_pitch.embedding = embedding
