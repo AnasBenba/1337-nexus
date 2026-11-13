@@ -1,9 +1,11 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
+from app.oauth.user import Users
 from app.user.opportunities.browse_opportunities.models import Opportunity
 from app.user.opportunities.match_scoring.service import (
     calculate_match_score,
@@ -40,11 +42,30 @@ async def list_applications(
             detail=str(error),
         ) from error
 
+    user_ids = {app.user_id for app, _ in applications}
+    users_by_id: dict[UUID, Users] = {}
+    if user_ids and hasattr(db, "execute"):
+        try:
+            u_res = await db.execute(select(Users).where(Users.id.in_(user_ids)))
+            users_by_id = {u.id: u for u in u_res.scalars().all()}
+        except Exception:
+            users_by_id = {}
+
     return [
         ReviewedApplicationResponse.model_validate(
             application,
             from_attributes=True,
-        ).model_copy(update={"match_score": score})
+        ).model_copy(
+            update={
+                "match_score": score,
+                "user_login": users_by_id[application.user_id].login
+                if application.user_id in users_by_id
+                else None,
+                "user_fullname": users_by_id[application.user_id].fullname
+                if application.user_id in users_by_id
+                else None,
+            }
+        )
         for application, score in applications
     ]
 

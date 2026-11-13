@@ -1,8 +1,26 @@
+from datetime import datetime
 from enum import Enum
 from typing import Any
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
+
+
+class VoteDirection(str, Enum):
+    UP = "up"
+    DOWN = "down"
+
+
+class PitchVoteRequest(BaseModel):
+    direction: VoteDirection
+
+
+class PitchVoteResponse(BaseModel):
+    pitch_id: UUID
+    upvotes: int
+    downvotes: int
+    score: int = 0
+    my_vote: VoteDirection | None = None
 
 
 class PitchStatus(str, Enum):
@@ -30,6 +48,7 @@ class PitchCreate(BaseModel):
     content: str
     category: PitchCategory
     description: str | None = None
+    status: PitchStatus | None = None
 
 
 class PitchResponse(BaseModel):
@@ -44,8 +63,12 @@ class PitchResponse(BaseModel):
     state: PitchStatus | None = None
     description: str | None = None
     author_id: UUID | None = None
+    created_at: datetime | None = None
+    upvotes: int = 0
+    downvotes: int = 0
+    score: int = 0
+    my_vote: VoteDirection | None = None
 
     def model_post_init(self, __context: Any) -> None:
         if self.state is None:
             self.state = self.status
-

@@ -19,7 +19,6 @@ from app.user.opportunities.browse_opportunities.models import Opportunity
 from app.user.pitches.models import Pitch
 from app.user.pitches.utils import render_and_sanitize
 
-
 SAMPLE_PROJECTS = [
     {
         "pitch": {
@@ -125,9 +124,7 @@ async def seed() -> None:
         for item in SAMPLE_PROJECTS:
             pitch_data = item["pitch"]
             # Check if pitch already exists by title
-            p_res = await session.execute(
-                select(Pitch).where(Pitch.title == pitch_data["title"])
-            )
+            p_res = await session.execute(select(Pitch).where(Pitch.title == pitch_data["title"]))
             pitch = p_res.scalar_one_or_none()
 
             if pitch is None:
@@ -179,9 +176,10 @@ async def seed() -> None:
                         await session.commit()
                     print(f"    = Opportunity exists: {existing_opp.title}")
 
-        print(f"\nSeed complete! Seeded {total_pitches} pitches and {total_opportunities} open opportunities.")
+        print(
+            f"\nSeed complete! Seeded {total_pitches} pitches and {total_opportunities} open opportunities."
+        )
 
 
 if __name__ == "__main__":
     asyncio.run(seed())
-

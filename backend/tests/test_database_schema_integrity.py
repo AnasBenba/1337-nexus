@@ -41,13 +41,11 @@ async def test_all_orm_models_exist_in_postgresql_database() -> None:
     engine = create_async_engine(DATABASE_URL, poolclass=NullPool)
     try:
         async with engine.connect() as conn:
+
             def inspect_db(sync_conn):
                 inspector = inspect(sync_conn)
                 tables = set(inspector.get_table_names())
-                columns = {
-                    t: {c["name"] for c in inspector.get_columns(t)}
-                    for t in tables
-                }
+                columns = {t: {c["name"] for c in inspector.get_columns(t)} for t in tables}
                 return tables, columns
 
             db_tables, db_columns = await conn.run_sync(inspect_db)
@@ -77,6 +75,7 @@ async def test_alembic_migrations_are_fully_up_to_date() -> None:
     engine = create_async_engine(DATABASE_URL, poolclass=NullPool)
     try:
         async with engine.connect() as conn:
+
             def inspect_alembic(sync_conn):
                 inspector = inspect(sync_conn)
                 if not inspector.has_table("alembic_version"):
@@ -85,6 +84,7 @@ async def test_alembic_migrations_are_fully_up_to_date() -> None:
                 return result.scalar()
 
             from sqlalchemy import text as sa_text
+
             current_db_version = await conn.run_sync(inspect_alembic)
 
         alembic_ini_path = Path(__file__).resolve().parent.parent / "alembic.ini"

@@ -17,6 +17,7 @@ interface AuthContextType {
   login: (loginOrEmail: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (login: string, email: string, fullname: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   openAuthModal: () => void;
   closeAuthModal: () => void;
   isAuthModalOpen: boolean;
@@ -31,12 +32,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchCurrentUser = useCallback(async () => {
     try {
-      const res = await fetch('/api/v1/auth/me', {
+      const res = await fetch('/api/v1/auth/session', {
         credentials: 'include',
       });
       if (res.ok) {
-        const data: UserProfile = await res.json();
-        setUser(data);
+        const data = (await res.json()) as { signed_in?: boolean; user?: UserProfile };
+        if (data.signed_in && data.user) {
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
       } else {
         setUser(null);
       }
@@ -125,6 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         logout,
+        refreshUser: fetchCurrentUser,
         openAuthModal: () => setIsAuthModalOpen(true),
         closeAuthModal: () => setIsAuthModalOpen(false),
         isAuthModalOpen,
@@ -142,4 +148,3 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
-

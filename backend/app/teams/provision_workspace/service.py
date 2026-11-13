@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.canvas import CanvasDocument
 from app.user.opportunities.apply.models import Application
 
 from ..models import (
@@ -11,6 +12,7 @@ from ..models import (
     WorkspaceCanvasDocument,
     WorkspaceChannel,
     WorkspaceTeam,
+    WorkspaceTeamMember,
 )
 
 
@@ -62,12 +64,71 @@ async def provision_workspace(
     return WorkspaceProvisioningResult(team, board, canvas, channel)
 
 
+async def ensure_workspace_member(
+    db: AsyncSession,
+    *,
+    team_id: UUID,
+    user_id: UUID,
+    role: str = "member",
+) -> WorkspaceTeamMember:
+    existing = await db.scalar(
+        select(WorkspaceTeamMember).where(
+            WorkspaceTeamMember.team_id == team_id,
+            WorkspaceTeamMember.user_id == user_id,
+        )
+    )
+    if existing is not None:
+        return existing
+
+    member = WorkspaceTeamMember(
+        team_id=team_id,
+        user_id=user_id,
+        role=role,
+        status="accepted",
+    )
+    db.add(member)
+    await db.flush()
+    return member
+
+
+async def ensure_canvas_document(
+    db: AsyncSession,
+    *,
+    canvas_id: UUID,
+    name: str = "Team Whiteboard",
+) -> CanvasDocument:
+    existing = await db.get(CanvasDocument, canvas_id)
+    if existing is not None:
+        return existing
+
+    doc = CanvasDocument(
+        id=canvas_id,
+        name=name[:255] if name else "Team Whiteboard",
+        snapshot=b"",
+    )
+    db.add(doc)
+    await db.flush()
+    return doc
+
+
 async def provision_workspace_for_application(
     db: AsyncSession,
     application: Application,
 ) -> WorkspaceProvisioningResult:
-    return await provision_workspace(
+    result = await provision_workspace(
         db,
         opportunity_id=application.opportunity_id,
         founder_id=application.user_id,
     )
+    await ensure_workspace_member(
+        db,
+        team_id=result.team.id,
+        user_id=application.user_id,
+        role="member",
+    )
+    await ensure_canvas_document(
+        db,
+        canvas_id=result.canvas.id,
+        name=f"Workspace {application.opportunity_id}",
+    )
+    return result

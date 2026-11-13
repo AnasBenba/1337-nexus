@@ -75,6 +75,19 @@ class CanvasNamespace(socketio.AsyncNamespace):  # type: ignore[misc]
         await self.save_session(sid, {"document_id": room})
 
         logger.info("Socket %s joined canvas room %s", sid, room)
+
+        # Replay persisted history updates for this document to the joining client
+        async with SessionLocal() as db:
+            from app.collaboration.canvas.join_canvas.service import (
+                get_document_updates,
+                get_or_create_document,
+            )
+
+            await get_or_create_document(db, doc_id)
+            updates = await get_document_updates(db, doc_id)
+            for upd in updates:
+                await self.emit("canvas:update", bytes(upd.data), room=sid)
+
         return {"status": "ok", "document_id": room}
 
     async def on_canvas_update(self, sid: str, data: Any) -> dict[str, Any]:

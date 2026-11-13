@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { AuthModal } from '@/components/auth/AuthModal';
 
 export const Layout: React.FC = () => {
-  const { user, isAuthenticated, openAuthModal, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   return (
@@ -90,7 +90,10 @@ export const Layout: React.FC = () => {
                   </Link>
                   <button
                     type="button"
-                    onClick={() => { setUserMenuOpen(false); void logout(); }}
+                    onClick={() => {
+                      setUserMenuOpen(false);
+                      void logout();
+                    }}
                     className="w-full flex items-center gap-2 px-4 py-2 text-xs text-error hover:bg-error-container/20 transition-colors cursor-pointer text-left"
                   >
                     <span className="material-symbols-outlined text-[16px]">logout</span>
@@ -100,14 +103,13 @@ export const Layout: React.FC = () => {
               )}
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={openAuthModal}
+            <Link
+              to="/login"
               className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-primary text-on-primary font-bold text-xs hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
             >
               <span className="material-symbols-outlined text-[16px]">login</span>
               <span>Sign In</span>
-            </button>
+            </Link>
           )}
         </div>
       </header>
@@ -122,23 +124,24 @@ export const Layout: React.FC = () => {
             </div>
             <div className="overflow-hidden">
               <div className="font-label-md text-label-md text-on-surface truncate font-bold">
-                {user ? user.fullname : 'Guest Student'}
+                {user ? user.fullname : 'Guest Visitor'}
               </div>
               <div className="flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
                 <span className="material-symbols-outlined text-[14px]">location_on</span>
-                <span className="text-[11px]">{user ? `@${user.login}` : 'Benguerir'}</span>
+                <span className="text-[11px]">{user ? `@${user.login}` : 'Not signed in'}</span>
               </div>
             </div>
           </div>
           <div className="mt-space-sm flex items-center justify-between font-label-code-tag text-label-code-tag">
             <span className="px-space-xs py-0.5 rounded bg-surface-container-highest text-on-primary-container font-semibold">
-              {user ? user.role.toUpperCase() : 'VISITOR'}
+              {user ? user.role.toUpperCase() : 'GUEST'}
             </span>
-            <span className="text-outline text-[11px]">Circle 05</span>
+            <span className="text-outline text-[11px]">1337 Network</span>
           </div>
         </div>
 
         <nav className="flex-1 flex flex-col gap-space-xs">
+          {/* 1. Discover Opportunities */}
           <NavLink
             to="/discover"
             className={({ isActive }) =>
@@ -155,30 +158,9 @@ export const Layout: React.FC = () => {
             </div>
           </NavLink>
 
+          {/* 2. Pitches (Create, Upvote/Downvote, & Save + Refine with AI) */}
           <NavLink
-            to="/refine-project"
-            className={({ isActive }) =>
-              `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all group ${
-                isActive
-                  ? 'bg-primary-fixed text-on-primary-fixed font-bold'
-                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
-              }`
-            }
-          >
-            <div className="flex items-center gap-space-sm">
-              <span className="material-symbols-outlined text-[20px] text-primary-container">
-                auto_awesome
-              </span>
-              <span className="font-label-md text-label-md">Pitch Refiner</span>
-            </div>
-            <span className="px-2 py-0.5 rounded-full bg-brand/10 text-brand font-label-code-tag text-[10px] font-bold">
-              AI
-            </span>
-          </NavLink>
-
-          {/* Collaborative Whiteboard [CV-403] */}
-          <NavLink
-            to="/whiteboard"
+            to="/pitches"
             className={({ isActive }) =>
               `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all group ${
                 isActive
@@ -189,15 +171,38 @@ export const Layout: React.FC = () => {
           >
             <div className="flex items-center gap-space-sm">
               <span className="material-symbols-outlined text-[20px] text-primary">
-                draw
+                campaign
               </span>
-              <span className="font-label-md text-label-md">Whiteboard</span>
+              <span className="font-label-md text-label-md">Pitches</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-code-tag text-[9px] font-bold">
-              CRDT
+            <span className="px-2 py-0.5 rounded-full bg-brand/10 text-brand font-label-code-tag text-[10px] font-bold">
+              + AI
             </span>
           </NavLink>
 
+          {/* 3. My Projects (Authorized Opportunities -> Show Details or Split-Screen Workspace) */}
+          <NavLink
+            to="/my-projects"
+            className={({ isActive }) =>
+              `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all group ${
+                isActive
+                  ? 'bg-primary-fixed text-on-primary-fixed font-bold'
+                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+              }`
+            }
+          >
+            <div className="flex items-center gap-space-sm">
+              <span className="material-symbols-outlined text-[20px] text-primary">
+                workspaces
+              </span>
+              <span className="font-label-md text-label-md">My Projects</span>
+            </div>
+            <span className="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-code-tag text-[9px] font-bold">
+              TEAM
+            </span>
+          </NavLink>
+
+          {/* 4. Direct Peer Messages */}
           <NavLink
             to="/messages"
             className={({ isActive }) =>
@@ -214,7 +219,7 @@ export const Layout: React.FC = () => {
             </div>
           </NavLink>
 
-          {/* AI Copilot Route */}
+          {/* 5. AI Copilot */}
           <NavLink
             to="/copilot"
             className={({ isActive }) =>
@@ -236,6 +241,7 @@ export const Layout: React.FC = () => {
             </span>
           </NavLink>
 
+          {/* 6. Profile */}
           <NavLink
             to="/profile"
             className={({ isActive }) =>
@@ -256,7 +262,11 @@ export const Layout: React.FC = () => {
         <div className="pt-space-md border-t border-surface-container-high">
           <div className="flex items-center justify-between px-space-sm py-space-xs rounded-DEFAULT bg-surface-container-low">
             <div className="flex items-center gap-space-xs font-label-code-tag text-label-code-tag text-on-surface-variant">
-              <span className={`w-2 h-2 rounded-full ${isAuthenticated ? 'bg-secondary-container' : 'bg-outline'}`} />
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  isAuthenticated ? 'bg-secondary-container' : 'bg-outline'
+                }`}
+              />
               <span>{isAuthenticated ? 'Authenticated' : 'Guest Mode'}</span>
             </div>
             <span className="material-symbols-outlined text-[16px] text-primary">verified</span>

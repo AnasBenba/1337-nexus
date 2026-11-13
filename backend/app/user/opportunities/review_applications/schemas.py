@@ -14,6 +14,8 @@ class ReviewedApplicationResponse(BaseModel):
     id: UUID
     opportunity_id: UUID
     user_id: UUID
+    user_login: str | None = None
+    user_fullname: str | None = None
     status: str
     message: str | None
     candidate_skills: list[str]

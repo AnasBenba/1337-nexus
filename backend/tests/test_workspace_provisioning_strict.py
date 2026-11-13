@@ -102,7 +102,9 @@ async def test_provision_workspace_is_idempotent_in_postgresql(engine) -> None:
     founder_id = uuid.uuid4()
 
     async with AsyncSession(engine) as session:
-        first = await provision_workspace(session, opportunity_id=opportunity_id, founder_id=founder_id)
+        first = await provision_workspace(
+            session, opportunity_id=opportunity_id, founder_id=founder_id
+        )
         first_team_id = first.team.id
         first_board_id = first.board.id
         first_canvas_id = first.canvas.id
@@ -110,7 +112,9 @@ async def test_provision_workspace_is_idempotent_in_postgresql(engine) -> None:
         await session.commit()
 
     async with AsyncSession(engine) as session:
-        second = await provision_workspace(session, opportunity_id=opportunity_id, founder_id=founder_id)
+        second = await provision_workspace(
+            session, opportunity_id=opportunity_id, founder_id=founder_id
+        )
         second_team_id = second.team.id
         second_board_id = second.board.id
         second_canvas_id = second.canvas.id
@@ -126,10 +130,14 @@ async def test_provision_workspace_is_idempotent_in_postgresql(engine) -> None:
     # Confirm only one team row exists for this opportunity
     async with AsyncSession(engine) as session:
         teams = (
-            await session.execute(
-                select(WorkspaceTeam).where(WorkspaceTeam.opportunity_id == opportunity_id)
+            (
+                await session.execute(
+                    select(WorkspaceTeam).where(WorkspaceTeam.opportunity_id == opportunity_id)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         assert len(teams) == 1, f"Expected 1 team, found {len(teams)}"
 
 
@@ -203,10 +211,14 @@ async def test_workspace_team_unique_constraint_per_opportunity(engine) -> None:
     # Exactly one row in workspace_teams for this opportunity
     async with AsyncSession(engine) as session:
         count_res = (
-            await session.execute(
-                select(WorkspaceTeam).where(WorkspaceTeam.opportunity_id == opportunity_id)
+            (
+                await session.execute(
+                    select(WorkspaceTeam).where(WorkspaceTeam.opportunity_id == opportunity_id)
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
         assert len(count_res) == 1, (
             f"UniqueConstraint violated: {len(count_res)} teams found for one opportunity"
         )
@@ -225,7 +237,9 @@ async def test_workspace_cascade_delete_removes_all_child_rows(engine) -> None:
     founder_id = uuid.uuid4()
 
     async with AsyncSession(engine) as session:
-        result = await provision_workspace(session, opportunity_id=opportunity_id, founder_id=founder_id)
+        result = await provision_workspace(
+            session, opportunity_id=opportunity_id, founder_id=founder_id
+        )
         team_id = result.team.id
         board_id = result.board.id
         canvas_id = result.canvas.id

@@ -1,58 +1,137 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useCanvasSocket } from './useCanvasSocket';
 import { Toolbar } from './Toolbar';
 import { CanvasStage, getCanvasCoordinates } from './CanvasStage';
 import { RemoteCursors } from './RemoteCursors';
-import type { DrawingTool, CanvasShape } from './types';
+import type { DrawingTool, CanvasShape, Point } from './types';
 
 // Default document ID for general collaboration when no specific workspace is active
 const DEFAULT_DOCUMENT_ID = '00000000-0000-0000-0000-000000000101';
 
-export const WhiteboardPage: React.FC = () => {
+export interface WhiteboardPageProps {
+  embeddedDocumentId?: string;
+  hideHeader?: boolean;
+  onPeersChange?: (onlineLogins: string[]) => void;
+}
+
+export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
+  embeddedDocumentId,
+  hideHeader = false,
+  onPeersChange,
+}) => {
   const { user, isAuthenticated, openAuthModal } = useAuth();
   const [searchParams] = useSearchParams();
 
-  // 1. Document / Room ID resolution (?document_id=<uuid>)
-  const documentId = searchParams.get('document_id') || DEFAULT_DOCUMENT_ID;
+  // 1. Document / Room ID resolution (?document_id=<uuid> or embeddedDocumentId)
+  const documentId = embeddedDocumentId || searchParams.get('document_id') || DEFAULT_DOCUMENT_ID;
 
   // 2. Toolbar & Drawing State
   const [tool, setTool] = useState<DrawingTool>('pen');
   const [color, setColor] = useState<string>('#2563EB');
   const [strokeWidth, setStrokeWidth] = useState<number>(4);
 
-  // 3. Shapes & History (ready for user's drawing engine or Yjs binding)
+  // 3. Canvas State & History
   const [shapes, setShapes] = useState<CanvasShape[]>([]);
+  const [redoStack, setRedoStack] = useState<CanvasShape[]>([]);
+  const [currentDrawing, setCurrentDrawing] = useState<CanvasShape | null>(null);
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isDrawingRef = useRef<boolean>(false);
+  const startPointRef = useRef<Point>({ x: 0, y: 0 });
 
   // 4. Inbound binary delta update handler from /canvas WebSocket
   const handleRemoteUpdate = useCallback((data: ArrayBuffer) => {
-    // User will decode incoming Yjs or binary delta updates here
-    console.debug('Received canvas:update buffer:', data.byteLength, 'bytes');
+    try {
+      const text = new TextDecoder().decode(data);
+      const msg = JSON.parse(text);
+
+      if (msg.action === 'add_shape' && msg.shape) {
+        setShapes((prev) => {
+          if (prev.some((s) => s.id === msg.shape.id)) return prev;
+          return [...prev, msg.shape];
+        });
+      } else if (msg.action === 'clear') {
+        setShapes([]);
+        setRedoStack([]);
+      } else if (msg.action === 'undo' && msg.shapeId) {
+        setShapes((prev) => prev.filter((s) => s.id !== msg.shapeId));
+      }
+    } catch {
+      // Inbound binary might be arbitrary buffer or Yjs payload
+    }
   }, []);
 
   // 5. Connect to Socket.IO /canvas namespace
-  // canvasSocket provides: isConnected, peers, sendAwareness, sendUpdate, and raw socket
   const canvasSocket = useCanvasSocket(documentId, handleRemoteUpdate);
-  const { isConnected, sendAwareness, peers } = canvasSocket;
+  const { isConnected, sendAwareness, sendUpdate, peers } = canvasSocket;
+
+  useEffect(() => {
+    if (!onPeersChange) return;
+    const logins: string[] = [];
+    peers.forEach((state: any) => {
+      if (state && typeof state.user === 'string') {
+        logins.push(state.user);
+      }
+    });
+    onPeersChange(logins);
+  }, [peers, onPeersChange]);
 
   // 6. Broadcast local mouse cursor to peers for collaborative awareness
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
-    if (!canvas || !isConnected) return;
+    if (!canvas) return;
 
     const coords = getCanvasCoordinates(e, canvas);
 
     // Broadcast cursor position to room peers
-    sendAwareness({
-      user: user?.login || 'Anonymous',
-      cursor: coords,
-      color: color,
-    });
+    if (isConnected) {
+      sendAwareness({
+        user: user?.login || 'Anonymous',
+        cursor: coords,
+        color: color,
+      });
+    }
 
-    // User will add their active drawing stroke rendering here
+    if (!isDrawingRef.current || !currentDrawing) return;
+
+    if (currentDrawing.type === 'pen' || currentDrawing.type === 'eraser') {
+      setCurrentDrawing((prev) =>
+        prev
+          ? {
+              ...prev,
+              points: [...(prev.points || []), coords],
+            }
+          : null
+      );
+    } else if (
+      currentDrawing.type === 'rect' ||
+      currentDrawing.type === 'circle' ||
+      currentDrawing.type === 'arrow'
+    ) {
+      const width = coords.x - startPointRef.current.x;
+      const height = coords.y - startPointRef.current.y;
+      setCurrentDrawing((prev) => (prev ? { ...prev, width, height } : null));
+    }
   };
+
+  const commitShape = useCallback(
+    (shape: CanvasShape) => {
+      setShapes((prev) => [...prev, shape]);
+      setRedoStack([]);
+
+      // Send binary JSON update over Socket.IO to backend
+      const payload = new TextEncoder().encode(
+        JSON.stringify({
+          action: 'add_shape',
+          shape,
+        })
+      );
+      sendUpdate(payload);
+    },
+    [sendUpdate]
+  );
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -63,13 +142,106 @@ export const WhiteboardPage: React.FC = () => {
       return;
     }
 
+    if (tool === 'select') return;
+
     const coords = getCanvasCoordinates(e, canvas);
-    console.debug('Pointer down at:', coords, 'using tool:', tool);
-    // User will start recording a new stroke / shape here
+    isDrawingRef.current = true;
+    startPointRef.current = coords;
+
+    const shapeId =
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `shape_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+    if (tool === 'text') {
+      const textInput = prompt('Enter text note:');
+      if (textInput && textInput.trim()) {
+        const textShape: CanvasShape = {
+          id: shapeId,
+          type: 'text',
+          color,
+          strokeWidth,
+          x: coords.x,
+          y: coords.y,
+          text: textInput.trim(),
+          userId: user?.login || 'Anonymous',
+          createdAt: Date.now(),
+        };
+        commitShape(textShape);
+      }
+      isDrawingRef.current = false;
+      return;
+    }
+
+    if (tool === 'pen' || tool === 'eraser') {
+      setCurrentDrawing({
+        id: shapeId,
+        type: tool,
+        color: tool === 'eraser' ? '#FFFFFF' : color,
+        strokeWidth: tool === 'eraser' ? strokeWidth * 3 : strokeWidth,
+        points: [coords],
+        userId: user?.login || 'Anonymous',
+        createdAt: Date.now(),
+      });
+    } else if (tool === 'rect' || tool === 'circle' || tool === 'arrow') {
+      setCurrentDrawing({
+        id: shapeId,
+        type: tool,
+        color,
+        strokeWidth,
+        x: coords.x,
+        y: coords.y,
+        width: 0,
+        height: 0,
+        userId: user?.login || 'Anonymous',
+        createdAt: Date.now(),
+      });
+    }
   };
 
   const handlePointerUp = () => {
-    // User will finalize the stroke and send delta via canvasSocket.sendUpdate(binaryBytes) here
+    if (!isDrawingRef.current || !currentDrawing) {
+      isDrawingRef.current = false;
+      setCurrentDrawing(null);
+      return;
+    }
+    isDrawingRef.current = false;
+
+    commitShape(currentDrawing);
+    setCurrentDrawing(null);
+  };
+
+  const handleClear = () => {
+    setShapes([]);
+    setRedoStack([]);
+    const payload = new TextEncoder().encode(
+      JSON.stringify({
+        action: 'clear',
+      })
+    );
+    sendUpdate(payload);
+  };
+
+  const handleUndo = () => {
+    if (shapes.length === 0) return;
+    const last = shapes[shapes.length - 1];
+    setShapes((prev) => prev.slice(0, -1));
+    setRedoStack((prev) => [...prev, last]);
+
+    const payload = new TextEncoder().encode(
+      JSON.stringify({
+        action: 'undo',
+        shapeId: last.id,
+      })
+    );
+    sendUpdate(payload);
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    const next = redoStack[redoStack.length - 1];
+    setRedoStack((prev) => prev.slice(0, -1));
+    commitShape(next);
   };
 
   const handleExportPNG = () => {
@@ -83,9 +255,111 @@ export const WhiteboardPage: React.FC = () => {
     link.click();
   };
 
+  // 7. Render shapes and active drawing onto 2D Canvas context
+  const redrawCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Reset transform to identity and clear entire buffer
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+
+    const drawShape = (s: CanvasShape) => {
+      ctx.save();
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.lineWidth = s.strokeWidth;
+      ctx.strokeStyle = s.color;
+      ctx.fillStyle = s.color;
+
+      if ((s.type === 'pen' || s.type === 'eraser') && s.points && s.points.length > 0) {
+        ctx.beginPath();
+        ctx.moveTo(s.points[0].x, s.points[0].y);
+        for (let i = 1; i < s.points.length; i++) {
+          ctx.lineTo(s.points[i].x, s.points[i].y);
+        }
+        ctx.stroke();
+      } else if (
+        s.type === 'rect' &&
+        s.x !== undefined &&
+        s.y !== undefined &&
+        s.width !== undefined &&
+        s.height !== undefined
+      ) {
+        ctx.strokeRect(s.x, s.y, s.width, s.height);
+      } else if (
+        s.type === 'circle' &&
+        s.x !== undefined &&
+        s.y !== undefined &&
+        s.width !== undefined &&
+        s.height !== undefined
+      ) {
+        const radiusX = Math.abs(s.width) / 2;
+        const radiusY = Math.abs(s.height) / 2;
+        const centerX = s.x + s.width / 2;
+        const centerY = s.y + s.height / 2;
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY, Math.max(1, radiusX), Math.max(1, radiusY), 0, 0, 2 * Math.PI);
+        ctx.stroke();
+      } else if (
+        s.type === 'arrow' &&
+        s.x !== undefined &&
+        s.y !== undefined &&
+        s.width !== undefined &&
+        s.height !== undefined
+      ) {
+        const fromX = s.x;
+        const fromY = s.y;
+        const toX = s.x + s.width;
+        const toY = s.y + s.height;
+        const headlen = 12;
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(
+          toX - headlen * Math.cos(angle - Math.PI / 6),
+          toY - headlen * Math.sin(angle - Math.PI / 6)
+        );
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(
+          toX - headlen * Math.cos(angle + Math.PI / 6),
+          toY - headlen * Math.sin(angle + Math.PI / 6)
+        );
+        ctx.stroke();
+      } else if (s.type === 'text' && s.text && s.x !== undefined && s.y !== undefined) {
+        ctx.font = `${Math.max(16, s.strokeWidth * 4)}px sans-serif`;
+        ctx.fillText(s.text, s.x, s.y);
+      }
+      ctx.restore();
+    };
+
+    for (const shape of shapes) {
+      drawShape(shape);
+    }
+
+    if (currentDrawing) {
+      drawShape(currentDrawing);
+    }
+  }, [shapes, currentDrawing]);
+
+  useEffect(() => {
+    redrawCanvas();
+  }, [redrawCanvas]);
+
   return (
-    <div className="flex flex-col h-[calc(100vh-6rem)] space-y-4">
+    <div className={`flex flex-col ${hideHeader ? 'h-full space-y-2.5' : 'h-[calc(100vh-6rem)] space-y-4'}`}>
       {/* Top Header */}
+      {!hideHeader && (
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
         <div>
           <div className="flex items-center gap-2">
@@ -98,7 +372,7 @@ export const WhiteboardPage: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-on-surface-variant">
-            Real-time multi-user shared canvas powered by Socket.IO & Yjs CRDT synchronization.
+            Real-time multi-user shared canvas synchronized with PostgreSQL & Socket.IO.
           </p>
         </div>
 
@@ -134,6 +408,7 @@ export const WhiteboardPage: React.FC = () => {
           </button>
         </div>
       </div>
+      )}
 
       {/* Toolbar */}
       <Toolbar
@@ -143,10 +418,12 @@ export const WhiteboardPage: React.FC = () => {
         onSelectColor={setColor}
         currentStrokeWidth={strokeWidth}
         onSelectStrokeWidth={setStrokeWidth}
-        onClear={() => setShapes([])}
+        onClear={handleClear}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
         onExport={handleExportPNG}
         canUndo={shapes.length > 0}
-        canRedo={false}
+        canRedo={redoStack.length > 0}
       />
 
       {/* Drawing Stage Area */}
@@ -155,6 +432,7 @@ export const WhiteboardPage: React.FC = () => {
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onResize={redrawCanvas}
       >
         <RemoteCursors peers={peers} />
       </CanvasStage>

@@ -32,11 +32,12 @@ async def chat_endpoint(
 @router.websocket("/ws/chat/team/{team_id}/{user_id}")
 async def team_chat_endpoint(
     websocket: WebSocket,
-    team_id: int,
+    team_id: uuid.UUID,
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
 ) -> None:
-    if await db.get(Users, user_id) is None:
+    user = await db.get(Users, user_id)
+    if user is None:
         await websocket.close(code=1008, reason="Unknown user")
         return
 
@@ -58,9 +59,19 @@ async def team_chat_endpoint(
             )
             db.add(new_msg)
             await db.commit()
+            await db.refresh(new_msg)
 
             broadcast_payload = json.dumps(
-                {"from": str(user_id), "team_id": team_id, "content": content}
+                {
+                    "id": str(new_msg.id),
+                    "from": str(user_id),
+                    "sender_id": str(user_id),
+                    "sender_login": user.login,
+                    "sender_fullname": user.fullname,
+                    "team_id": str(team_id),
+                    "content": content,
+                    "created_at": new_msg.created_at.isoformat() if new_msg.created_at else None,
+                }
             )
             await manager.broadcast_to_team(team_id, user_id, broadcast_payload)
 
@@ -69,26 +80,65 @@ async def team_chat_endpoint(
 
 
 @router.get("/messages/team/{team_id}")
+@router.get("/api/v1/messages/team/{team_id}", include_in_schema=False)
 async def get_team_chat_history(
-    team_id: int,
+    team_id: uuid.UUID,
     db: AsyncSession = Depends(get_db_session),
 ) -> list[dict[str, str | None]]:
     stmt = select(Message).where(Message.team_id == team_id).order_by(Message.created_at.asc())
     result = await db.execute(stmt)
-    messages = result.scalars().all()
+    messages = list(result.scalars().all())
+    if not messages:
+        return []
+
+    sender_ids = {m.sender_id for m in messages}
+    users_res = await db.execute(select(Users).where(Users.id.in_(sender_ids)))
+    users_by_id = {u.id: u for u in users_res.scalars().all()}
+
     return [
         {
             "id": str(message.id),
             "content": message.content,
             "created_at": message.created_at.isoformat() if message.created_at else None,
             "sender_id": str(message.sender_id),
+            "sender_login": (
+                users_by_id[message.sender_id].login
+                if message.sender_id in users_by_id
+                else f"user_{str(message.sender_id)[:6]}"
+            ),
+            "sender_fullname": (
+                users_by_id[message.sender_id].fullname
+                if message.sender_id in users_by_id
+                else f"Teammate {str(message.sender_id)[:6]}"
+            ),
             "team_id": str(message.team_id),
         }
         for message in messages
     ]
 
 
+@router.get("/messages/peers")
+@router.get("/api/v1/messages/peers", include_in_schema=False)
+async def list_chat_peers(
+    db: AsyncSession = Depends(get_db_session),
+) -> list[dict[str, str | None]]:
+    res = await db.execute(select(Users).order_by(Users.fullname.asc()).limit(100))
+    users = res.scalars().all()
+    return [
+        {
+            "id": str(u.id),
+            "login": u.login,
+            "fullname": u.fullname,
+            "email": u.email,
+            "avatar_url": u.avatar_url,
+            "role": u.role,
+        }
+        for u in users
+    ]
+
+
 @router.get("/messages/{user_a}/{user_b}")
+@router.get("/api/v1/messages/{user_a}/{user_b}", include_in_schema=False)
 async def get_chat_history(
     user_a: uuid.UUID,
     user_b: uuid.UUID,
@@ -97,8 +147,11 @@ async def get_chat_history(
     stmt = (
         select(Message)
         .where(
-            ((Message.sender_id == user_a) & (Message.receiver_id == user_b))
-            | ((Message.sender_id == user_b) & (Message.receiver_id == user_a))
+            Message.team_id.is_(None),
+            (
+                ((Message.sender_id == user_a) & (Message.receiver_id == user_b))
+                | ((Message.sender_id == user_b) & (Message.receiver_id == user_a))
+            ),
         )
         .order_by(Message.created_at.asc())
     )
@@ -110,7 +163,7 @@ async def get_chat_history(
             "content": message.content,
             "created_at": message.created_at.isoformat() if message.created_at else None,
             "sender_id": str(message.sender_id),
-            "receiver_id": str(message.receiver_id),
+            "receiver_id": str(message.receiver_id) if message.receiver_id else None,
             "is_read": bool(message.is_read),
             "delivered": getattr(message, "is_delivered", True),
         }

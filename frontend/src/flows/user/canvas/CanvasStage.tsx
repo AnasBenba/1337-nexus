@@ -7,6 +7,7 @@ export interface CanvasStageProps {
   onPointerMove?: (e: React.PointerEvent<HTMLCanvasElement>) => void;
   onPointerUp?: (e: React.PointerEvent<HTMLCanvasElement>) => void;
   onWheel?: (e: React.WheelEvent<HTMLCanvasElement>) => void;
+  onResize?: () => void;
   children?: React.ReactNode;
 }
 
@@ -16,6 +17,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
   onPointerMove,
   onPointerUp,
   onWheel,
+  onResize,
   children,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -39,12 +41,13 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
       if (ctx) {
         ctx.scale(dpr, dpr);
       }
+      onResize?.();
     };
 
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [canvasRef]);
+  }, [canvasRef, onResize]);
 
   return (
     <div

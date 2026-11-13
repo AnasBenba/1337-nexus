@@ -25,11 +25,10 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import NullPool, select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
-from app.main import app
 from app.collaboration.board.models import BoardCard, BoardColumn
 from app.core.config import get_settings
+from app.main import app
 from app.teams.models import WorkspaceBoard, WorkspaceTeam
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -116,15 +115,11 @@ async def _provision_board(client: AsyncClient, engine: object) -> tuple[uuid.UU
     async with AsyncSession(engine) as session:
         team = (
             await session.execute(
-                select(WorkspaceTeam).where(
-                    WorkspaceTeam.opportunity_id == uuid.UUID(opp_id)
-                )
+                select(WorkspaceTeam).where(WorkspaceTeam.opportunity_id == uuid.UUID(opp_id))
             )
         ).scalar_one()
         board = (
-            await session.execute(
-                select(WorkspaceBoard).where(WorkspaceBoard.team_id == team.id)
-            )
+            await session.execute(select(WorkspaceBoard).where(WorkspaceBoard.team_id == team.id))
         ).scalar_one()
 
     return board.id, founder_h
