@@ -16,6 +16,10 @@ from app.shared.ai.client import get_ai_provider
 from app.user.pitches.models import Pitch
 from app.user.pitches.schemas import PitchCreate
 from app.user.pitches.service import update_pitch
+from app.user.projects.refine_project.rate_limit import (
+    SlidingWindowRateLimiter,
+    pitch_refine_rate_limiter,
+)
 from app.user.projects.refine_project.schemas import (
     ApplySuggestionResponse,
     CritiqueSummary,
@@ -65,6 +69,7 @@ async def request_pitch_refinement(
     db: AsyncSession,
     pitch_id: uuid.UUID,
     current_user: Users,
+    rate_limiter: SlidingWindowRateLimiter | None = None,
 ) -> RefineResponse:
     """
     Initiate an AI critique workflow for a pitch.
@@ -120,6 +125,15 @@ async def request_pitch_refinement(
                 base_hash=content_hash,
                 message="A refinement job for this exact pitch version is already in progress",
             )
+
+    # Rate limit check for new AI refinement job
+    limiter = rate_limiter or pitch_refine_rate_limiter
+    rate_key = (
+        f"user:{current_user.id}"
+        if current_user and getattr(current_user, "id", None)
+        else f"pitch:{pitch.id}"
+    )
+    await limiter.enforce(rate_key)
 
     # 7. Snapshot and enqueue new job
     snapshot_payload = {

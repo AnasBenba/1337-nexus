@@ -10,8 +10,10 @@ export class ApiError extends Error {
   detail: string;
   isConflict: boolean;
   isStale: boolean;
+  isRateLimit: boolean;
+  retryAfter?: number;
 
-  constructor(status: number, detail: string) {
+  constructor(status: number, detail: string, retryAfter?: number) {
     super(detail);
     this.name = 'ApiError';
     this.status = status;
@@ -21,6 +23,8 @@ export class ApiError extends Error {
       status === 409 &&
       (detail.toLowerCase().includes('version token') ||
         detail.toLowerCase().includes('stale'));
+    this.isRateLimit = status === 429;
+    this.retryAfter = retryAfter;
   }
 }
 
@@ -46,7 +50,13 @@ export async function requestRefine(
 
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new ApiError(res.status, errorBody.detail || 'Failed to submit refine request');
+    const retryHeader = res.headers?.get?.('Retry-After');
+    const retryAfter = retryHeader ? parseInt(retryHeader, 10) : undefined;
+    throw new ApiError(
+      res.status,
+      errorBody.detail || 'Failed to submit refine request',
+      retryAfter
+    );
   }
 
   return res.json();

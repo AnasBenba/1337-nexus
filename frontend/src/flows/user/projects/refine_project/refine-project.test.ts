@@ -153,4 +153,32 @@ describe('Refine Project API Client', () => {
     const result = await dismissSuggestion('pitch-uuid-1', 'sug-1');
     expect(result.status).toBe('dismissed');
   });
+
+  it('requestRefine throws ApiError with isRateLimit=true on 429 status', async () => {
+    const headers = new Headers();
+    headers.set('Retry-After', '45');
+    headers.set('X-RateLimit-Limit', '5');
+    headers.set('X-RateLimit-Remaining', '0');
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+      statusText: 'Too Many Requests',
+      headers,
+      json: async () => ({
+        detail: 'Rate limit exceeded: You can only submit up to 5 pitch refinement requests every 60s. Please retry in 45s.',
+      }),
+    } as unknown as Response);
+
+    await expect(requestRefine('pitch-uuid-1', 42)).rejects.toThrow(ApiError);
+
+    try {
+      await requestRefine('pitch-uuid-1', 42);
+    } catch (err: any) {
+      expect(err.status).toBe(429);
+      expect(err.isRateLimit).toBe(true);
+      expect(err.retryAfter).toBe(45);
+      expect(err.detail).toContain('Rate limit exceeded');
+    }
+  });
 });

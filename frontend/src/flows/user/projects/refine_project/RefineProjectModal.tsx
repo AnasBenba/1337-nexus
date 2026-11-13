@@ -186,7 +186,14 @@ export const RefineProjectModal: React.FC<RefineProjectModalProps> = ({
       setModalState('C');
       startPolling(pitchId);
     } catch (err: any) {
-      setGeneralError(err?.detail || err?.message || 'Failed to submit critique request');
+      if (err?.isRateLimit || err?.status === 429) {
+        setGeneralError(
+          err?.detail ||
+            "Rate limit reached: You've submitted multiple refinement requests. Please wait a moment before trying again."
+        );
+      } else {
+        setGeneralError(err?.detail || err?.message || 'Failed to submit critique request');
+      }
       setModalState('I');
     }
   };

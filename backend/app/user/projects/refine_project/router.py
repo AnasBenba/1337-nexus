@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Query, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,9 +32,23 @@ async def get_current_user_dep(
 ) -> Users:
     """
     Resolve the current authenticated user.
-    Supports X-User-Id header, query param, or fallback to database user.
+    Supports session cookie, explicit X-User-Id header, query param, or database user.
     """
-    # 1. Explicit Header
+    # 1. Session cookie authentication
+    token = request.cookies.get("access_token")
+    if token:
+        try:
+            from app.oauth import jwt
+
+            payload = jwt.verify_access_token(token)
+            intra_id = int(payload["sub"])
+            user = await db.scalar(select(Users).where(Users.intra_id == intra_id))
+            if user:
+                return user
+        except Exception:
+            pass
+
+    # 2. Explicit Header (internal / test clients)
     if x_user_id:
         try:
             uid = int(x_user_id)
@@ -44,30 +58,22 @@ async def get_current_user_dep(
         except ValueError:
             pass
 
-    # 2. Query parameter
+    # 3. Query parameter
     if user_id:
         user = await db.get(Users, user_id)
         if user:
             return user
 
-    # 3. Fallback to existing user in database
+    # 4. Fallback to existing user in database
     result = await db.execute(select(Users).limit(1))
     user = result.scalar_one_or_none()
     if user:
         return user
 
-    # 4. Dev seed user if database is empty
-    dev_user = Users(
-        id=1,
-        login="sel-bou",
-        fullname="Soufiane El B.",
-        role="user",
-        intra_id=4242,
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Authentication required",
     )
-    db.add(dev_user)
-    await db.commit()
-    await db.refresh(dev_user)
-    return dev_user
 
 
 # Supports both canonical /api/v1/user/projects and frontend flow /api/user/projects/refine-project
