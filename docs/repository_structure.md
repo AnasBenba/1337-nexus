@@ -139,9 +139,9 @@
 │   │   │   │   └── continue_project/            # AYOUB
 │   │   │   │
 │   │   │   └── profile/                         # SFY
-│   │   │       ├── view_profile/                # SFY
-│   │   │       ├── edit_profile/                # SFY
-│   │   │       └── settings/                    # SFY
+│   │   │       ├── avatar.py                    # SFY
+│   │   │       ├── router.py                    # SFY
+│   │   │       └── schemas.py                   # SFY
 │   │   │
 │   │   ├── teams/                               # AYOUB
 │   │   │   ├── create_team/                    # AYOUB
@@ -278,8 +278,15 @@
 │   │   │       ├── notifications/               # YASSIN
 │   │   │       ├── quick_actions/                # AYOUB
 │   │   │       └── profile/                      # SFY
+│   │   │           ├── AvatarUploader.tsx        # SFY
+│   │   │           ├── ProfileEditForm.tsx       # SFY
+│   │   │           ├── ProfilePage.tsx           # SFY
+│   │   │           ├── api.ts                    # SFY
+│   │   │           └── avatar.test.tsx           # SFY
 │   │   │
 │   │   ├── components/                           # SHARED FRONTEND
+│   │   │   ├── Avatar.tsx                        # SFY
+│   │   │   ├── Layout.tsx                        # ANAS + ALL FRONTEND
 │   │   │   ├── ui/                               # ANAS + ALL FRONTEND
 │   │   │   └── layout/                           # ANAS
 │   │   │

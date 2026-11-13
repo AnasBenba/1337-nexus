@@ -1,9 +1,8 @@
 import os
-from pathlib import Path
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 
 from .collaboration.board.router import router as board_router
 from .collaboration.chat.send_direct_message.router import (
@@ -47,24 +46,47 @@ from .user.projects.refine_project.router import (
 )
 
 router = APIRouter()
-HOME_PAGE = Path(__file__).parent / "index.html"
+
+
+DEFAULT_LOCAL_FRONTEND = "https://localhost:8443"
 
 
 def _safe_local_origin(raw_url: str | None) -> str | None:
     if not raw_url:
         return None
-    parsed = urlparse(raw_url)
+    cleaned = raw_url.strip().strip('"').strip("'")
+    parsed = urlparse(cleaned)
     if parsed.scheme in {"http", "https"} and parsed.hostname in {"localhost", "127.0.0.1"}:
         return f"{parsed.scheme}://{parsed.netloc}"
     return None
 
 
+def _resolve_frontend_origin(request: Request) -> str | None:
+    referer_or_origin = _safe_local_origin(request.headers.get("referer")) or _safe_local_origin(
+        request.headers.get("origin")
+    )
+    if referer_or_origin:
+        return referer_or_origin
+    fwd_proto = request.headers.get("x-forwarded-proto")
+    fwd_host = request.headers.get("x-forwarded-host")
+    if fwd_proto and fwd_host:
+        return _safe_local_origin(f"{fwd_proto}://{fwd_host}")
+    return None
+
+
+@router.get("/", include_in_schema=False)
+async def root_redirect(request: Request) -> RedirectResponse:
+    configured_frontend = os.getenv("FRONTEND_URL")
+    if configured_frontend:
+        return RedirectResponse(url=configured_frontend, status_code=307)
+    origin = _resolve_frontend_origin(request) or DEFAULT_LOCAL_FRONTEND
+    return RedirectResponse(url=f"{origin}/discover", status_code=307)
+
+
 @router.get("/auth/login", tags=["auth"])
 async def auth_login(request: Request) -> RedirectResponse:
     response = await entrypoint.redirect_to_forttytwo()
-    frontend_origin = _safe_local_origin(request.headers.get("referer")) or _safe_local_origin(
-        request.headers.get("origin")
-    )
+    frontend_origin = _resolve_frontend_origin(request)
     if frontend_origin:
         response.set_cookie(
             key="oauth_frontend_origin",
@@ -75,19 +97,6 @@ async def auth_login(request: Request) -> RedirectResponse:
             path="/",
         )
     return response
-
-
-@router.get("/home", tags=["pages"])
-async def home(request: Request) -> FileResponse:
-    token = request.cookies.get("access_token")
-    if not token:
-        raise HTTPException(
-            status_code=401,
-            detail="Not authenticated",
-        )
-
-    jwt.verify_access_token(token)
-    return FileResponse(HOME_PAGE, media_type="text/html")
 
 
 @router.get("/api/v1/auth/oauth/42/callback", tags=["auth"])
@@ -118,7 +127,8 @@ async def auth_callback(request: Request, code: str, state: str) -> RedirectResp
         redirect_target = configured_frontend
     else:
         origin_cookie = _safe_local_origin(request.cookies.get("oauth_frontend_origin"))
-        redirect_target = f"{origin_cookie}/discover" if origin_cookie else "/"
+        base_origin = origin_cookie or DEFAULT_LOCAL_FRONTEND
+        redirect_target = f"{base_origin}/discover"
 
     response = RedirectResponse(url=redirect_target, status_code=303)
     response.set_cookie(
