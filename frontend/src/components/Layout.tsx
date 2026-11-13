@@ -203,6 +203,29 @@ export const Layout: React.FC = () => {
             </span>
           </NavLink>
 
+          {/* 6. Collaborative Whiteboard */}
+          <NavLink
+            to="/whiteboard"
+            className={({ isActive }) =>
+              `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all group ${
+                isActive
+                  ? 'bg-primary-fixed text-on-primary-fixed font-bold'
+                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+              }`
+            }
+          >
+            <div className="flex items-center gap-space-sm">
+              <span className="material-symbols-outlined text-[20px] text-primary">
+                draw
+              </span>
+              <span className="font-label-md text-label-md">Whiteboard</span>
+            </div>
+            <span className="font-label-code-tag text-[9px] uppercase px-1.5 py-0.5 rounded bg-primary-fixed text-on-primary-fixed-variant font-bold">
+              CRDT
+            </span>
+          </NavLink>
+
+
         </nav>
 
         {isAuthenticated && user && (
