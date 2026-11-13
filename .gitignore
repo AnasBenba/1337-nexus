@@ -39,6 +39,7 @@ tests/42_subjects/
 # IDE / editor files
 .vscode/
 .antigravity/
+.agents/
 .idea/
 .antigravity/
 *.swp
