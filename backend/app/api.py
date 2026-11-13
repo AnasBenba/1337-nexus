@@ -1,4 +1,6 @@
+import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
@@ -39,6 +41,7 @@ from .user.opportunities.withdraw_application.router import (
     router as withdraw_application_router,
 )
 from .user.pitches.router import router as pitches_router
+from .user.profile.router import router as profile_router
 from .user.projects.refine_project.router import (
     router as refine_project_router,
 )
@@ -47,9 +50,31 @@ router = APIRouter()
 HOME_PAGE = Path(__file__).parent / "index.html"
 
 
+def _safe_local_origin(raw_url: str | None) -> str | None:
+    if not raw_url:
+        return None
+    parsed = urlparse(raw_url)
+    if parsed.scheme in {"http", "https"} and parsed.hostname in {"localhost", "127.0.0.1"}:
+        return f"{parsed.scheme}://{parsed.netloc}"
+    return None
+
+
 @router.get("/auth/login", tags=["auth"])
-async def auth_login() -> RedirectResponse:
-    return await entrypoint.redirect_to_forttytwo()
+async def auth_login(request: Request) -> RedirectResponse:
+    response = await entrypoint.redirect_to_forttytwo()
+    frontend_origin = _safe_local_origin(request.headers.get("referer")) or _safe_local_origin(
+        request.headers.get("origin")
+    )
+    if frontend_origin:
+        response.set_cookie(
+            key="oauth_frontend_origin",
+            value=frontend_origin,
+            httponly=True,
+            samesite="lax",
+            max_age=300,
+            path="/",
+        )
+    return response
 
 
 @router.get("/home", tags=["pages"])
@@ -88,18 +113,26 @@ async def auth_callback(request: Request, code: str, state: str) -> RedirectResp
 
     jwt_token = jwt.create_access_token(nexus_user.id, role=nexus_user.role)
 
-    response = RedirectResponse(url="/home", status_code=303)
+    configured_frontend = os.getenv("FRONTEND_URL")
+    if configured_frontend:
+        redirect_target = configured_frontend
+    else:
+        origin_cookie = _safe_local_origin(request.cookies.get("oauth_frontend_origin"))
+        redirect_target = f"{origin_cookie}/discover" if origin_cookie else "/"
+
+    response = RedirectResponse(url=redirect_target, status_code=303)
     response.set_cookie(
         key="access_token",
         value=jwt_token,
         httponly=True,
         secure=False,
         samesite="lax",
-        max_age=15 * 60,
+        max_age=jwt.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path="/",
     )
     response.delete_cookie("state", path="/")
     response.delete_cookie("code_verifier", path="/")
+    response.delete_cookie("oauth_frontend_origin", path="/")
     return response
 
 
@@ -116,6 +149,7 @@ async def health_ready() -> dict[str, object]:
 def register_routes(app: FastAPI) -> None:
     app.include_router(router)
     app.include_router(auth_router)
+    app.include_router(profile_router)
     app.include_router(pitches_router)
     app.include_router(opportunities_router)
     app.include_router(create_opportunity_router)

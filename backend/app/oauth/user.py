@@ -58,6 +58,10 @@ class Users(base.Base):  # type: ignore[misc]
         String(500),
         nullable=True,
     )
+    bio: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
 
 
 async def get_user_by_id(session: AsyncSession, user_id: uuid.UUID) -> Users | None:

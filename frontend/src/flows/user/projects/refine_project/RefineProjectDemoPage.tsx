@@ -16,14 +16,14 @@ interface PitchItem {
 
 const FALLBACK_PITCH: PitchItem = {
   id: '00000000-0000-0000-0000-000000000001',
-  title: 'StudySync: Peer Code Review Network',
+  title: 'Sample Project Pitch',
   content:
-    'Problem: 1337 students often wait hours for peer evaluations on graphics and algorithm projects.\n\n' +
-    'Solution: A campus-native peer review matchmaking tool that pairs students based on project progression and intra evaluation points.\n\n' +
-    'Impact: Reduce idle evaluation waiting time by 60% across Circles 01-04.',
+    'Problem: Define the core engineering problem.\n\n' +
+    'Solution: Outline the architecture and peer collaboration flow.\n\n' +
+    'Impact: Measure adoption and learning outcomes.',
   category: 'Technology',
   status: 'draft',
-  description: 'Campus-native peer review matchmaking',
+  description: 'Project pitch preview',
 };
 
 export const RefineProjectDemoPage: React.FC = () => {
@@ -233,7 +233,7 @@ export const RefineProjectDemoPage: React.FC = () => {
             <p className="text-xs md:text-sm text-slate-600 flex items-center gap-2">
               <span className="material-symbols-outlined text-sm text-slate-400">person</span>
               <span>
-                {activePitch.author_id ? `Author: ${activePitch.author_id.slice(0, 8)}...` : 'Soufiane El B. (@sel-bou) · 1337 Benguerir · Circle 04'}
+                {activePitch.author_id ? `Author: ${activePitch.author_id.slice(0, 8)}...` : 'No author assigned'}
               </span>
             </p>
           </div>

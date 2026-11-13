@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 
 export const AuthModal: React.FC = () => {
@@ -192,10 +193,10 @@ export const AuthModal: React.FC = () => {
               <input
                 type="password"
                 required
-                minLength={6}
+                minLength={8}
                 value={regPassword}
                 onChange={(e) => setRegPassword(e.target.value)}
-                placeholder="Minimum 6 characters"
+                placeholder="Minimum 8 characters"
                 className="w-full px-3.5 py-2 rounded-xl border border-outline-variant bg-surface text-sm text-on-surface focus:outline-none focus:border-primary"
               />
             </div>
@@ -210,16 +211,20 @@ export const AuthModal: React.FC = () => {
           </form>
         )}
 
-        <div className="mt-6 pt-4 border-t border-outline-variant text-center">
-          <p className="text-xs text-on-surface-variant">
-            Or continue with{' '}
-            <a 
-              href="http://localhost:8000/api/v1/auth/oauth/42/login" 
-              className="text-primary font-bold hover:underline"
-            >
-              42 Intra OAuth
-            </a>
-          </p>
+        <div className="mt-6 pt-4 border-t border-outline-variant flex flex-col gap-2 text-center">
+          <a
+            href="/auth/login"
+            className="w-full py-2.5 rounded-xl bg-surface-container-low text-on-surface font-semibold text-xs hover:bg-surface-container transition-colors inline-flex items-center justify-center gap-2"
+          >
+            Continue with 42 Intra OAuth
+          </a>
+          <Link
+            to="/login"
+            onClick={closeAuthModal}
+            className="text-xs text-primary font-semibold hover:underline"
+          >
+            Open dedicated sign-in page
+          </Link>
         </div>
       </div>
     </div>

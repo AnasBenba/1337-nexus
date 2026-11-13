@@ -39,9 +39,10 @@ class AuthClient:
         )
 
 
-async def redirect_to_forttytwo():
-    client = AuthClient(redirect_uri="http://localhost:8000/api/v1/auth/oauth/42/callback")
+async def redirect_to_forttytwo() -> RedirectResponse:
+    redirect_uri = os.getenv("REDIRECT_URL", "http://localhost:8000/api/v1/auth/oauth/42/callback")
+    client = AuthClient(redirect_uri=redirect_uri)
     response = RedirectResponse(client.get_FortyTwo_auth_url())
-    response.set_cookie(key="state", value=client.state, httponly=True)
-    response.set_cookie(key="code_verifier", value=client.code_verifier, httponly=True)
+    response.set_cookie(key="state", value=client.state, httponly=True, path="/")
+    response.set_cookie(key="code_verifier", value=client.code_verifier, httponly=True, path="/")
     return response

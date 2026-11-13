@@ -10,8 +10,14 @@ export type UserProfile = {
   login: string;
   fullname: string;
   email: string | null;
+  bio?: string | null;
   avatar_url: string | null;
   role: string;
+};
+
+export type Me = UserProfile & {
+  bio: string | null;
+  permissions: string[];
 };
 
 export type SignupInput = {
@@ -70,5 +76,14 @@ export async function isSignedIn(): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+export async function logout(): Promise<void> {
+  await fetch('/api/v1/auth/logout', { method: 'POST', credentials: 'include' });
+}
+
+export async function getMe(): Promise<Me | null> {
+  const res = await fetch('/api/v1/users/me', { credentials: 'include' });
+  return res.ok ? ((await res.json()) as Me) : null;
 }
 

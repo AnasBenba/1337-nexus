@@ -27,7 +27,7 @@ export const EmptyCritiqueState: React.FC<EmptyCritiqueStateProps> = ({
               No major issues found, your pitch looks solid
             </h4>
             <p className="text-xs text-slate-500">
-              Your pitch satisfies all core rubrics for Circle 04 capstone evaluation.
+              Your pitch clearly addresses the key project evaluation criteria.
             </p>
           </div>
         </div>

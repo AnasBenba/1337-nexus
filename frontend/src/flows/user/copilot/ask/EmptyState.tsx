@@ -84,7 +84,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({ onSelectPrompt }) => {
 
       <div className="flex items-center gap-space-sm text-outline font-label-code-tag text-label-code-tag text-center">
         <span className="material-symbols-outlined text-[16px]">verified_user</span>
-        <span>Indexed with 42 Network Curriculum v4.2 & Peer Checklists (Synced Benguerir & Khouribga)</span>
+        <span>Indexed with 42 Network Curriculum &amp; Peer Evaluation Checklists</span>
       </div>
     </div>
   );

@@ -2,13 +2,15 @@ import json
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.collaboration.chat.models import Message
+from app.core.auth import get_current_user_strict
 from app.core.db import get_db_session
 from app.oauth.user import Users
+from app.realtime.presence import presence_manager
 
 from .service import start_chat
 from .socket_manager import manager
@@ -120,10 +122,17 @@ async def get_team_chat_history(
 @router.get("/messages/peers")
 @router.get("/api/v1/messages/peers", include_in_schema=False)
 async def list_chat_peers(
+    current_user: Users = Depends(get_current_user_strict),
     db: AsyncSession = Depends(get_db_session),
-) -> list[dict[str, str | None]]:
-    res = await db.execute(select(Users).order_by(Users.fullname.asc()).limit(100))
+) -> list[dict[str, Any]]:
+    res = await db.execute(
+        select(Users)
+        .where(Users.is_active.is_(True))
+        .order_by(Users.fullname.asc(), Users.login.asc())
+        .limit(100)
+    )
     users = res.scalars().all()
+    online_ids = presence_manager.get_online_user_ids()
     return [
         {
             "id": str(u.id),
@@ -132,6 +141,8 @@ async def list_chat_peers(
             "email": u.email,
             "avatar_url": u.avatar_url,
             "role": u.role,
+            "is_self": u.id == current_user.id,
+            "is_online": str(u.id) in online_ids,
         }
         for u in users
     ]
@@ -142,8 +153,14 @@ async def list_chat_peers(
 async def get_chat_history(
     user_a: uuid.UUID,
     user_b: uuid.UUID,
+    current_user: Users = Depends(get_current_user_strict),
     db: AsyncSession = Depends(get_db_session),
 ) -> list[dict[str, Any]]:
+    if current_user.id not in (user_a, user_b):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only view your own direct message history",
+        )
     stmt = (
         select(Message)
         .where(

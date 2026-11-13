@@ -8,10 +8,13 @@ export interface UserProfile {
   role: string;
   avatar_url: string | null;
   intra_id: number | null;
+  bio?: string | null;
+  permissions?: string[];
 }
 
 interface AuthContextType {
   user: UserProfile | null;
+  setUser: React.Dispatch<React.SetStateAction<UserProfile | null>>;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (loginOrEmail: string, password: string) => Promise<{ success: boolean; error?: string }>;
@@ -38,7 +41,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (res.ok) {
         const data = (await res.json()) as { signed_in?: boolean; user?: UserProfile };
         if (data.signed_in && data.user) {
-          setUser(data.user);
+          const meRes = await fetch('/api/v1/users/me', { credentials: 'include' }).catch(() => null);
+          if (meRes && meRes.ok) {
+            const fullProfile = (await meRes.json()) as UserProfile;
+            setUser(fullProfile);
+          } else {
+            setUser(data.user);
+          }
         } else {
           setUser(null);
         }
@@ -125,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
+        setUser,
         isAuthenticated: !!user,
         isLoading,
         login,

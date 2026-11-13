@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.jobs import job_worker_lifespan
 from app.realtime.server import get_socket_app
+from app.user.profile.avatar import AVATAR_DIR, MEDIA_ROOT
 
 from .api import register_routes
 
@@ -22,6 +24,9 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    AVATAR_DIR.mkdir(parents=True, exist_ok=True)
+    app.mount("/media", StaticFiles(directory=str(MEDIA_ROOT), check_dir=False), name="media")
 
     register_routes(app)
     return app

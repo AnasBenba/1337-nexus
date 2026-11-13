@@ -12,6 +12,7 @@ from app.collaboration.chat.models import Message
 from app.core.db import SessionLocal
 from app.oauth.jwt import verify_access_token
 from app.oauth.user import Users, get_user_by_intra_id
+from app.realtime.presence import presence_manager
 
 
 class ChatNamespace(socketio.AsyncNamespace):  # type: ignore[misc]
@@ -64,10 +65,31 @@ class ChatNamespace(socketio.AsyncNamespace):  # type: ignore[misc]
                     "user_id": user_id,
                     "login": user.login,
                     "fullname": user.fullname,
+                    "avatar_url": user.avatar_url,
                     "team_rooms": set(),
                 },
             )
             await self.enter_room(sid, f"user:{user_id}")
+
+            became_online = presence_manager.add_connection(str(user_id), sid)
+            if became_online:
+                await self.emit(
+                    "presence_change",
+                    {"user_id": str(user_id), "status": "online"},
+                )
+
+            await self.emit(
+                "my_identity",
+                {
+                    "id": str(user.id),
+                    "login": user.login,
+                    "fullname": user.fullname,
+                    "role": user.role,
+                    "avatar_url": user.avatar_url,
+                    "online_user_ids": sorted(presence_manager.get_online_user_ids()),
+                },
+                room=sid,
+            )
 
             # Deliver offline 1-to-1 messages
             statement = (
@@ -125,6 +147,13 @@ class ChatNamespace(socketio.AsyncNamespace):  # type: ignore[misc]
 
         for team_id_str in affected_teams:
             await self._broadcast_team_presence(team_id_str)
+
+        disconnected_user_id, is_offline = presence_manager.remove_connection(sid)
+        if is_offline and disconnected_user_id:
+            await self.emit(
+                "presence_change",
+                {"user_id": disconnected_user_id, "status": "offline"},
+            )
 
     async def on_join_team(self, sid: str, data: Any) -> dict[str, Any]:
         if not isinstance(data, dict):

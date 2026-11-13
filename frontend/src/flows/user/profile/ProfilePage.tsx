@@ -1,159 +1,219 @@
 import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import type { Me, UserProfile } from '@/app/authentication/login/Auth.api';
+import { Avatar } from '@/components/Avatar';
 import { useAuth } from '@/context/AuthContext';
+import { can, Permission } from '@/lib/permissions';
+import { getMyProfile, getProfile, updateMyProfile } from './api';
+import { AvatarUploader } from './AvatarUploader';
+import { ProfileEditForm } from './ProfileEditForm';
 
-interface UserPitch {
-  id: string;
-  title: string;
-  category: string;
-  status: string;
-  created_at?: string;
-}
+const AVATAR_CLASS = 'h-24 w-24 text-[28px] ring-4 ring-surface-container-lowest';
 
 export const ProfilePage: React.FC = () => {
-  const { user, openAuthModal, logout } = useAuth();
-  const [pitches, setPitches] = useState<UserPitch[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { login: routeLogin } = useParams();
+  const navigate = useNavigate();
+  const { user: authUser, setUser: setAuthUser, isAuthenticated, isLoading, logout } = useAuth();
+
+  const isMe = !routeLogin || (authUser !== null && routeLogin === authUser.login);
+
+  const [me, setMe] = useState<Me | null>(null);
+  const [other, setOther] = useState<UserProfile | null | undefined>(undefined);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
 
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
+    let cancelled = false;
+    setEditing(false);
+    setLoadError(null);
+
+    if (isLoading) return undefined;
+
+    if (!isAuthenticated) {
+      setLoadingProfile(false);
+      setMe(null);
+      setOther(null);
+      return undefined;
     }
 
-    const fetchPitches = async () => {
-      try {
-        const res = await fetch('/api/v1/user/pitches', { credentials: 'include' });
-        if (res.ok) {
-          const data: UserPitch[] = await res.json();
-          // Filter to user's pitches if author_id is set or show all active
-          setPitches(data);
-        }
-      } catch (err) {
-        console.error('Failed to load user pitches', err);
-      } finally {
-        setLoading(false);
-      }
+    setLoadingProfile(true);
+    if (isMe) {
+      getMyProfile()
+        .then((profile) => {
+          if (cancelled) return;
+          setMe(profile);
+          setAuthUser(profile);
+        })
+        .catch((err: Error) => {
+          if (!cancelled) setLoadError(err.message);
+        })
+        .finally(() => {
+          if (!cancelled) setLoadingProfile(false);
+        });
+    } else if (routeLogin) {
+      setOther(undefined);
+      getProfile(routeLogin)
+        .then((profile) => {
+          if (!cancelled) setOther(profile);
+        })
+        .catch((err: Error) => {
+          if (!cancelled) setLoadError(err.message);
+        })
+        .finally(() => {
+          if (!cancelled) setLoadingProfile(false);
+        });
+    }
+
+    return () => {
+      cancelled = true;
     };
+  }, [isAuthenticated, isLoading, isMe, routeLogin, setAuthUser]);
 
-    void fetchPitches();
-  }, [user]);
+  const handleMeChanged = (updated: Me) => {
+    setMe(updated);
+    setAuthUser(updated);
+  };
 
-  if (!user) {
+  const handleSignOut = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
+
+  if (isLoading || loadingProfile) {
+    return <Notice icon="hourglass_empty" text="Loading profile…" />;
+  }
+
+  if (!isAuthenticated) {
     return (
-      <div className="max-w-md mx-auto py-16 text-center space-y-4">
-        <div className="w-16 h-16 rounded-full bg-surface-container flex items-center justify-center mx-auto text-on-surface-variant">
-          <span className="material-symbols-outlined text-[32px]">account_circle</span>
+      <div className="mx-auto max-w-md py-space-2xl text-center">
+        <div className="rounded-2xl bg-surface-container-lowest p-8 shadow-sm border border-outline-variant/40">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-fixed text-primary">
+            <span className="material-symbols-outlined text-[28px]">person</span>
+          </div>
+          <h1 className="font-headline-sm text-headline-sm font-bold text-on-surface">
+            Sign in to view profiles
+          </h1>
+          <p className="mt-2 text-body-sm text-on-surface-variant">
+            Sign in with your 42 Intra account or student credentials to manage your profile and avatar.
+          </p>
+          <div className="mt-6 flex justify-center">
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-2.5 font-label-md text-label-md font-bold text-on-primary shadow-sm hover:opacity-95 transition-opacity"
+            >
+              Sign in
+            </Link>
+          </div>
         </div>
-        <h2 className="text-xl font-bold text-on-surface">Sign In to View Profile</h2>
-        <p className="text-xs text-on-surface-variant">
-          Access your created project pitches, recruitment applications, and workspace memberships.
-        </p>
-        <button
-          type="button"
-          onClick={openAuthModal}
-          className="px-6 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-xs hover:opacity-90 transition-opacity"
-        >
-          Sign In / Register
-        </button>
       </div>
     );
   }
 
+  if (loadError) return <Notice icon="error" text={loadError} />;
+
+  const displayedUser = isMe ? me : other;
+  if (displayedUser === undefined) return <Notice icon="hourglass_empty" text="Loading profile…" />;
+  if (displayedUser === null) {
+    return <Notice icon="person_off" text={`No user named @${routeLogin ?? ''}.`} />;
+  }
+
+  const canEditMine = isMe && me !== null && can(me, Permission.EDIT_OWN_PROFILE);
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      {/* Profile Card */}
-      <div className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-6 md:p-8 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-          <div className="w-20 h-20 rounded-2xl bg-primary flex items-center justify-center text-on-primary text-2xl font-bold shadow-md">
-            {user.avatar_url ? (
-              <img src={user.avatar_url} alt={user.login} className="w-full h-full object-cover rounded-2xl" />
-            ) : (
-              user.fullname.slice(0, 2).toUpperCase()
+    <div className="mx-auto max-w-3xl py-space-lg">
+      <section className="overflow-hidden rounded-2xl bg-surface-container-lowest border border-outline-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+        <div className="h-28 bg-gradient-to-r from-primary-container to-secondary-fixed" />
+        <div className="px-space-xl pb-space-xl">
+          <div className="flex flex-wrap items-start justify-between gap-space-md">
+            <div className="-mt-12">
+              {canEditMine && me ? (
+                <AvatarUploader me={me} onChange={handleMeChanged} className={AVATAR_CLASS} />
+              ) : (
+                <Avatar
+                  name={displayedUser.fullname}
+                  src={displayedUser.avatar_url}
+                  className={AVATAR_CLASS}
+                />
+              )}
+            </div>
+
+            {isMe && (
+              <div className="mt-space-md flex items-center gap-2">
+                {canEditMine && !editing && (
+                  <button
+                    type="button"
+                    onClick={() => setEditing(true)}
+                    className="flex items-center gap-1.5 rounded-full bg-surface-container px-space-md py-space-xs font-label-md text-label-md font-semibold text-on-surface hover:bg-surface-container-high transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                    <span>Edit profile</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => void handleSignOut()}
+                  className="flex items-center gap-1.5 rounded-full bg-surface-container-low px-space-md py-space-xs font-label-md text-label-md font-semibold text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[18px]">logout</span>
+                  <span>Sign out</span>
+                </button>
+              </div>
             )}
           </div>
 
-          <div className="flex-1 text-center sm:text-left space-y-2">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <h1 className="text-2xl font-bold text-on-surface">{user.fullname}</h1>
-                <p className="text-xs font-mono text-on-surface-variant">@{user.login}</p>
-              </div>
-
-              <div className="flex items-center gap-2 justify-center sm:justify-start">
-                <span className="px-3 py-1 rounded-full bg-primary-fixed text-on-primary-fixed text-xs font-bold capitalize">
-                  {user.role}
-                </span>
-                <span className="px-3 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed text-xs font-bold">
-                  Circle 05
-                </span>
-              </div>
+          {editing && me ? (
+            <div className="mt-space-lg">
+              <ProfileEditForm
+                user={me}
+                onCancel={() => setEditing(false)}
+                save={async (changes) => {
+                  handleMeChanged(await updateMyProfile(changes));
+                  setEditing(false);
+                }}
+              />
             </div>
-
-            <p className="text-xs text-on-surface-variant">
-              {user.email || '42 Campus Intra Student'} • Campus 1337 Benguerir
-            </p>
-
-            <div className="pt-3 flex flex-wrap gap-4 text-xs font-mono text-outline">
-              <span>UUID: {user.id}</span>
-              {user.intra_id && <span>Intra ID: {user.intra_id}</span>}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 pt-6 border-t border-outline-variant flex justify-end">
-          <button
-            type="button"
-            onClick={logout}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-error-container text-on-error-container text-xs font-bold hover:opacity-90 transition-opacity cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[16px]">logout</span>
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </div>
-
-      {/* User's Project Pitches */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-on-surface flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-[20px]">folder_open</span>
-            My Authored Pitches ({pitches.length})
-          </h2>
-          <a
-            href="/refine-project"
-            className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-          >
-            <span>Open Refiner</span>
-            <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-          </a>
-        </div>
-
-        {loading ? (
-          <div className="py-8 text-center text-xs text-on-surface-variant">Loading pitches...</div>
-        ) : pitches.length === 0 ? (
-          <div className="bg-surface-container-lowest p-8 rounded-2xl border border-outline-variant text-center text-xs text-on-surface-variant">
-            You haven&apos;t created any project pitches yet. Go to Pitch Refiner to create your first pitch with AI critique!
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {pitches.map((p) => (
-              <div
-                key={p.id}
-                className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-4 shadow-sm space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-on-surface line-clamp-1">{p.title}</h3>
-                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed">
-                    {p.status}
+          ) : (
+            <>
+              <h1 className="mt-space-md font-headline-md text-headline-md font-bold text-on-surface">
+                {displayedUser.fullname}
+              </h1>
+              <div className="mt-1.5 flex flex-wrap items-center gap-space-sm text-on-surface-variant">
+                <span className="font-label-code-tag text-label-code-tag">
+                  @{displayedUser.login}
+                </span>
+                <span className="rounded-full bg-primary-fixed px-space-sm py-0.5 font-label-code-tag text-[11px] uppercase text-on-primary-fixed">
+                  {displayedUser.role}
+                </span>
+                {displayedUser.intra_id !== null && (
+                  <span className="rounded-full bg-surface-container px-space-sm py-0.5 font-label-code-tag text-[11px] text-on-surface-variant">
+                    42 Intra
                   </span>
-                </div>
-                <p className="text-xs text-on-surface-variant">Category: {p.category}</p>
+                )}
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+
+              {displayedUser.email && (
+                <p className="mt-2 text-body-sm text-on-surface-variant">{displayedUser.email}</p>
+              )}
+
+              <p className="mt-space-lg whitespace-pre-line text-on-surface">
+                {displayedUser.bio || (
+                  <span className="italic text-on-surface-variant">
+                    {isMe ? 'You haven’t written a bio yet.' : 'No bio yet.'}
+                  </span>
+                )}
+              </p>
+            </>
+          )}
+        </div>
+      </section>
     </div>
   );
 };
 
+const Notice: React.FC<{ icon: string; text: string }> = ({ icon, text }) => (
+  <div className="flex flex-col items-center gap-space-sm py-space-2xl text-on-surface-variant">
+    <span className="material-symbols-outlined text-[40px]">{icon}</span>
+    <p>{text}</p>
+  </div>
+);
