@@ -21,7 +21,7 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
   hideHeader = false,
   onPeersChange,
 }) => {
-  const { user, isAuthenticated, openAuthModal } = useAuth();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
 
   // 1. Document / Room ID resolution (?document_id=<uuid> or embeddedDocumentId)
@@ -40,6 +40,7 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawingRef = useRef<boolean>(false);
   const startPointRef = useRef<Point>({ x: 0, y: 0 });
+  const currentDrawingRef = useRef<CanvasShape | null>(null);
 
   // 4. Inbound binary delta update handler from /canvas WebSocket
   const handleRemoteUpdate = useCallback((data: ArrayBuffer) => {
@@ -94,25 +95,20 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
       });
     }
 
-    if (!isDrawingRef.current || !currentDrawing) return;
+    if (!isDrawingRef.current || !currentDrawingRef.current) return;
 
-    if (currentDrawing.type === 'pen' || currentDrawing.type === 'eraser') {
-      setCurrentDrawing((prev) =>
-        prev
-          ? {
-              ...prev,
-              points: [...(prev.points || []), coords],
-            }
-          : null
-      );
+    const current = currentDrawingRef.current;
+    if (current.type === 'pen' || current.type === 'eraser') {
+      current.points = [...(current.points || []), coords];
+      setCurrentDrawing({ ...current });
     } else if (
-      currentDrawing.type === 'rect' ||
-      currentDrawing.type === 'circle' ||
-      currentDrawing.type === 'arrow'
+      current.type === 'rect' ||
+      current.type === 'circle' ||
+      current.type === 'arrow'
     ) {
-      const width = coords.x - startPointRef.current.x;
-      const height = coords.y - startPointRef.current.y;
-      setCurrentDrawing((prev) => (prev ? { ...prev, width, height } : null));
+      current.width = coords.x - startPointRef.current.x;
+      current.height = coords.y - startPointRef.current.y;
+      setCurrentDrawing({ ...current });
     }
   };
 
@@ -137,12 +133,13 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    if (!isAuthenticated) {
-      openAuthModal();
-      return;
-    }
-
     if (tool === 'select') return;
+
+    try {
+      canvas.setPointerCapture(e.pointerId);
+    } catch {
+      // Ignore
+    }
 
     const coords = getCanvasCoordinates(e, canvas);
     isDrawingRef.current = true;
@@ -173,42 +170,55 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
       return;
     }
 
-    if (tool === 'pen' || tool === 'eraser') {
-      setCurrentDrawing({
-        id: shapeId,
-        type: tool,
-        color: tool === 'eraser' ? '#FFFFFF' : color,
-        strokeWidth: tool === 'eraser' ? strokeWidth * 3 : strokeWidth,
-        points: [coords],
-        userId: user?.login || 'Anonymous',
-        createdAt: Date.now(),
-      });
-    } else if (tool === 'rect' || tool === 'circle' || tool === 'arrow') {
-      setCurrentDrawing({
-        id: shapeId,
-        type: tool,
-        color,
-        strokeWidth,
-        x: coords.x,
-        y: coords.y,
-        width: 0,
-        height: 0,
-        userId: user?.login || 'Anonymous',
-        createdAt: Date.now(),
-      });
-    }
+    const newShape: CanvasShape =
+      tool === 'pen' || tool === 'eraser'
+        ? {
+            id: shapeId,
+            type: tool,
+            color: tool === 'eraser' ? '#FFFFFF' : color,
+            strokeWidth: tool === 'eraser' ? strokeWidth * 3 : strokeWidth,
+            points: [coords],
+            userId: user?.login || 'Anonymous',
+            createdAt: Date.now(),
+          }
+        : {
+            id: shapeId,
+            type: tool,
+            color,
+            strokeWidth,
+            x: coords.x,
+            y: coords.y,
+            width: 0,
+            height: 0,
+            userId: user?.login || 'Anonymous',
+            createdAt: Date.now(),
+          };
+
+    currentDrawingRef.current = newShape;
+    setCurrentDrawing(newShape);
   };
 
-  const handlePointerUp = () => {
-    if (!isDrawingRef.current || !currentDrawing) {
+  const handlePointerUp = (e?: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e && canvasRef.current) {
+      try {
+        canvasRef.current.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignore
+      }
+    }
+
+    if (!isDrawingRef.current || !currentDrawingRef.current) {
       isDrawingRef.current = false;
+      currentDrawingRef.current = null;
       setCurrentDrawing(null);
       return;
     }
     isDrawingRef.current = false;
-
-    commitShape(currentDrawing);
+    const finalShape = currentDrawingRef.current;
+    currentDrawingRef.current = null;
     setCurrentDrawing(null);
+
+    commitShape(finalShape);
   };
 
   const handleClear = () => {
@@ -262,11 +272,10 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Reset transform to identity and clear entire buffer
-    ctx.save();
+    const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.restore();
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const drawShape = (s: CanvasShape) => {
       ctx.save();
@@ -432,6 +441,7 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
         onResize={redrawCanvas}
       >
         <RemoteCursors peers={peers} />

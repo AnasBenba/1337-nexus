@@ -6,6 +6,7 @@ export interface CanvasStageProps {
   onPointerDown?: (e: React.PointerEvent<HTMLCanvasElement>) => void;
   onPointerMove?: (e: React.PointerEvent<HTMLCanvasElement>) => void;
   onPointerUp?: (e: React.PointerEvent<HTMLCanvasElement>) => void;
+  onPointerCancel?: (e: React.PointerEvent<HTMLCanvasElement>) => void;
   onWheel?: (e: React.WheelEvent<HTMLCanvasElement>) => void;
   onResize?: () => void;
   children?: React.ReactNode;
@@ -16,6 +17,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
   onPointerDown,
   onPointerMove,
   onPointerUp,
+  onPointerCancel,
   onWheel,
   onResize,
   children,
@@ -59,6 +61,7 @@ export const CanvasStage: React.FC<CanvasStageProps> = ({
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
         onWheel={onWheel}
         className="absolute inset-0 cursor-crosshair w-full h-full"
       />
