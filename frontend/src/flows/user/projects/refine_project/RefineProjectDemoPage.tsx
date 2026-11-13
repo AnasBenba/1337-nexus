@@ -1,22 +1,54 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { authFetch } from '@/lib/auth';
 import { RefineEntryButton } from './RefineEntryButton';
 import { RefineProjectModal } from './RefineProjectModal';
 import { ModalState } from './types';
 
+interface Pitch {
+  id: string;
+  title: string;
+  content: string;
+  description?: string;
+  status: string;
+}
+
 export const RefineProjectDemoPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activePreviewState, setActivePreviewState] = useState<ModalState | undefined>(undefined);
-  const pitchTitle = 'StudySync: Peer Code Review Network';
+  const [selectedPitch, setSelectedPitch] = useState<Pitch | null>(null);
   const [pitchContent, setPitchContent] = useState(
     'Problem: 1337 students often wait hours for peer evaluations on graphics and algorithm projects.\n\n' +
       'Solution: A campus-native peer review matchmaking tool that pairs students based on project progression and intra evaluation points.\n\n' +
       'Impact: Reduce idle evaluation waiting time by 60% across Circles 01-04.'
   );
 
-  // Demo pitch ID (UUID format)
-  const [demoPitchId] = useState('00000000-0000-0000-0000-000000000001');
+  useEffect(() => {
+    let cancelled = false;
+
+    authFetch('/api/v1/user/pitches')
+      .then(async (response) => {
+        if (!response.ok) return;
+        const pitches = (await response.json()) as Pitch[];
+        const draft = pitches.find((pitch) => pitch.status.toLowerCase() === 'draft');
+        if (!cancelled && draft) {
+          setSelectedPitch(draft);
+          setPitchContent(draft.content);
+        }
+      })
+      .catch(() => {
+        // Preview states remain available when the pitches endpoint is unavailable.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const pitchTitle = selectedPitch?.title || 'StudySync: Peer Code Review Network';
+  const pitchId = selectedPitch?.id || '00000000-0000-0000-0000-000000000001';
 
   const openInState = (state?: ModalState) => {
+    if (state === undefined && !selectedPitch) return;
     setActivePreviewState(state);
     setIsModalOpen(true);
   };
@@ -47,7 +79,8 @@ export const RefineProjectDemoPage: React.FC = () => {
           <button
             type="button"
             onClick={() => openInState(undefined)}
-            className="px-3 py-1.5 rounded-lg text-xs font-mono font-semibold bg-brand text-white hover:bg-brand-hover shadow-sm transition-all"
+            disabled={!selectedPitch}
+            className="px-3 py-1.5 rounded-lg text-xs font-mono font-semibold bg-brand text-white hover:bg-brand-hover shadow-sm transition-all disabled:cursor-not-allowed disabled:opacity-50"
           >
             ⚡ Live Backend Flow
           </button>
@@ -102,6 +135,12 @@ export const RefineProjectDemoPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {!selectedPitch && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          Create a draft pitch first to use live critique. The preview states remain available below.
+        </p>
+      )}
 
       {/* Pitch Dashboard View */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -178,7 +217,7 @@ export const RefineProjectDemoPage: React.FC = () => {
       <RefineProjectModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        pitchId={demoPitchId}
+        pitchId={pitchId}
         projectTitle={pitchTitle}
         initialState={activePreviewState}
         onPitchUpdated={handlePitchUpdated}
