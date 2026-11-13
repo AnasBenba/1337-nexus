@@ -19,6 +19,23 @@ from .service import update_application_status
 router = APIRouter(tags=["opportunities"])
 
 
+def _reviewed_application_response(
+    application: Application,
+    match_score: float,
+) -> ReviewedApplicationResponse:
+    return ReviewedApplicationResponse(
+        id=application.id,
+        opportunity_id=application.opportunity_id,
+        user_id=application.user_id,
+        status=application.status,
+        message=application.message,
+        candidate_skills=application.candidate_skills,
+        match_score=match_score,
+        created_at=application.created_at,
+        updated_at=application.updated_at,
+    )
+
+
 @router.get(
     "/opportunities/{opportunity_id}/applications",
     response_model=list[ReviewedApplicationResponse],
@@ -46,10 +63,7 @@ async def list_applications(
         ) from error
 
     return [
-        ReviewedApplicationResponse.model_validate(
-            application,
-            from_attributes=True,
-        ).model_copy(update={"match_score": score})
+        _reviewed_application_response(application, score)
         for application, score in applications
     ]
 
@@ -95,7 +109,4 @@ async def change_application_status(
         opportunity.required_skills,
         application.candidate_skills,
     )
-    return ReviewedApplicationResponse.model_validate(
-        application,
-        from_attributes=True,
-    ).model_copy(update={"match_score": score})
+    return _reviewed_application_response(application, score)
