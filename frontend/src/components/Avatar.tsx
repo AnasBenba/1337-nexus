@@ -38,6 +38,7 @@ export const Avatar: React.FC<AvatarProps> = ({
         src={src}
         alt={name}
         title={name}
+        referrerPolicy="no-referrer"
         onError={() => setBroken(true)}
         className={`${base} object-cover`}
       />

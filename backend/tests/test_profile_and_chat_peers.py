@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 import uuid
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -34,18 +34,15 @@ def _make_png_bytes() -> bytes:
 
 
 @pytest.mark.asyncio
-async def test_email_signup_keeps_default_avatar_and_profile_lifecycle(tmp_path: Path) -> None:
-    """Verify email users start with avatar_url=None and can update bio + upload/delete avatar."""
+async def test_email_signup_keeps_default_avatar_and_profile_lifecycle() -> None:
+    """Verify email users start with avatar_url=None and can update bio + upload/fetch/delete avatar."""
     assert asgi_app is not None
     login = f"prof_{uuid.uuid4().hex[:8]}"
     email = f"{login}@1337.ma"
     created_id: uuid.UUID | None = None
-    tmp_avatars = tmp_path / "avatars"
+    uploaded_file: Path | None = None
 
-    with (
-        patch.object(avatar_mod, "AVATAR_DIR", tmp_avatars),
-        patch("app.user.profile.router.AVATAR_DIR", tmp_avatars),
-    ):
+    try:
         transport = ASGITransport(app=fastapi_app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             unauth = await client.get("/api/v1/users/me")
@@ -94,8 +91,14 @@ async def test_email_signup_keeps_default_avatar_and_profile_lifecycle(tmp_path:
             assert up_res.status_code == 200
             avatar_url = up_res.json()["avatar_url"]
             assert avatar_url.startswith("/media/avatars/")
-            uploaded_file = tmp_avatars / Path(avatar_url).name
+            uploaded_file = avatar_mod.AVATAR_DIR / Path(avatar_url).name
             assert uploaded_file.exists()
+
+            # Fetching the returned avatar URL through the app returns 200 image/webp
+            fetch_avatar = await client.get(avatar_url)
+            assert fetch_avatar.status_code == 200
+            assert fetch_avatar.headers.get("content-type") == "image/webp"
+            assert len(fetch_avatar.content) > 0
 
             del_res = await client.delete("/api/v1/users/me/avatar")
             assert del_res.status_code == 200
@@ -105,20 +108,44 @@ async def test_email_signup_keeps_default_avatar_and_profile_lifecycle(tmp_path:
             pub_res = await client.get(f"/api/v1/users/{login}")
             assert pub_res.status_code == 200
             assert pub_res.json()["bio"] == "Systems & web dev"
-
-    if created_id is not None:
-        async with AsyncSession(engine, expire_on_commit=False) as session:
-            await session.execute(delete(Users).where(Users.id == created_id))
-            await session.commit()
+    finally:
+        if uploaded_file is not None:
+            uploaded_file.unlink(missing_ok=True)
+        if created_id is not None:
+            async with AsyncSession(engine, expire_on_commit=False) as session:
+                await session.execute(delete(Users).where(Users.id == created_id))
+                await session.commit()
 
 
 @pytest.mark.asyncio
 async def test_intra_manage_user_fetches_and_preserves_custom_avatar() -> None:
-    """Verify 42 Intra login stores image.link, respects custom /media uploads, and avoids collision."""
+    """Verify 42 Intra /v2/me payload syncs image.link/versions, respects custom /media uploads, and handles missing images."""
     unique = uuid.uuid4().hex[:6]
     intra_login = f"intra_{unique}"
     intra_id = 900000 + int(unique[:4], 16)
+    no_img_id = intra_id + 1
     created_ids: list[uuid.UUID] = []
+
+    sample_42_v2_me_payload = {
+        "id": intra_id,
+        "email": f"{intra_login}@student.1337.ma",
+        "login": intra_login,
+        "first_name": "Zoubair",
+        "last_name": "Bakkas",
+        "usual_full_name": "Zoubair Bakkas",
+        "displayname": "Zoubair Bakkas",
+        "kind": "student",
+        "image": {
+            "link": f"https://cdn.intra.42.fr/users/123456/{intra_login}.jpg",
+            "versions": {
+                "large": f"https://cdn.intra.42.fr/users/123456/large_{intra_login}.jpg",
+                "medium": f"https://cdn.intra.42.fr/users/123456/medium_{intra_login}.jpg",
+                "small": f"https://cdn.intra.42.fr/users/123456/small_{intra_login}.jpg",
+                "micro": f"https://cdn.intra.42.fr/users/123456/micro_{intra_login}.jpg",
+            },
+        },
+        "campus": [{"id": 21, "name": "Benguerir"}],
+    }
 
     try:
         # 1. Pre-create an email user with the same login (no intra_id)
@@ -134,49 +161,90 @@ async def test_intra_manage_user_fetches_and_preserves_custom_avatar() -> None:
             await session.refresh(collision_user)
             created_ids.append(collision_user.id)
 
-        # 2. First 42 Intra login gets suffixed login and Intra photo URL
-        first = await oauth_manager.manage_user(
-            {
-                "id": intra_id,
-                "login": intra_login,
-                "displayname": "42 Student",
-                "email": f"{intra_login}@student.1337.ma",
-                "image": {"link": "https://cdn.intra.42.fr/users/photo1.jpg"},
-            }
-        )
-        created_ids.append(first.id)
-        assert first.id != created_ids[0]
-        assert first.login == f"{intra_login}-42"
-        assert first.avatar_url == "https://cdn.intra.42.fr/users/photo1.jpg"
+        # 2. First 42 Intra login via /api/v1/auth/oauth/42/callback with sample /v2/me payload
+        with (
+            patch(
+                "app.oauth.manager.get_access_token",
+                new=AsyncMock(return_value={"access_token": "mock_42_access_token"}),
+            ),
+            patch(
+                "app.oauth.manager.get_user",
+                new=AsyncMock(return_value=sample_42_v2_me_payload),
+            ),
+        ):
+            transport = ASGITransport(app=fastapi_app)
+            async with AsyncClient(
+                transport=transport, base_url="http://localhost:8000", follow_redirects=False
+            ) as client:
+                client.cookies.set("state", "test_state_123")
+                client.cookies.set("code_verifier", "test_verifier_123")
+                client.cookies.set("oauth_frontend_origin", "https://localhost:8443")
 
-        # 3. Subsequent Intra login updates Intra photo if not custom /media/
+                cb_res = await client.get(
+                    "/api/v1/auth/oauth/42/callback",
+                    params={"code": "oauth_code_abc", "state": "test_state_123"},
+                )
+                assert cb_res.status_code == 303
+                assert cb_res.headers["location"] == "https://localhost:8443/discover"
+                assert "access_token" in cb_res.cookies
+
+                client.cookies.set("access_token", cb_res.cookies["access_token"])
+                me_res = await client.get("/api/v1/users/me")
+                assert me_res.status_code == 200
+                me_json = me_res.json()
+                first_id = uuid.UUID(me_json["id"])
+                created_ids.append(first_id)
+                assert first_id != created_ids[0]
+                assert me_json["login"] == f"{intra_login}-42"
+                assert (
+                    me_json["avatar_url"]
+                    == f"https://cdn.intra.42.fr/users/123456/{intra_login}.jpg"
+                )
+
+        # 3. Pre-existing 42 user with avatar_url=None gets refreshed from image.versions fallback
+        async with AsyncSession(engine, expire_on_commit=False) as session:
+            db_user = await session.scalar(select(Users).where(Users.id == first_id))
+            assert db_user is not None
+            db_user.avatar_url = None
+            await session.commit()
+
         second = await oauth_manager.manage_user(
             {
                 "id": intra_id,
                 "login": intra_login,
-                "displayname": "42 Student",
-                "image": {"versions": {"medium": "https://cdn.intra.42.fr/users/photo2.jpg"}},
+                "displayname": "Zoubair Bakkas",
+                "image": {
+                    "link": None,
+                    "versions": {
+                        "medium": f"https://cdn.intra.42.fr/users/123456/medium_{intra_login}.jpg"
+                    },
+                },
             }
         )
-        assert second.id == first.id
-        assert second.avatar_url == "https://cdn.intra.42.fr/users/photo2.jpg"
+        assert second.id == first_id
+        assert second.avatar_url == f"https://cdn.intra.42.fr/users/123456/medium_{intra_login}.jpg"
 
         # 4. Custom uploaded /media/avatars/ photo is preserved on Intra login
         async with AsyncSession(engine, expire_on_commit=False) as session:
-            db_user = await session.scalar(select(Users).where(Users.id == first.id))
+            db_user = await session.scalar(select(Users).where(Users.id == first_id))
             assert db_user is not None
             db_user.avatar_url = "/media/avatars/custom.webp"
             await session.commit()
 
-        third = await oauth_manager.manage_user(
+        third = await oauth_manager.manage_user(sample_42_v2_me_payload)
+        assert third.avatar_url == "/media/avatars/custom.webp"
+
+        # 5. Missing Intra image defaults to avatar_url=None (initials fallback)
+        no_img_user = await oauth_manager.manage_user(
             {
-                "id": intra_id,
-                "login": intra_login,
-                "displayname": "42 Student",
-                "image": {"link": "https://cdn.intra.42.fr/users/photo3.jpg"},
+                "id": no_img_id,
+                "login": f"noimg_{unique}",
+                "displayname": "No Image Student",
+                "image": {"link": None, "versions": {"medium": None, "small": None}},
             }
         )
-        assert third.avatar_url == "/media/avatars/custom.webp"
+        created_ids.append(no_img_user.id)
+        assert no_img_user.avatar_url is None
     finally:
         if created_ids:
             async with AsyncSession(engine, expire_on_commit=False) as session:
