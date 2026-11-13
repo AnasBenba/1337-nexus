@@ -21,7 +21,7 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
   hideHeader = false,
   onPeersChange,
 }) => {
-  const { user, isAuthenticated, openAuthModal } = useAuth();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
 
   // 1. Document / Room ID resolution (?document_id=<uuid> or embeddedDocumentId)
@@ -137,10 +137,7 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    if (!isAuthenticated) {
-      openAuthModal();
-      return;
-    }
+    // Allow collaborative drawing for all active peers (fallback to Anonymous if not signed in)
 
     if (tool === 'select') return;
 
