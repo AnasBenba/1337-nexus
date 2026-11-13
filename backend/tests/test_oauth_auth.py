@@ -80,3 +80,38 @@ def test_users_model_instantiation() -> None:
     assert user.fullname == "Soufiane El B"
     assert user.role == "student"
     assert user.intra_id == 424242
+
+
+@pytest.mark.asyncio
+async def test_backend_root_and_oauth_routes_never_return_html() -> None:
+    """Requesting /, /home, and OAuth entry routes without a session never returns text/html."""
+    from httpx import ASGITransport, AsyncClient
+
+    from app.api import _safe_local_origin
+    from app.main import fastapi_app
+
+    transport = ASGITransport(app=fastapi_app)
+    async with AsyncClient(
+        transport=transport, base_url="http://localhost:8000", follow_redirects=False
+    ) as client:
+        for path in ("/", "/home", "/auth/login", "/api/v1/auth/oauth/42/callback"):
+            resp = await client.get(path)
+            content_type = resp.headers.get("content-type", "")
+            assert "text/html" not in content_type, (
+                f"{path} returned unexpected content-type {content_type}"
+            )
+
+        root_resp = await client.get("/")
+        assert root_resp.status_code == 307
+        assert root_resp.headers["location"].endswith("/discover")
+
+        home_resp = await client.get("/home")
+        assert home_resp.status_code == 404
+
+        login_resp = await client.get(
+            "/auth/login",
+            headers={"X-Forwarded-Proto": "https", "X-Forwarded-Host": "localhost:8443"},
+        )
+        assert login_resp.status_code == 307
+        raw_cookie = login_resp.cookies.get("oauth_frontend_origin")
+        assert _safe_local_origin(raw_cookie) == "https://localhost:8443"
