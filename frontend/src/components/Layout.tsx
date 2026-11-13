@@ -114,9 +114,9 @@ export const Layout: React.FC = () => {
             </span>
           </NavLink>
 
-          {/* Pitch Refiner */}
+          {/* Pitches & AI Refiner */}
           <NavLink
-            to="/refine-project"
+            to="/pitches"
             className={({ isActive }) =>
               `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all group ${
                 isActive
@@ -126,13 +126,13 @@ export const Layout: React.FC = () => {
             }
           >
             <div className="flex items-center gap-space-sm">
-              <span className="material-symbols-outlined text-[20px] text-primary-container">
-                auto_awesome
+              <span className="material-symbols-outlined text-[20px] text-primary">
+                campaign
               </span>
-              <span className="font-label-md text-label-md">Pitch Refiner</span>
+              <span className="font-label-md text-label-md">Pitches</span>
             </div>
             <span className="px-2 py-0.5 rounded-full bg-brand/10 text-brand font-label-code-tag text-[10px] font-bold">
-              AI
+              + AI
             </span>
           </NavLink>
 

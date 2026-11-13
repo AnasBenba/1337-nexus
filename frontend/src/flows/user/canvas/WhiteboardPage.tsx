@@ -21,7 +21,7 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
   hideHeader = false,
   onPeersChange,
 }) => {
-  const { user } = useAuth();
+  const { user, isAuthenticated, openAuthModal } = useAuth();
   const [searchParams] = useSearchParams();
 
   // 1. Document / Room ID resolution (?document_id=<uuid> or embeddedDocumentId)
@@ -87,7 +87,7 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
     const coords = getCanvasCoordinates(e, canvas);
 
     // Broadcast cursor position to room peers
-    if (isConnected) {
+    if (isConnected && isAuthenticated) {
       sendAwareness({
         user: user?.login || 'Anonymous',
         cursor: coords,
@@ -132,6 +132,11 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    if (!isAuthenticated) {
+      openAuthModal();
+      return;
+    }
 
     if (tool === 'select') return;
 
@@ -222,6 +227,10 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
   };
 
   const handleClear = () => {
+    if (!isAuthenticated) {
+      openAuthModal();
+      return;
+    }
     setShapes([]);
     setRedoStack([]);
     const payload = new TextEncoder().encode(
@@ -233,6 +242,10 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
   };
 
   const handleUndo = () => {
+    if (!isAuthenticated) {
+      openAuthModal();
+      return;
+    }
     if (shapes.length === 0) return;
     const last = shapes[shapes.length - 1];
     setShapes((prev) => prev.slice(0, -1));
@@ -248,6 +261,10 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
   };
 
   const handleRedo = () => {
+    if (!isAuthenticated) {
+      openAuthModal();
+      return;
+    }
     if (redoStack.length === 0) return;
     const next = redoStack[redoStack.length - 1];
     setRedoStack((prev) => prev.slice(0, -1));
@@ -417,6 +434,22 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
           </button>
         </div>
       </div>
+      )}
+
+      {!isAuthenticated && (
+        <div className="flex items-center justify-between px-4 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-200 text-xs shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px] text-amber-600">lock</span>
+            <span>You are viewing in read-only mode. Only authenticated campus users can draw.</span>
+          </div>
+          <button
+            type="button"
+            onClick={openAuthModal}
+            className="px-3 py-1 rounded-lg bg-primary text-on-primary font-bold hover:opacity-90 transition-all cursor-pointer"
+          >
+            Sign In to Draw
+          </button>
+        </div>
       )}
 
       {/* Toolbar */}

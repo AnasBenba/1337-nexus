@@ -1,0 +1,2 @@
+export { PitchesPage } from './PitchesPage';
+
