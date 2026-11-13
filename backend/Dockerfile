@@ -27,7 +27,8 @@ COPY backend/entrypoint.sh ./entrypoint.sh
 COPY backend/content ./content
 
 RUN chmod +x /app/entrypoint.sh \
-    && chown -R app:app /app
+    && mkdir -p /media/avatars /app/media/avatars \
+    && chown -R app:app /app /media
 
 USER app
 

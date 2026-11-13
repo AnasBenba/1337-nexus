@@ -51,4 +51,3 @@ class ProfileUpdate(BaseModel):
 
     fullname: str = Field(min_length=1, max_length=100)
     bio: str = Field(default="", max_length=500)
-

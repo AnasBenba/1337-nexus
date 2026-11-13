@@ -1,2 +1,1 @@
 """User profile package."""
-

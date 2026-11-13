@@ -45,4 +45,3 @@ class PresenceManager:
 
 
 presence_manager = PresenceManager()
-

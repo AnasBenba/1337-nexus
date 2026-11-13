@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import io
+import mimetypes
 import os
 from pathlib import Path
 
 from PIL import Image, ImageOps, UnidentifiedImageError
+
+# Ensure .webp is always recognized by StaticFiles even in minimal containers without /etc/mime.types
+mimetypes.add_type("image/webp", ".webp")
 
 
 def resolve_media_root() -> Path:
@@ -16,7 +20,10 @@ def resolve_media_root() -> Path:
         return Path(configured)
 
     docker_media = Path("/media")
-    if docker_media.exists() and os.access(docker_media, os.W_OK):
+    docker_avatars = docker_media / "avatars"
+    if (docker_avatars.exists() and os.access(docker_avatars, os.W_OK)) or (
+        docker_media.exists() and os.access(docker_media, os.W_OK)
+    ):
         return docker_media
 
     return Path(__file__).resolve().parents[3] / "media"
@@ -60,4 +67,3 @@ def process_avatar(data: bytes) -> bytes:
     out = io.BytesIO()
     fitted.save(out, "WEBP", quality=85)
     return out.getvalue()
-

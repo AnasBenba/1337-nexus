@@ -66,4 +66,3 @@ def require(permission: Permission) -> Callable[[Users], Coroutine[Any, Any, Use
         return user
 
     return check
-
