@@ -1,0 +1,26 @@
+groups:
+  - name: nexus_alerts
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+
+      - alert: BackendServerError
+        expr: increase(http_requests_total{status=~"5.."}[5m]) > 5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backend had more than 5 server errors (5xx) in 5 minutes"
+
+      - alert: PostgresTooManyConnections
+        expr: sum(pg_stat_database_numbackends) > 30
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL has more than 30 active connections (limit is 40)"

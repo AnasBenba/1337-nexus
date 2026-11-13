@@ -49,9 +49,11 @@ class JobWorker(Mapping[str, Any]):
         lease_duration: float | None = None,
         heartbeat_interval: float | None = None,
         shutdown_timeout: float | None = None,
+        only_registered: bool = False,
     ) -> None:
         self.session_factory = session_factory or SessionLocal
         self.worker_id = worker_id or os.getenv("JOB_WORKER_ID") or f"worker-{uuid.uuid4().hex[:8]}"
+        self.only_registered = only_registered
         settings = None
         with contextlib.suppress(Exception):
             from app.core.config import get_settings
@@ -217,18 +219,24 @@ class JobWorker(Mapping[str, Any]):
             now = datetime.now(UTC)
             lease_expiry = now + timedelta(seconds=self.lease_duration)
 
+            from app.jobs.registry import _REGISTRY
+
+            conditions = [
+                or_(
+                    AIJob.status == "pending",
+                    and_(
+                        AIJob.status == "running",
+                        AIJob.lease_expires_at.is_not(None),
+                        AIJob.lease_expires_at < now,
+                    ),
+                )
+            ]
+            if self.only_registered:
+                conditions.append(AIJob.job_type.in_(list(_REGISTRY.keys())))
+
             stmt = (
                 select(AIJob)
-                .where(
-                    or_(
-                        AIJob.status == "pending",
-                        and_(
-                            AIJob.status == "running",
-                            AIJob.lease_expires_at.is_not(None),
-                            AIJob.lease_expires_at < now,
-                        ),
-                    )
-                )
+                .where(*conditions)
                 .order_by(AIJob.created_at.asc())
                 .limit(slots_to_claim)
                 .with_for_update(skip_locked=True)
@@ -530,7 +538,7 @@ async def job_worker_lifespan(app: Any = None) -> AsyncGenerator[JobWorker, None
     Usage:
         app = FastAPI(lifespan=job_worker_lifespan)
     """
-    worker = JobWorker()
+    worker = JobWorker(only_registered=True)
     await worker.start()
     try:
         yield worker
@@ -544,7 +552,7 @@ async def run_worker_cli() -> None:
         level=logging.INFO,
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     )
-    worker = JobWorker()
+    worker = JobWorker(only_registered=True)
     await worker.start()
 
     stop_event = asyncio.Event()

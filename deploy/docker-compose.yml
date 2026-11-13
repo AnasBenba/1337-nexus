@@ -5,11 +5,6 @@ services:
     env_file:
       - .env
 
-    # environment:
-    #   POSTGRES_DB: ${POSTGRES_DB}
-    #   POSTGRES_USER: ${POSTGRES_USER}
-    #   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d:ro
@@ -41,13 +36,15 @@ services:
     build:
       context: ..
       dockerfile: backend/Dockerfile
-      args:
-        PYTHON_IMAGE: ${PYTHON_IMAGE}
 
     restart: unless-stopped
+    
     env_file:
       - .env
+
+
     environment:
+    
       # DATABASE_URL: ${DATABASE_URL}
       # MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL}
       # TRUSTED_PROXY_SUBNET: ${TRUSTED_PROXY_SUBNET}
@@ -78,6 +75,7 @@ services:
         NGINX_IMAGE: ${NGINX_IMAGE}
 
     restart: unless-stopped
+
     env_file:
       - .env
     # environment:
@@ -86,6 +84,8 @@ services:
 
     depends_on:
       backend:
+        condition: service_started
+      grafana:
         condition: service_started
 
     ports:
@@ -98,16 +98,108 @@ services:
 
     networks:
       - nexus
+  
+  prometheus:
+    image: ${PROMETHEUS_IMAGE:-prom/prometheus:v3.2.1}
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    expose:
+      - "9090"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    mem_limit: 256m
+    networks:
+      - nexus
+  postgres-exporter:
+    image: ${POSTGRES_EXPORTER_IMAGE:-prometheuscommunity/postgres-exporter:v0.16.0}
+    restart: unless-stopped
+    command:
+      - "--no-collector.stat_bgwriter"
+    environment:
+      DATA_SOURCE_URI: postgres:5432/${POSTGRES_DB}?sslmode=disable
+      DATA_SOURCE_USER: ${POSTGRES_USER}
+      DATA_SOURCE_PASS: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "9187"
+    mem_limit: 64m
+    networks:
+      - nexus
+
+  nginx-exporter:
+    image: ${NGINX_EXPORTER_IMAGE:-nginx/nginx-prometheus-exporter:1.4.0}
+    restart: unless-stopped
+    command:
+      - "--nginx.scrape-uri=http://nginx:8080/nginx_status"
+    depends_on:
+      nginx:
+        condition: service_started
+    expose:
+      - "9113"
+    mem_limit: 64m
+    networks:
+      - nexus
+
+  node-exporter:
+    image: ${NODE_EXPORTER_IMAGE:-prom/node-exporter:v1.8.2}
+    restart: unless-stopped
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    expose:
+      - "9100"
+    mem_limit: 64m
+    networks:
+      - nexus
+  
+  grafana:
+    image: ${GRAFANA_IMAGE:-grafana/grafana:11.5.2}
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-Anasbenba123}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/grafana/"
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    expose:
+      - "3000"
+    mem_limit: 192m
+    networks:
+      - nexus
 
 
 volumes:
   postgres_data:
   media_data:
+  prometheus_data:
+  grafana_data:
 
 
 networks:
   nexus:
     driver: bridge
-    ipam:
-      config:
-        - subnet: ${TRUSTED_PROXY_SUBNET}

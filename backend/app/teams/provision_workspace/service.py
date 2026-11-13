@@ -11,6 +11,7 @@ from ..models import (
     WorkspaceCanvasDocument,
     WorkspaceChannel,
     WorkspaceTeam,
+    WorkspaceTeamMember,
 )
 
 
@@ -26,7 +27,7 @@ async def provision_workspace(
     db: AsyncSession,
     *,
     opportunity_id: UUID,
-    founder_id: UUID,
+    founder_id: int,
 ) -> WorkspaceProvisioningResult:
     existing_team = await db.scalar(
         select(WorkspaceTeam).where(
@@ -43,9 +44,7 @@ async def provision_workspace(
             )
         )
         channel = await db.scalar(
-            select(WorkspaceChannel).where(
-                WorkspaceChannel.team_id == existing_team.id
-            )
+            select(WorkspaceChannel).where(WorkspaceChannel.team_id == existing_team.id)
         )
         if board is None or canvas is None or channel is None:
             raise ValueError("Workspace is incomplete")
@@ -55,10 +54,15 @@ async def provision_workspace(
         opportunity_id=opportunity_id,
         founder_id=founder_id,
     )
+    founder_member = WorkspaceTeamMember(
+        team=team,
+        user_id=founder_id,
+        status="active",
+    )
     board = WorkspaceBoard(team=team)
     canvas = WorkspaceCanvasDocument(team=team)
     channel = WorkspaceChannel(team=team)
-    db.add_all([team, board, canvas, channel])
+    db.add_all([team, founder_member, board, canvas, channel])
     await db.flush()
 
     return WorkspaceProvisioningResult(team, board, canvas, channel)

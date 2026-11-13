@@ -32,10 +32,13 @@ async def record_canvas_update(
     db: AsyncSession,
     document_id: uuid.UUID,
     data: bytes | bytearray,
+    auto_compact: bool = True,
+    compaction_threshold: int = 500,
 ) -> CanvasUpdate:
     """
     Atomically append a binary delta update to canvas_updates with a strictly
-    monotonic sequence number.
+    monotonic sequence number. Optionally triggers snapshot compaction if updates
+    reach the compaction threshold.
     """
     binary_data = validate_canvas_payload(data)
 
@@ -74,4 +77,11 @@ async def record_canvas_update(
         next_sequence,
         len(binary_data),
     )
+
+    # 4. Trigger compaction if threshold is reached
+    if auto_compact:
+        from app.collaboration.canvas.compact_document.service import maybe_compact_canvas_document
+
+        await maybe_compact_canvas_document(db, document_id, threshold=compaction_threshold)
+
     return update

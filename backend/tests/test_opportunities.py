@@ -6,8 +6,8 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from app.user.opportunities.apply.service import apply_to_opportunity
 from app.user.opportunities.apply.models import Application
+from app.user.opportunities.apply.service import apply_to_opportunity
 from app.user.opportunities.browse_opportunities.models import Opportunity
 from app.user.opportunities.browse_opportunities.service import browse_opportunities
 from app.user.opportunities.create_opportunity.schemas import CreateOpportunityRequest
@@ -37,7 +37,7 @@ def application(*, status="pending", candidate_skills=None):
     return SimpleNamespace(
         id=uuid4(),
         opportunity_id=uuid4(),
-        user_id=uuid4(),
+        user_id=2,
         status=status,
         message="Application message",
         candidate_skills=candidate_skills or [],
@@ -151,7 +151,7 @@ async def test_publish_opportunity_sets_status_to_open():
 @pytest.mark.asyncio
 async def test_apply_to_opportunity_stores_candidate_skills():
     opportunity_id = uuid4()
-    user_id = uuid4()
+    user_id = 2
     opportunity = SimpleNamespace(id=opportunity_id, status="open")
     db = MagicMock()
     db.get = AsyncMock(return_value=opportunity)
@@ -187,7 +187,7 @@ async def test_apply_to_closed_opportunity_is_rejected():
         await apply_to_opportunity(
             db=db,
             opportunity_id=uuid4(),
-            user_id=uuid4(),
+            user_id=2,
         )
 
     db.execute.assert_not_called()
@@ -340,7 +340,7 @@ def test_application_model_instantiation() -> None:
     new_application = Application(
         id=uuid4(),
         opportunity_id=uuid4(),
-        user_id=uuid4(),
+        user_id=2,
         candidate_skills=["Python", "PostgreSQL"],
         status="pending",
         message="I'd love to join this team!",

@@ -34,9 +34,45 @@ from app.core.db import get_db_session
 #     router as withdraw_application_router,
 # )
 from app.user.pitches.router import router as pitches_router
+from app.collaboration.board.router import router as board_router
+from app.user.opportunities.apply.router import router as apply_router
+from app.user.opportunities.browse_opportunities.router import (
+    router as opportunities_router,
+)
+from app.user.opportunities.create_opportunity.router import (
+    router as create_opportunity_router,
+)
+from app.user.opportunities.match_scoring.router import (
+    router as match_scoring_router,
+)
+from app.user.opportunities.publish_opportunity.router import (
+    router as publish_opportunity_router,
+)
+from app.user.opportunities.review_applications.router import (
+    router as review_applications_router,
+)
+from app.user.opportunities.update_opportunity.router import (
+    router as update_opportunity_router,
+)
+from app.user.opportunities.view_opportunity.router import (
+    router as view_opportunity_router,
+)
+from app.user.opportunities.withdraw_application.router import (
+    router as withdraw_application_router,
+)
 from app.user.projects.refine_project.router import (
     router as refine_project_router,
 )
+from app.teams.router import router as teams_router
+from app.user.projects.archive_project.router import router as archive_project_router
+from app.user.projects.create_project.router import router as create_project_router
+from app.user.projects.edit_project.router import router as edit_project_router
+from app.user.projects.my_projects.router import router as my_projects_router
+from app.user.projects.publish_project.router import router as publish_project_router
+from app.user.projects.recommended_projects.router import (
+    router as recommended_projects_router,
+)
+from app.user.quick_actions.router import router as quick_actions_router
 
 from .oauth import entrypoint, jwt, manager, refresh_tokens
 from .oauth.user import Users
@@ -44,10 +80,15 @@ from .admin.users.router import router as admin_users_router
 from .oauth.email_auth import router as email_auth_router
 from .user.friends.router import router as friends_router
 from .user.profile.router import router as profile_router
+from .collaboration.chat.send_direct_message.router import (
+    router as send_direct_message_router,
+)
+from .oauth import entrypoint, jwt, manager
 from .user.copilot.ask.router import router as ask_router
 from .user.copilot.retrieve_curriculum.router import (
     router as retrieve_curriculum_router,
 )
+from .user.pitches.router import router as pitches_router
 
 router = APIRouter()
 HOME_PAGE = Path(__file__).parent / "index.html"
@@ -156,44 +197,46 @@ async def auth_callback(request: Request, code: str, state: str, session: DbSess
     refresh_tokens.set_auth_cookies(response, nexus_user, refresh_token)
     response.delete_cookie("state", path="/")
     response.delete_cookie("code_verifier", path="/")
-
     return response
 
 
 @router.get("/health/live", tags=["health"])
 async def health_live() -> dict[str, str]:
-    return {
-        "status": "ok",
-        "service": "api",
-    }
+    return {"status": "ok", "service": "api"}
 
 
 @router.get("/health/ready", tags=["health"])
 async def health_ready() -> dict[str, object]:
-    return {
-        "status": "ready",
-        "dependencies": {
-            "database": "unknown",
-        },
-    }
+    return {"status": "ready", "dependencies": {"database": "unknown"}}
 
 
 def register_routes(app: FastAPI) -> None:
     app.include_router(router)
-    # app.include_router(opportunities_router)
-    # app.include_router(create_opportunity_router)
-    # app.include_router(update_opportunity_router)
-    # app.include_router(publish_opportunity_router)
-    # app.include_router(match_scoring_router)
-    # app.include_router(review_applications_router)
-    # app.include_router(view_opportunity_router)
+    app.include_router(pitches_router)
+    app.include_router(opportunities_router)
+    app.include_router(create_opportunity_router)
+    app.include_router(update_opportunity_router)
+    app.include_router(publish_opportunity_router)
+    app.include_router(match_scoring_router)
+    app.include_router(review_applications_router)
+    app.include_router(view_opportunity_router)
     app.include_router(retrieve_curriculum_router)
     app.include_router(ask_router)
-    # app.include_router(apply_router)
-    # app.include_router(withdraw_application_router)
+    app.include_router(apply_router)
+    app.include_router(withdraw_application_router)
     app.include_router(refine_project_router)
+    app.include_router(create_project_router)
+    app.include_router(my_projects_router)
+    app.include_router(recommended_projects_router)
+    app.include_router(edit_project_router)
+    app.include_router(publish_project_router)
+    app.include_router(archive_project_router)
+    app.include_router(quick_actions_router)
+    app.include_router(teams_router)
     app.include_router(pitches_router)
     app.include_router(profile_router)
     app.include_router(friends_router)
     app.include_router(admin_users_router)
     app.include_router(email_auth_router)
+    app.include_router(board_router)
+    app.include_router(send_direct_message_router, tags=["Chat"])

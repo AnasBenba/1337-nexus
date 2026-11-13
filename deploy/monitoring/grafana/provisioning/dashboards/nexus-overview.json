@@ -1,0 +1,91 @@
+{
+  "uid": "nexus-overview",
+  "title": "1337 Nexus Monitoring",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Services Up Status (1 = UP, 0 = DOWN)",
+      "type": "stat",
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "up",
+          "legendFormat": "{{job}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "FastAPI HTTP Requests / sec",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (method, status) (rate(http_requests_total[1m]))",
+          "legendFormat": "{{method}} ({{status}})"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "PostgreSQL Active Connections (Max 40)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum(pg_stat_database_numbackends)",
+          "legendFormat": "Active DB Connections"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Nginx Active Connections",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "nginx_connections_active",
+          "legendFormat": "Active Connections"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Host Memory Usage (%)",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+          "legendFormat": "RAM %"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Host CPU Usage (%)",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 13 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "100 - (avg(rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)",
+          "legendFormat": "CPU %"
+        }
+      ]
+    }
+  ]
+}

@@ -1,9 +1,14 @@
 #!/bin/sh
-set -eu
+set -e
 
-: "${DATABASE_URL:?DATABASE_URL must be set}"
-: "${MIGRATION_DATABASE_URL:?MIGRATION_DATABASE_URL must be set}"
-: "${TRUSTED_PROXY_SUBNET:?TRUSTED_PROXY_SUBNET must be set}"
+echo "Running database migrations..."
+migration_attempt=1
+max_migration_attempts=30
+until alembic upgrade head; do
+    if [ "$migration_attempt" -ge "$max_migration_attempts" ]; then
+        echo "Database migrations failed after ${max_migration_attempts} attempts." >&2
+        exit 1
+    fi
 
 echo "Waiting for PostgreSQL..."
 
@@ -39,31 +44,13 @@ echo "PostgreSQL is reachable. Running migrations..."
 python -m app.cli.create_superadmin
 
 # unset MIGRATION_DATABASE_URL
+    echo "Database is not reachable yet; retrying migration in 2 seconds (attempt ${migration_attempt}/${max_migration_attempts})..."
+    migration_attempt=$((migration_attempt + 1))
+    sleep 2
+done
 
 echo "Starting FastAPI..."
-
-UVICORN_ARGS="
-    --host 0.0.0.0
-    --port 8000
-    --proxy-headers
-    --forwarded-allow-ips $TRUSTED_PROXY_SUBNET
-    --no-access-log
-"
-
-if [ -n "${UVICORN_RELOAD:-}" ]; then
-    exec uvicorn app.main:app \
-        --host 0.0.0.0 \
-        --port 8000 \
-        --proxy-headers \
-        --forwarded-allow-ips "$TRUSTED_PROXY_SUBNET" \
-        --no-access-log \
-        --reload
-else
-    exec uvicorn app.main:app \
-        --host 0.0.0.0 \
-        --port 8000 \
-        --workers 1 \
-        --proxy-headers \
-        --forwarded-allow-ips "$TRUSTED_PROXY_SUBNET" \
-        --no-access-log
-fi
+exec uvicorn app.main:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --reload
