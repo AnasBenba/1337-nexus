@@ -27,7 +27,7 @@ export const SourcesRow: React.FC<SourcesRowProps> = ({
           <div className="h-7 w-44 rounded-full bg-surface-container-high animate-pulse" />
           <div className="h-7 w-28 rounded-full bg-surface-container-high animate-pulse" />
         </div>
-        <div className="flex items-center gap-space-sm px-space-sm py-2 rounded-DEFAULT bg-surface-container-low border border-surface-container-high text-on-surface-variant font-label-code-tag text-[11px] mt-space-xs">
+        <div className="flex items-center gap-space-sm px-space-sm py-2 rounded bg-surface-container-low border border-surface-container-high text-on-surface-variant font-label-code-tag text-[11px] mt-space-xs">
           <span className="material-symbols-outlined text-[18px] text-primary animate-spin">sync</span>
           <span className="flex-1">
             Generating grounded paragraph cross-references and similarity scoring against 42 Intra PDFs...
@@ -41,7 +41,7 @@ export const SourcesRow: React.FC<SourcesRowProps> = ({
   // 2. Zero citations found banner
   if (!citations || citations.length === 0) {
     return (
-      <div className="p-space-md rounded-DEFAULT bg-surface-container-lowest border border-outline-variant/60 shadow-sm mb-space-md">
+      <div className="p-space-md rounded bg-surface-container-lowest border border-outline-variant/60 shadow-sm mb-space-md">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
           <div className="flex items-start gap-space-sm">
             <div className="w-9 h-9 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center shrink-0 mt-0.5">

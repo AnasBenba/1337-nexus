@@ -10,6 +10,40 @@ until alembic upgrade head; do
         exit 1
     fi
 
+echo "Waiting for PostgreSQL..."
+
+python - "$MIGRATION_DATABASE_URL" <<'PY'
+import socket
+import sys
+import time
+from urllib.parse import urlparse
+
+url = urlparse(sys.argv[1])
+host = url.hostname or "postgres"
+port = url.port or 5432
+
+deadline = time.monotonic() + 60
+
+while time.monotonic() < deadline:
+    try:
+        with socket.create_connection((host, port), timeout=2):
+            break
+    except OSError:
+        time.sleep(1)
+else:
+    raise SystemExit("PostgreSQL did not become reachable within 60 seconds")
+PY
+
+echo "PostgreSQL is reachable. Running migrations..."
+
+(
+    alembic upgrade head
+)
+
+# Create/promote the superadmin from SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD (.env). Skips if unset.
+python -m app.cli.create_superadmin
+
+# unset MIGRATION_DATABASE_URL
     echo "Database is not reachable yet; retrying migration in 2 seconds (attempt ${migration_attempt}/${max_migration_attempts})..."
     migration_attempt=$((migration_attempt + 1))
     sleep 2

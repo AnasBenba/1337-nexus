@@ -18,7 +18,7 @@ export const StreamingIndicator: React.FC<StreamingIndicatorProps> = ({ status }
 
   return (
     <div className="py-space-xs">
-      <div className="bg-surface-container-low p-space-md rounded-DEFAULT shadow-sm mb-space-md border border-surface-container-high/60">
+      <div className="bg-surface-container-low p-space-md rounded shadow-sm mb-space-md border border-surface-container-high/60">
         <div className="flex items-center justify-between mb-space-xs">
           <div className="flex items-center gap-space-xs font-label-code-tag text-label-code-tag text-primary font-semibold">
             <span className="w-2.5 h-2.5 rounded-full bg-primary-container animate-ping" />

@@ -61,7 +61,7 @@ help:
 	@echo "  make test           Run backend pytest"
 	@echo "  make frontend-test  Run frontend Vitest"
 	@echo "  make migrate        Run Alembic migrations"
-	@echo "  make seed           Run seed command"
+	@echo "  make seed           Create/promote the superadmin from SUPERADMIN_EMAIL/PASSWORD"
 	@echo "  make ingest         Ingest curriculum subjects"
 	@echo "  make gen-api        Export OpenAPI"
 	@echo
@@ -125,7 +125,7 @@ migrate:
 	$(DEV_COMPOSE) exec backend alembic upgrade head
 
 seed:
-	$(DEV_COMPOSE) exec backend python -m app.cli.seed
+	$(DEV_COMPOSE) exec backend python -m app.cli.create_superadmin
 
 ingest:
 	$(DEV_COMPOSE) exec -u 0 backend python -m app.cli.ingest_subjects

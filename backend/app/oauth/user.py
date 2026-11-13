@@ -1,3 +1,4 @@
+from sqlalchemy import CheckConstraint, ColumnElement, String, or_
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
@@ -5,18 +6,28 @@ from sqlalchemy.orm import Mapped, mapped_column
 from ..core import base
 
 
-class Users(base.Base):  # type: ignore[misc]
+class Users(base.Base):
     __tablename__ = "users"
+    # Same values as app.oauth.permissions.Role; the DB rejects anything else.
+    __table_args__ = (
+        CheckConstraint("role IN ('user', 'admin', 'superadmin')", name="ck_users_role"),
+    )
+
     id: Mapped[int] = mapped_column(primary_key=True)
     login: Mapped[str] = mapped_column()
     fullname: Mapped[str] = mapped_column()
-    role: Mapped[str] = mapped_column()  # either user || admin
-    intra_id: Mapped[int | None] = mapped_column(nullable=True)
+    role: Mapped[str] = mapped_column(default="user")  # see app.oauth.permissions.Role
+    intra_id: Mapped[int | None] = mapped_column(nullable=True)  # set for 42 accounts
+    # Email/password accounts. Emails are stored lowercase; password_hash is Argon2 (salted),
+    # never the password itself. 42-only accounts have no password_hash.
+    email: Mapped[str | None] = mapped_column(String(254), unique=True, nullable=True)
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    bio: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
 
-async def get_user_by_intra_id(session: AsyncSession, intra_id: int) -> Users | None:
-    statement = select(Users).where(Users.intra_id == intra_id)
-
-    result = await session.execute(statement)
-
-    return result.scalar_one_or_none()
+def login_or_name_contains(q: str) -> ColumnElement[bool]:
+    """Case-insensitive "login or fullname contains q" filter, used by user search."""
+    # Escape LIKE wildcards so "%" or "_" in the query are matched literally.
+    pattern = "%" + q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+    return or_(Users.login.ilike(pattern, escape="\\"), Users.fullname.ilike(pattern, escape="\\"))

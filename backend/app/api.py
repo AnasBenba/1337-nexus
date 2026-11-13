@@ -1,8 +1,39 @@
+import os
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import APIRouter, FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.db import get_db_session
+
+# from app.user.opportunities.apply.router import router as apply_router
+# from app.user.opportunities.browse_opportunities.router import (
+#     router as opportunities_router,
+# )
+# from app.user.opportunities.create_opportunity.router import (
+#     router as create_opportunity_router,
+# )
+# from app.user.opportunities.match_scoring.router import (
+#     router as match_scoring_router,
+# )
+# from app.user.opportunities.publish_opportunity.router import (
+#     router as publish_opportunity_router,
+# )
+# from app.user.opportunities.review_applications.router import (
+#     router as review_applications_router,
+# )
+# from app.user.opportunities.update_opportunity.router import (
+#     router as update_opportunity_router,
+# )
+# from app.user.opportunities.view_opportunity.router import (
+#     router as view_opportunity_router,
+# )
+# from app.user.opportunities.withdraw_application.router import (
+#     router as withdraw_application_router,
+# )
+from app.user.pitches.router import router as pitches_router
 from app.collaboration.board.router import router as board_router
 from app.user.opportunities.apply.router import router as apply_router
 from app.user.opportunities.browse_opportunities.router import (
@@ -43,6 +74,12 @@ from app.user.projects.recommended_projects.router import (
 )
 from app.user.quick_actions.router import router as quick_actions_router
 
+from .oauth import entrypoint, jwt, manager, refresh_tokens
+from .oauth.user import Users
+from .admin.users.router import router as admin_users_router
+from .oauth.email_auth import router as email_auth_router
+from .user.friends.router import router as friends_router
+from .user.profile.router import router as profile_router
 from .collaboration.chat.send_direct_message.router import (
     router as send_direct_message_router,
 )
@@ -55,6 +92,63 @@ from .user.pitches.router import router as pitches_router
 
 router = APIRouter()
 HOME_PAGE = Path(__file__).parent / "index.html"
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://localhost:8443/")
+DbSession = Annotated[AsyncSession, Depends(get_db_session)]
+
+
+@router.get("/api/v1/auth/session", tags=["auth"])
+async def auth_session(request: Request, session: DbSession) -> Response:
+    """Am I signed in? Always 200 {"signed_in": bool}, so pages like /login can check
+    without a 401 showing up in the browser console. If the access token has expired but
+    the refresh cookie is still valid, the session is renewed here too."""
+    token = request.cookies.get(refresh_tokens.ACCESS_COOKIE)
+    if token:
+        try:
+            if await session.get(Users, jwt.user_id_from(jwt.verify_access_token(token))):
+                return JSONResponse({"signed_in": True})
+        except HTTPException:
+            pass  # expired or invalid: try the refresh cookie below
+
+    refresh = request.cookies.get(refresh_tokens.REFRESH_COOKIE)
+    if refresh:
+        try:
+            user, new_refresh = await refresh_tokens.rotate(session, refresh)
+        except refresh_tokens.RefreshError:
+            pass
+        else:
+            response = JSONResponse({"signed_in": True})
+            refresh_tokens.set_auth_cookies(response, user, new_refresh)
+            return response
+
+    return JSONResponse({"signed_in": False})
+
+
+@router.post("/api/v1/auth/refresh", tags=["auth"], status_code=204)
+async def auth_refresh(request: Request, session: DbSession) -> Response:
+    """Swap the refresh cookie for a new access token (and a new refresh token)."""
+    token = request.cookies.get(refresh_tokens.REFRESH_COOKIE)
+    response = Response(status_code=204)
+    try:
+        if not token:
+            raise refresh_tokens.RefreshError("Missing refresh token")
+        user, new_refresh = await refresh_tokens.rotate(session, token)
+    except refresh_tokens.RefreshError as exc:
+        response = JSONResponse({"detail": str(exc)}, status_code=401)
+        refresh_tokens.clear_auth_cookies(response)
+        return response
+    refresh_tokens.set_auth_cookies(response, user, new_refresh)
+    return response
+
+
+@router.post("/api/v1/auth/logout", tags=["auth"], status_code=204)
+async def auth_logout(request: Request, session: DbSession) -> Response:
+    # The cookies are HttpOnly, so only the server can remove them.
+    token = request.cookies.get(refresh_tokens.REFRESH_COOKIE)
+    if token:
+        await refresh_tokens.revoke(session, token)  # can't be used to get new access tokens anymore
+    response = Response(status_code=204)
+    refresh_tokens.clear_auth_cookies(response)
+    return response
 
 
 @router.get("/auth/login", tags=["auth"])
@@ -76,7 +170,7 @@ async def home(request: Request) -> FileResponse:
 
 
 @router.get("/api/v1/auth/oauth/42/callback", tags=["auth"])
-async def auth_callback(request: Request, code: str, state: str) -> RedirectResponse:
+async def auth_callback(request: Request, code: str, state: str, session: DbSession) -> RedirectResponse:
     state_cookie = request.cookies.get("state")
     code_verifier_cookie = request.cookies.get("code_verifier")
 
@@ -96,18 +190,11 @@ async def auth_callback(request: Request, code: str, state: str) -> RedirectResp
     intra_user = await manager.get_user(token["access_token"])
     nexus_user = await manager.manage_user(intra_user)
 
-    jwt_token = jwt.create_access_token(nexus_user.intra_id)
+    refresh_token = await refresh_tokens.issue(session, nexus_user.id)
+    await session.commit()
 
-    response = RedirectResponse(url="/home", status_code=303)
-    response.set_cookie(
-        key="access_token",
-        value=jwt_token,
-        httponly=True,
-        secure=False,
-        samesite="lax",
-        max_age=15 * 60,
-        path="/",
-    )
+    response = RedirectResponse(url=FRONTEND_URL, status_code=303)
+    refresh_tokens.set_auth_cookies(response, nexus_user, refresh_token)
     response.delete_cookie("state", path="/")
     response.delete_cookie("code_verifier", path="/")
     return response
@@ -147,5 +234,9 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(quick_actions_router)
     app.include_router(teams_router)
     app.include_router(pitches_router)
+    app.include_router(profile_router)
+    app.include_router(friends_router)
+    app.include_router(admin_users_router)
+    app.include_router(email_auth_router)
     app.include_router(board_router)
     app.include_router(send_direct_message_router, tags=["Chat"])

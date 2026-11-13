@@ -1,13 +1,61 @@
-import React from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, Navigate, NavLink, Outlet } from 'react-router-dom';
+import { getMe, isSignedIn, logout, type Me } from '@/app/authentication/login/Auth.api';
+import { Avatar } from '@/components/Avatar';
+import { RoleBadge } from '@/flows/admin/users';
+import { refreshSession } from '@/lib/http';
+import { can, Permission } from '@/lib/permissions';
+import { connectPresence, disconnectPresence } from '@/lib/presence';
+
+/** What pages get from useOutletContext(): the signed-in user and a way to update it. */
+export type LayoutContext = { me: Me; setMe: (me: Me) => void };
 
 export const Layout: React.FC = () => {
+  // undefined = still checking, null = not signed in
+  const [me, setMe] = useState<Me | null | undefined>(undefined);
+
+  useEffect(() => {
+    // Ask /auth/session first: it never answers 401, so a logged-out visitor's console stays
+    // clean (and an expired access token is renewed there). Only then load my profile.
+    isSignedIn()
+      .then((signedIn) => (signedIn ? getMe() : null))
+      .then(setMe)
+      .catch(() => setMe(null));
+  }, []);
+
+  // Keep a presence connection open while signed in, so friends see me online.
+  // Closing the tab or logging out (me -> null) disconnects it.
+  const signedInId = me?.id;
+  useEffect(() => {
+    if (signedInId === undefined) return;
+    connectPresence();
+    return disconnectPresence;
+  }, [signedInId]);
+
+  // Renew the 15-minute access token before it runs out while the app is open, so
+  // requests don't hit a 401 first (the 401 -> refresh -> retry path stays as a fallback).
+  useEffect(() => {
+    if (signedInId === undefined) return;
+    const timer = setInterval(() => void refreshSession(), 10 * 60 * 1000);
+    return () => clearInterval(timer);
+  }, [signedInId]);
+
+  if (me === undefined) return null;
+  if (me === null) return <Navigate to="/login" replace />;
+
+  const profilePath = `/users/${me.login}`;
+
+  const handleLogout = async () => {
+    await logout().catch(() => undefined); // even if the request fails, leave the app
+    setMe(null); // the check above then redirects to /login
+  };
+
   return (
     <div className="min-h-screen bg-surface font-body-md text-body-md text-on-surface antialiased">
       {/* Top Header */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl z-50 flex items-center justify-between px-margin shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-space-sm w-64 shrink-0">
-          <div className="w-9 h-9 rounded-DEFAULT bg-primary flex items-center justify-center text-on-primary shadow-sm">
+          <div className="w-9 h-9 rounded bg-primary flex items-center justify-center text-on-primary shadow-sm">
             <span className="material-symbols-outlined text-[20px]">hub</span>
           </div>
           <span className="font-headline-sm text-headline-sm font-bold tracking-tight text-on-surface">
@@ -70,23 +118,43 @@ export const Layout: React.FC = () => {
             </button>
           </div>
 
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-sm text-on-primary">
-            <span className="material-symbols-outlined text-[18px]">person</span>
-          </div>
+          <Link to={profilePath} aria-label="My profile" className="rounded-full shadow-sm">
+            <Avatar name={me.fullname} src={me.avatar_url} />
+          </Link>
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            aria-label="Log out"
+            title="Log out"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[20px]">logout</span>
+          </button>
         </div>
       </header>
 
       {/* Left Navigation Sidebar */}
       <aside className="fixed left-0 top-16 bottom-0 w-64 bg-surface-container-lowest z-40 flex flex-col p-space-md shadow-[0_1px_8px_rgba(0,0,0,0.03)] overflow-y-auto">
-        <div className="bg-surface-container-low rounded-DEFAULT p-space-md mb-space-md relative overflow-hidden">
-          <div className="h-10 -mx-space-md -mt-space-md bg-secondary-fixed mb-space-sm opacity-80" />
-          <div className="flex items-center gap-space-sm">
-            <div className="w-11 h-11 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-label-md text-label-md font-bold shrink-0">
-              SE
-            </div>
+        <div className="bg-surface-container-low rounded p-space-md mb-space-md relative overflow-hidden">
+          <div className="h-12 -mx-space-md -mt-space-md bg-gradient-to-r from-primary-container to-secondary-fixed" />
+          <div className="flex items-start gap-space-sm">
+            <Link to={profilePath} aria-label="My profile" className="-mt-6 rounded-full">
+              <Avatar
+                name={me.fullname}
+                src={me.avatar_url}
+                className="w-12 h-12 text-label-md ring-4 ring-surface-container-low"
+              />
+            </Link>
             <div className="overflow-hidden">
-              <div className="font-label-md text-label-md text-on-surface truncate font-bold">
-                Soufiane El B.
+              <Link
+                to={profilePath}
+                className="block font-label-md text-label-md text-on-surface truncate font-bold hover:text-primary"
+              >
+                {me.fullname}
+              </Link>
+              <div className="flex min-w-0 items-center gap-1 font-body-sm text-[11px] text-on-surface-variant">
+                <span className="truncate">@{me.login}</span>
+                <RoleBadge role={me.role} />
               </div>
               <div className="flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
                 <span className="material-symbols-outlined text-[14px]">location_on</span>
@@ -107,7 +175,7 @@ export const Layout: React.FC = () => {
             to="/"
             end
             className={({ isActive }) =>
-              `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all ${
+              `flex items-center justify-between px-space-md py-space-sm rounded transition-all ${
                 isActive
                   ? 'bg-primary-fixed text-on-primary-fixed font-bold'
                   : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
@@ -123,7 +191,7 @@ export const Layout: React.FC = () => {
           <NavLink
             to="/discover"
             className={({ isActive }) =>
-              `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all ${
+              `flex items-center justify-between px-space-md py-space-sm rounded transition-all ${
                 isActive
                   ? 'bg-primary-fixed text-on-primary-fixed font-bold'
                   : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
@@ -137,9 +205,25 @@ export const Layout: React.FC = () => {
           </NavLink>
 
           <NavLink
+            to="/friends"
+            className={({ isActive }) =>
+              `flex items-center justify-between px-space-md py-space-sm rounded transition-all ${
+                isActive
+                  ? 'bg-primary-fixed text-on-primary-fixed font-bold'
+                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+              }`
+            }
+          >
+            <div className="flex items-center gap-space-sm">
+              <span className="material-symbols-outlined text-[20px]">group</span>
+              <span className="font-label-md text-label-md">Friends</span>
+            </div>
+          </NavLink>
+
+          <NavLink
             to="/projects"
             className={({ isActive }) =>
-              `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all ${
+              `flex items-center justify-between px-space-md py-space-sm rounded transition-all ${
                 isActive
                   ? 'bg-primary-fixed text-on-primary-fixed font-bold'
                   : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
@@ -158,7 +242,7 @@ export const Layout: React.FC = () => {
           <NavLink
             to="/messages"
             className={({ isActive }) =>
-              `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all ${
+              `flex items-center justify-between px-space-md py-space-sm rounded transition-all ${
                 isActive
                   ? 'bg-primary-fixed text-on-primary-fixed font-bold'
                   : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
@@ -169,7 +253,7 @@ export const Layout: React.FC = () => {
               <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
               <span className="font-label-md text-label-md">Messages</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full bg-primary-container text-on-primary-container font-label-code-tag text-[10px]">
+            <span className="px-2 py-0.5 rounded-full bg-primary text-on-primary font-label-code-tag text-[10px] font-bold">
               4
             </span>
           </NavLink>
@@ -177,7 +261,7 @@ export const Layout: React.FC = () => {
           <NavLink
             to="/refine-project"
             className={({ isActive }) =>
-              `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all group ${
+              `flex items-center justify-between px-space-md py-space-sm rounded transition-all group ${
                 isActive
                   ? 'bg-primary-fixed text-on-primary-fixed font-bold'
                   : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
@@ -201,7 +285,7 @@ export const Layout: React.FC = () => {
           <NavLink
             to="/copilot"
             className={({ isActive }) =>
-              `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all group ${
+              `flex items-center justify-between px-space-md py-space-sm rounded transition-all group ${
                 isActive
                   ? 'bg-primary-fixed text-on-primary-fixed font-bold'
                   : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
@@ -218,10 +302,33 @@ export const Layout: React.FC = () => {
               PROMPT
             </span>
           </NavLink>
+
+          {/* Only shown to roles that can manage users (admins). */}
+          {can(me, Permission.VIEW_USERS) && (
+            <>
+              <div className="my-space-sm h-[1px] bg-surface-container-high" />
+              <NavLink
+                to="/admin/users"
+                className={({ isActive }) =>
+                  `flex items-center justify-between px-space-md py-space-sm rounded transition-all ${
+                    isActive
+                      ? 'bg-primary-fixed text-on-primary-fixed font-bold'
+                      : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+                  }`
+                }
+              >
+                <div className="flex items-center gap-space-sm">
+                  <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+                  <span className="font-label-md text-label-md">Users</span>
+                </div>
+                <RoleBadge role={me.role} />
+              </NavLink>
+            </>
+          )}
         </nav>
 
         <div className="pt-space-md border-t border-surface-container-high">
-          <div className="flex items-center justify-between px-space-sm py-space-xs rounded-DEFAULT bg-surface-container-low">
+          <div className="flex items-center justify-between px-space-sm py-space-xs rounded bg-surface-container-low">
             <div className="flex items-center gap-space-xs font-label-code-tag text-label-code-tag text-on-surface-variant">
               <span className="w-2 h-2 rounded-full bg-secondary-container" />
               <span>Intra Connected</span>
@@ -234,7 +341,7 @@ export const Layout: React.FC = () => {
       {/* Main Content Area */}
       <div className="pl-64">
         <main className="w-full min-h-screen pt-16 bg-surface p-margin">
-          <Outlet />
+          <Outlet context={{ me, setMe } satisfies LayoutContext} />
         </main>
       </div>
     </div>

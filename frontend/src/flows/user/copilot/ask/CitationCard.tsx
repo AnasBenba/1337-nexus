@@ -78,7 +78,7 @@ export const CitationCard: React.FC<CitationCardProps> = ({
           <div
             key={c.chunk_id || i}
             onClick={() => onToggleCard?.(citationNumber)}
-            className="p-space-md rounded-DEFAULT bg-surface-container-lowest border border-surface-container-high shadow-sm transition-all duration-200 cursor-pointer"
+            className="p-space-md rounded bg-surface-container-lowest border border-surface-container-high shadow-sm transition-all duration-200 cursor-pointer"
           >
             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-space-sm mb-space-xs">
               <div className="flex items-start gap-space-xs">
