@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 from fastapi import HTTPException
 
@@ -14,7 +16,7 @@ from app.oauth.user import Users
 
 
 def _user(role: str, user_id: int = 1) -> Users:
-    return Users(id=user_id, login=f"t_{role}_{user_id}", fullname=role, role=role)
+    return Users(id=uuid4(), login=f"t_{role}_{user_id}", fullname=role, role=role)
 
 
 def test_each_role_includes_the_one_below() -> None:

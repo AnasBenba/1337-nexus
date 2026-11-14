@@ -17,7 +17,7 @@ export const AdminUsersPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [data, setData] = useState<AdminUserPage | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const allowed = can(me, Permission.VIEW_USERS);
 

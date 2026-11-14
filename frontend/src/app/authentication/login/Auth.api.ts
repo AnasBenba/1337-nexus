@@ -1,14 +1,12 @@
 import { authFetch, errorMessage } from '@/lib/http';
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
-
 export function loginWith42(): void {
-  window.location.assign(`${API_URL}/auth/login`);
+  window.location.assign('/api/v1/auth/oauth/42/login');
 }
 
 /** Any user's public profile (GET /users/{login}). */
 export type UserProfile = {
-  id: number;
+  id: string;
   login: string;
   fullname: string;
   role: string;

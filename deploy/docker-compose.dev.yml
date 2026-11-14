@@ -4,9 +4,6 @@ services:
       - "5433:5432"
 
   backend:
-    ports:
-      - "8000:8000"
-
     volumes:
       - ../backend/app:/app/app
       - ../backend/alembic:/app/alembic

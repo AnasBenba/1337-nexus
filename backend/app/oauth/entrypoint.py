@@ -2,6 +2,7 @@ import base64
 import hashlib
 import os
 import secrets
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from fastapi.responses import RedirectResponse
 
@@ -28,19 +29,27 @@ class AuthClient:
         return finale_hash.rstrip(b"=").decode()
 
     def get_FortyTwo_auth_url(self) -> str:
-        return (
-            f"{self.authorize_url}"
-            f"&client_id={self.client}"
-            f"&state={self.state}"
-            f"&code_challenge={self.code_challenge}"
-            f"&code_challenge_method=S256"
-            f"&redirect_uri={self.redirect_uri}"
-            f"&response_type=code"
+        parts = urlsplit(self.authorize_url)
+        query = parse_qsl(parts.query, keep_blank_values=True)
+        query.extend(
+            [
+                ("client_id", self.client),
+                ("state", self.state),
+                ("code_challenge", self.code_challenge),
+                ("code_challenge_method", "S256"),
+                ("redirect_uri", self.redirect_uri),
+                ("response_type", "code"),
+            ]
         )
+        return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
 
 
 async def redirect_to_forttytwo():
-    client = AuthClient(redirect_uri="http://localhost:8000/api/v1/auth/oauth/42/callback")
+    redirect_uri = os.getenv("REDIRECT_URL")
+    if not redirect_uri:
+        raise RuntimeError("REDIRECT_URL is not configured")
+
+    client = AuthClient(redirect_uri=redirect_uri)
     response = RedirectResponse(client.get_FortyTwo_auth_url())
     response.set_cookie(key="state", value=client.state, httponly=True)
     response.set_cookie(key="code_verifier", value=client.code_verifier, httponly=True)

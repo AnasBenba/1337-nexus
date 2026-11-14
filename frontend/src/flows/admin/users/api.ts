@@ -19,13 +19,13 @@ export function listUsers(params: { q: string; role: Role | ''; page: number; pa
   return api<AdminUserPage>(`${base}?${search}`);
 }
 
-export const updateUser = (id: number, changes: AdminUserChanges) =>
+export const updateUser = (id: string, changes: AdminUserChanges) =>
   api<UserProfile>(`${base}/${id}`, { method: 'PATCH', ...json(changes) });
 
-export const removeUserAvatar = (id: number) => api<UserProfile>(`${base}/${id}/avatar`, { method: 'DELETE' });
+export const removeUserAvatar = (id: string) => api<UserProfile>(`${base}/${id}/avatar`, { method: 'DELETE' });
 
 /** 204 No Content on success, so no JSON to parse. */
-export async function deleteUser(id: number): Promise<void> {
+export async function deleteUser(id: string): Promise<void> {
   const res = await authFetch(`${base}/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error(await errorMessage(res));
 }

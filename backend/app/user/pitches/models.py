@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime
 
 from pgvector.sqlalchemy import Vector  # type: ignore[import-untyped]
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -47,8 +47,8 @@ class Pitch(Base):  # type: ignore[misc]
     embedding: Mapped[list[float] | None] = mapped_column(
         Vector(EMBEDDING_DIMENSIONS), nullable=True
     )
-    author_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("users.id"), nullable=True, index=True
+    author_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True
     )
 
     @property

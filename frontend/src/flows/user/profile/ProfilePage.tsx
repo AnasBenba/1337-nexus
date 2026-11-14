@@ -48,7 +48,7 @@ export const ProfilePage: React.FC = () => {
   useEffect(
     () =>
       onPresence(({ user_id, online }) => {
-        if (user_id === otherId) setFriend((f) => f && { ...f, online });
+        if (String(user_id) === otherId) setFriend((f) => f && { ...f, online });
       }),
     [otherId],
   );

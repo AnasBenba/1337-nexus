@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint, func
+from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID as PostgreSQLUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -27,8 +27,7 @@ class WorkspaceTeam(Base):
         nullable=False,
         index=True,
     )
-    founder_id: Mapped[int] = mapped_column(
-        Integer,
+    founder_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -81,8 +80,7 @@ class WorkspaceTeamMember(Base):
         nullable=False,
         index=True,
     )
-    user_id: Mapped[int] = mapped_column(
-        Integer,
+    user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,

@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
@@ -23,7 +24,7 @@ class Friendship(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    requester_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
-    addressee_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    requester_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    addressee_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     status: Mapped[str] = mapped_column(String(16), default="pending")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from unittest.mock import patch
+from uuid import UUID, uuid4
 
 import jwt
 import pytest
@@ -17,12 +18,13 @@ from app.oauth.user import Users
 def test_jwt_create_and_verify_success() -> None:
     """Test valid token generation and decoding."""
     with patch("app.oauth.jwt.JWT_SECRET", "test_secret_key_fixed_length"):
-        token = create_access_token(user_id=4242)
+        user_id = uuid4()
+        token = create_access_token(user_id=user_id)
         assert isinstance(token, str)
 
         payload = verify_access_token(token)
-        assert payload["sub"] == "user:4242"
-        assert user_id_from(payload) == 4242
+        assert payload["sub"] == f"user:{user_id}"
+        assert user_id_from(payload) == user_id
         assert "exp" in payload
 
 
@@ -30,7 +32,7 @@ def test_jwt_missing_secret_raises_runtime_error() -> None:
     """Test RuntimeError when JWT_SECRET is not configured."""
     with patch("app.oauth.jwt.JWT_SECRET", None):
         with pytest.raises(RuntimeError, match="JWT_SECRET is not configured"):
-            create_access_token(1234)
+            create_access_token(uuid4())
 
         with pytest.raises(RuntimeError, match="JWT_SECRET is not configured"):
             verify_access_token("some.token.value")
@@ -40,7 +42,7 @@ def test_jwt_expired_token_raises_401() -> None:
     """Test ExpiredSignatureError maps to 401 HTTPException."""
     import time
 
-    secret = "test_secret_for_expiry"  # noqa: S105
+    secret = "test_secret_for_expiry"
     with patch("app.oauth.jwt.JWT_SECRET", secret):
         expired_payload = {
             "sub": "9999",
@@ -67,13 +69,13 @@ def test_jwt_invalid_token_signature_raises_401() -> None:
 def test_users_model_instantiation() -> None:
     """Test Soufiane's Users model fields."""
     user = Users(
-        id=1,
+        id=uuid4(),
         login="soufiane",
         fullname="Soufiane El B",
         role="student",
         intra_id=424242,
     )
-    assert user.id == 1
+    assert isinstance(user.id, UUID)
     assert user.login == "soufiane"
     assert user.fullname == "Soufiane El B"
     assert user.role == "student"
@@ -82,7 +84,7 @@ def test_users_model_instantiation() -> None:
 
 def test_old_style_subject_is_rejected() -> None:
     """Tokens from before the switch (sub = bare 42 id) must not map to a user."""
-    for sub in ("130465", "user:", "user:abc", "admin:1"):
+    for sub in ("130465", "user:", "user:abc", "user:4242", "admin:1"):
         with pytest.raises(HTTPException) as exc_info:
             user_id_from({"sub": sub})
         assert exc_info.value.status_code == 401

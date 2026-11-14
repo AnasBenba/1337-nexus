@@ -1,5 +1,6 @@
 import os
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 import jwt
 from fastapi import HTTPException, status
@@ -15,7 +16,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 15
 SUBJECT_PREFIX = "user:"
 
 
-def create_access_token(user_id: int) -> str:
+def create_access_token(user_id: UUID) -> str:
     if not JWT_SECRET:
         raise RuntimeError("JWT_SECRET is not configured")
 
@@ -67,10 +68,13 @@ def verify_access_token(token: str) -> dict:
         ) from None
 
 
-def user_id_from(payload: dict) -> int:
+def user_id_from(payload: dict) -> UUID:
     """users.id from a verified token payload, or 401 if the subject isn't ours."""
     sub = str(payload.get("sub", ""))
     raw_id = sub.removeprefix(SUBJECT_PREFIX)
-    if not sub.startswith(SUBJECT_PREFIX) or not raw_id.isdigit():
+    if not sub.startswith(SUBJECT_PREFIX):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
-    return int(raw_id)
+    try:
+        return UUID(raw_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload") from None
