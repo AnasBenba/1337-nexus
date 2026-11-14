@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { authFetch } from '@/lib/auth';
+import { authFetch } from '@/lib/http';
 
 interface Card {
   id: string;

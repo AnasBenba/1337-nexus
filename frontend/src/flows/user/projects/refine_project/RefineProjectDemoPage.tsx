@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { authFetch } from '@/lib/auth';
+import { authFetch } from '@/lib/http';
 import { RefineEntryButton } from './RefineEntryButton';
 import { RefineProjectModal } from './RefineProjectModal';
 import { ModalState } from './types';

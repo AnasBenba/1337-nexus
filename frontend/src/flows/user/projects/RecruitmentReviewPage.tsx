@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { authFetch } from '@/lib/auth';
+import { authFetch } from '@/lib/http';
 
 interface Project {
   id: string;

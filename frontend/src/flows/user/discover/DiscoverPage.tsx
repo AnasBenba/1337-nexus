@@ -1,6 +1,6 @@
-iimport React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { authFetch } from '@/lib/auth';
+import { authFetch } from '@/lib/http';
 
 interface Opportunity {
   id: string;

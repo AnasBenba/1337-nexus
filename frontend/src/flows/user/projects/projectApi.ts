@@ -1,4 +1,4 @@
-import { authFetch } from '@/lib/auth';
+import { authFetch } from '@/lib/http';
 
 export interface Project {
   id: string;
