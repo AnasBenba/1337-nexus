@@ -11,6 +11,7 @@ session of that user is revoked.
 import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 from fastapi import Response
 from sqlalchemy import DateTime, ForeignKey, String, delete, select, update
@@ -35,7 +36,7 @@ class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     token_hash: Mapped[str] = mapped_column(String(64), unique=True)  # sha256 hex; raw token never stored
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     rotated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -50,7 +51,7 @@ def _hash(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-async def issue(session: AsyncSession, user_id: int) -> str:
+async def issue(session: AsyncSession, user_id: UUID) -> str:
     """Create a refresh token for user_id (caller commits). Returns the raw token for the cookie."""
     now = datetime.now(UTC)
     # Housekeeping: drop this user's expired tokens so the table doesn't grow forever.

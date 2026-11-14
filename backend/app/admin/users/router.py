@@ -7,6 +7,7 @@ Who can act on whom (see app/oauth/permissions.py):
 """
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func, select
@@ -27,7 +28,7 @@ CanEditUsers = Annotated[Users, Depends(require(Permission.EDIT_USERS))]
 CanDeleteUsers = Annotated[Users, Depends(require(Permission.DELETE_USERS))]
 
 
-async def _get_or_404(session: AsyncSession, user_id: int) -> Users:
+async def _get_or_404(session: AsyncSession, user_id: UUID) -> Users:
     user = await session.get(Users, user_id)
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found")
@@ -69,12 +70,12 @@ async def list_users(
 
 
 @router.get("/{user_id}", response_model=UserProfile, summary="View one user")
-async def get_user(user_id: int, _: CanViewUsers, session: DbSession) -> Users:
+async def get_user(user_id: UUID, _: CanViewUsers, session: DbSession) -> Users:
     return await _get_or_404(session, user_id)
 
 
 @router.patch("/{user_id}", response_model=UserProfile, summary="Edit a user's name, bio or role")
-async def update_user(user_id: int, body: AdminUserUpdate, actor: CanEditUsers, session: DbSession) -> Users:
+async def update_user(user_id: UUID, body: AdminUserUpdate, actor: CanEditUsers, session: DbSession) -> Users:
     user = await _get_or_404(session, user_id)
     _check_can_manage(actor, user)
     changes = body.model_dump(exclude_none=True)
@@ -92,7 +93,7 @@ async def update_user(user_id: int, body: AdminUserUpdate, actor: CanEditUsers, 
 
 
 @router.delete("/{user_id}/avatar", response_model=UserProfile, summary="Remove a user's avatar")
-async def remove_user_avatar(user_id: int, actor: CanEditUsers, session: DbSession) -> Users:
+async def remove_user_avatar(user_id: UUID, actor: CanEditUsers, session: DbSession) -> Users:
     user = await _get_or_404(session, user_id)
     _check_can_manage(actor, user)
     old_url, user.avatar_url = user.avatar_url, None
@@ -103,7 +104,7 @@ async def remove_user_avatar(user_id: int, actor: CanEditUsers, session: DbSessi
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete a user")
-async def delete_user(user_id: int, actor: CanDeleteUsers, session: DbSession) -> Response:
+async def delete_user(user_id: UUID, actor: CanDeleteUsers, session: DbSession) -> Response:
     user = await _get_or_404(session, user_id)
     _check_can_manage(actor, user)
     avatar_url = user.avatar_url

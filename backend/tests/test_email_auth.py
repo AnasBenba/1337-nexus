@@ -67,11 +67,33 @@ async def test_signup_creates_user_and_logs_in(ctx) -> None:
         r = await c.post("/auth/signup", json=_signup("a", email=f"A@{DOMAIN.upper()}"))
         assert r.status_code == 201
         body = r.json()
+        assert uuid.UUID(body["id"]).version == 4
         assert body["role"] == "user" and "password" not in str(body) and "profile:edit_own" in body["permissions"]
         assert {"access_token", "refresh_token"} <= set(r.cookies)
         assert (await c.get("/users/me")).json()["login"] == f"{PREFIX}a"  # cookie works
     user = await _stored(ctx, f"{PREFIX}a")
     assert user.email == f"a@{DOMAIN}"  # lowercased
+
+
+async def test_profile_update_keeps_uuid_identity(ctx) -> None:
+    async with ctx["client"]() as c:
+        await c.post("/auth/signup", json=_signup("profile"))
+        before = (await c.get("/users/me")).json()
+        updated = await c.put("/users/me", json={"fullname": " Updated Name ", "bio": " hello "})
+        assert updated.status_code == 200
+        body = updated.json()
+        assert body["id"] == before["id"]
+        uuid.UUID(body["id"])
+        assert body["fullname"] == "Updated Name" and body["bio"] == "hello"
+
+
+async def test_logout_revokes_session(ctx) -> None:
+    async with ctx["client"]() as c:
+        await c.post("/auth/signup", json=_signup("logout"))
+        assert (await c.get("/users/me")).status_code == 200
+        assert (await c.post("/auth/logout")).status_code == 204
+        assert (await c.get("/users/me")).status_code == 401
+        assert (await c.get("/auth/session")).json() == {"signed_in": False}
 
 
 async def test_passwords_are_salted_hashes(ctx) -> None:

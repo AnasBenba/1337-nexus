@@ -6,7 +6,7 @@ export function loginWith42(): void {
 
 /** Any user's public profile (GET /users/{login}). */
 export type UserProfile = {
-  id: number;
+  id: string;
   login: string;
   fullname: string;
   role: string;

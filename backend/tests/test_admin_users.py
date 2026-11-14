@@ -85,7 +85,7 @@ async def test_admin_edits_a_user(ctx) -> None:
         assert r.json()["fullname"] == "Alice A." and r.json()["bio"] is None
         assert (await c.patch(f"/users/{alice.id}", json={"login": "hacked"})).status_code == 422
         assert (await c.patch(f"/users/{alice.id}", json={"fullname": ""})).status_code == 422
-        assert (await c.get("/users/999999999")).status_code == 404
+        assert (await c.get(f"/users/{uuid.uuid4()}")).status_code == 404
 
 
 async def test_only_superadmin_changes_roles(ctx) -> None:

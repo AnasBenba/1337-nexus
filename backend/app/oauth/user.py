@@ -1,6 +1,6 @@
-from sqlalchemy import CheckConstraint, ColumnElement, String, or_
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID, uuid4
+
+from sqlalchemy import CheckConstraint, ColumnElement, String, or_, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from ..core import base
@@ -13,7 +13,11 @@ class Users(base.Base):
         CheckConstraint("role IN ('user', 'admin', 'superadmin')", name="ck_users_role"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[UUID] = mapped_column(
+        primary_key=True,
+        default=uuid4,
+        server_default=text("gen_random_uuid()"),
+    )
     login: Mapped[str] = mapped_column()
     fullname: Mapped[str] = mapped_column()
     role: Mapped[str] = mapped_column(default="user")  # see app.oauth.permissions.Role

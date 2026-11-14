@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 from app.oauth.permissions import permissions_for
@@ -8,7 +10,7 @@ class UserProfile(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: UUID
     login: str
     fullname: str
     role: str
@@ -31,7 +33,7 @@ class UserSummary(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
+    id: UUID
     login: str
     fullname: str
     avatar_url: str | None

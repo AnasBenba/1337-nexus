@@ -32,6 +32,6 @@ export function can(me: { permissions: string[] }, permission: PermissionName): 
  * role than yours, never yourself. So admins manage users, the superadmin manages
  * admins and users, and nobody manages the superadmin.
  */
-export function canManage(me: { id: number; role: string }, user: { id: number; role: string }): boolean {
+export function canManage(me: { id: string; role: string }, user: { id: string; role: string }): boolean {
   return me.id !== user.id && (RANK[me.role] ?? -1) > (RANK[user.role] ?? 99);
 }
