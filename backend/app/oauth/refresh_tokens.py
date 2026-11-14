@@ -111,8 +111,8 @@ async def revoke(session: AsyncSession, token: str) -> None:
     await session.commit()
 
 
-# ponytail: secure=False because the 42 callback still lands on http://localhost:8000.
-# Flip to True once the whole flow goes through https (nginx).
+# Keep secure=False for existing local HTTP and test clients; production HTTPS cookie
+# policy should be enabled once those clients no longer need HTTP.
 def set_auth_cookies(response: Response, user: Users, refresh_token: str | None) -> None:
     response.set_cookie(
         ACCESS_COOKIE,

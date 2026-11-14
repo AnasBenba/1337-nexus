@@ -8,6 +8,7 @@ import re
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -15,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
 from app.oauth import refresh_tokens
+from app.oauth.entrypoint import redirect_to_forttytwo
 from app.oauth.passwords import hash_password, verify_password
 from app.oauth.permissions import Role
 from app.oauth.user import Users
@@ -27,6 +29,11 @@ DbSession = Annotated[AsyncSession, Depends(get_db_session)]
 LOGIN_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{2,19}$")
 RESERVED_LOGINS = {"me", "admin", "api", "login", "signup", "friends", "users"}
 PASSWORD_MIN, PASSWORD_MAX = 8, 128  # the max stops huge inputs from tying up the hasher
+
+
+@router.get("/oauth/42/login", tags=["auth"], summary="Start 42 Intra login")
+async def login_with_42() -> RedirectResponse:
+    return await redirect_to_forttytwo()
 
 
 class SignupRequest(BaseModel):

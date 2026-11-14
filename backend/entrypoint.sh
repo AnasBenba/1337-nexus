@@ -1,15 +1,6 @@
 #!/bin/sh
 set -e
 
-echo "Running database migrations..."
-migration_attempt=1
-max_migration_attempts=30
-until alembic upgrade head; do
-    if [ "$migration_attempt" -ge "$max_migration_attempts" ]; then
-        echo "Database migrations failed after ${max_migration_attempts} attempts." >&2
-        exit 1
-    fi
-
 echo "Waiting for PostgreSQL..."
 
 python - "$MIGRATION_DATABASE_URL" <<'PY'
@@ -36,18 +27,29 @@ PY
 
 echo "PostgreSQL is reachable. Running migrations..."
 
-(
-    alembic upgrade head
-)
-
-# Create/promote the superadmin from SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD (.env). Skips if unset.
-python -m app.cli.create_superadmin
-
-# unset MIGRATION_DATABASE_URL
+migration_attempt=1
+max_migration_attempts=30
+until alembic upgrade head; do
+    if [ "$migration_attempt" -ge "$max_migration_attempts" ]; then
+        echo "Database migrations failed after ${max_migration_attempts} attempts." >&2
+        exit 1
+    fi
     echo "Database is not reachable yet; retrying migration in 2 seconds (attempt ${migration_attempt}/${max_migration_attempts})..."
     migration_attempt=$((migration_attempt + 1))
     sleep 2
 done
+
+echo "Database migrations completed. Initializing SuperAdmin..."
+
+if [ -z "${SUPERADMIN_EMAIL:-}" ] || [ -z "${SUPERADMIN_PASSWORD:-}" ]; then
+    echo "SuperAdmin initialization failed: SUPERADMIN_EMAIL and SUPERADMIN_PASSWORD must be set." >&2
+    exit 1
+fi
+
+if ! python -m app.cli.create_superadmin; then
+    echo "SuperAdmin initialization failed; refusing to start FastAPI." >&2
+    exit 1
+fi
 
 echo "Starting FastAPI..."
 exec uvicorn app.main:app \
