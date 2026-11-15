@@ -98,16 +98,23 @@ class TestGeminiAIProvider:
         # 1. GOOGLE_API_KEY fallback
         monkeypatch.setenv("GOOGLE_API_KEY", "google_fallback_key")
         monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+        monkeypatch.delenv("GEMINI_API_KEY1", raising=False)
         p1 = GeminiAIProvider(client=MagicMock())
         assert p1.api_key == "google_fallback_key"
 
-        # 2. GEMINI_API_KEY overrides GOOGLE_API_KEY
+        # 2. GEMINI_API_KEY1 overrides GOOGLE_API_KEY
+        monkeypatch.setenv("GEMINI_API_KEY1", "gemini_backup_key")
+        p_backup = GeminiAIProvider(client=MagicMock())
+        assert p_backup.api_key == "gemini_backup_key"
+
+        # 3. GEMINI_API_KEY overrides GEMINI_API_KEY1 and GOOGLE_API_KEY
         monkeypatch.setenv("GEMINI_API_KEY", "gemini_primary_key")
         p2 = GeminiAIProvider(client=MagicMock())
         assert p2.api_key == "gemini_primary_key"
+        assert p2.api_keys == ["gemini_primary_key", "gemini_backup_key", "google_fallback_key"]
 
     @pytest.mark.asyncio
-    async def test_stream_complete_defaults_to_gemini_3_8_flash_and_falls_back_on_deprecated_model(
+    async def test_stream_complete_defaults_to_gemini_3_5_flash_lite_and_falls_back_on_deprecated_model(
         self, monkeypatch
     ):
         monkeypatch.setenv("CHAT_MODEL", "gemini-2.5-flash")
@@ -139,10 +146,14 @@ class TestGeminiAIProvider:
         ]
 
         assert tokens == ["Critique response"]
-        assert call_models == ["gemini-2.5-flash", "gemini-3.8-flash"]
+        assert call_models == ["gemini-2.5-flash", "gemini-3.5-flash-lite"]
 
     @pytest.mark.asyncio
     async def test_aq_key_switches_to_vertexai_on_api_key_invalid(self, monkeypatch):
+        monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+        monkeypatch.delenv("GEMINI_API_KEY1", raising=False)
+        monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+
         mock_embedding = MagicMock()
         mock_embedding.values = [0.5] * 1536
         mock_response = MagicMock()
@@ -165,5 +176,40 @@ class TestGeminiAIProvider:
         vectors = await provider.embed(["test text"])
 
         assert provider._vertexai is True
+        assert len(vectors) == 1
+        assert len(vectors[0]) == 1536
+
+    @pytest.mark.asyncio
+    async def test_multi_key_failover_to_gemini_api_key1_on_rate_limit(self, monkeypatch):
+        monkeypatch.setenv("GEMINI_API_KEY", "AQ.primary_rate_limited_key")
+        monkeypatch.setenv("GEMINI_API_KEY1", "AIzaSy_backup_old_key")
+        monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+
+        mock_embedding = MagicMock()
+        mock_embedding.values = [0.25] * 1536
+        mock_response = MagicMock()
+        mock_response.embeddings = [mock_embedding]
+
+        primary_client = MagicMock()
+        primary_client.aio.models.embed_content = AsyncMock(
+            side_effect=RuntimeError("429 RESOURCE_EXHAUSTED: Quota exceeded")
+        )
+
+        backup_client = MagicMock()
+        backup_client.aio.models.embed_content = AsyncMock(return_value=mock_response)
+
+        created_keys: list[str | None] = []
+
+        def _fake_client(**kwargs):
+            created_keys.append(kwargs.get("api_key"))
+            return primary_client if kwargs.get("api_key") == "AQ.primary_rate_limited_key" else backup_client
+
+        monkeypatch.setattr("app.shared.ai.gemini.genai.Client", _fake_client)
+
+        provider = GeminiAIProvider()
+        vectors = await provider.embed(["inception service of choice"])
+
+        assert provider.api_key == "AIzaSy_backup_old_key"
+        assert created_keys == ["AQ.primary_rate_limited_key", "AIzaSy_backup_old_key"]
         assert len(vectors) == 1
         assert len(vectors[0]) == 1536
