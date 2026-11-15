@@ -77,6 +77,14 @@ class OpportunityWorkspaceResponse(BaseModel):
     role: str
 
 
+class OpportunityTeamMemberResponse(BaseModel):
+    user_id: UUID
+    login: str
+    fullname: str
+    role: str
+    is_founder: bool
+
+
 class TeamMemberRequest(BaseModel):
     user_id: UUID
 
@@ -395,6 +403,212 @@ async def create_or_get_opportunity_workspace(
         channel_id=workspace.channel.id,
         role=membership.role,
     )
+
+
+@router.get(
+    "/teams/opportunities/{opportunity_id}/members",
+    response_model=list[OpportunityTeamMemberResponse],
+    status_code=status.HTTP_200_OK,
+)
+@router.get(
+    "/api/v1/teams/opportunities/{opportunity_id}/members",
+    response_model=list[OpportunityTeamMemberResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def list_opportunity_team_members(
+    opportunity_id: UUID,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: Users = Depends(_resolve_team_user),
+) -> list[OpportunityTeamMemberResponse]:
+    opportunity = await db.get(Opportunity, opportunity_id)
+    if opportunity is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Opportunity not found",
+        )
+
+    pitch = await db.get(Pitch, opportunity.project_id)
+    founder_id = (
+        pitch.author_id
+        if pitch is not None and pitch.author_id is not None
+        else current_user.id
+    )
+
+    is_owner = current_user.id == founder_id
+    accepted_app = await db.scalar(
+        select(Application).where(
+            Application.opportunity_id == opportunity_id,
+            Application.user_id == current_user.id,
+            Application.status == "accepted",
+        )
+    )
+    existing_team = await db.scalar(
+        select(WorkspaceTeam).where(WorkspaceTeam.opportunity_id == opportunity_id)
+    )
+    existing_member = None
+    if existing_team is not None:
+        existing_member = await db.scalar(
+            select(WorkspaceTeamMember).where(
+                WorkspaceTeamMember.team_id == existing_team.id,
+                WorkspaceTeamMember.user_id == current_user.id,
+                WorkspaceTeamMember.status == "active",
+            )
+        )
+
+    if not is_owner and accepted_app is None and existing_member is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only team members can view this opportunity's team",
+        )
+
+    workspace = await provision_workspace(
+        db,
+        opportunity_id=opportunity.id,
+        founder_id=founder_id,
+    )
+
+    # Ensure all accepted applicants for this opportunity are synced into WorkspaceTeamMember
+    accepted_apps = list(
+        (
+            await db.scalars(
+                select(Application).where(
+                    Application.opportunity_id == opportunity_id,
+                    Application.status == "accepted",
+                )
+            )
+        ).all()
+    )
+    for app_row in accepted_apps:
+        member_row = await db.scalar(
+            select(WorkspaceTeamMember).where(
+                WorkspaceTeamMember.team_id == workspace.team.id,
+                WorkspaceTeamMember.user_id == app_row.user_id,
+            )
+        )
+        if member_row is None:
+            db.add(
+                WorkspaceTeamMember(
+                    team_id=workspace.team.id,
+                    user_id=app_row.user_id,
+                    status="active",
+                    role="admin" if app_row.user_id == founder_id else "member",
+                )
+            )
+        elif member_row.status != "active":
+            member_row.status = "active"
+
+    await db.commit()
+
+    stmt = (
+        select(WorkspaceTeamMember, Users)
+        .join(Users, Users.id == WorkspaceTeamMember.user_id)
+        .where(
+            WorkspaceTeamMember.team_id == workspace.team.id,
+            WorkspaceTeamMember.status == "active",
+        )
+        .order_by(Users.fullname.asc(), Users.login.asc())
+    )
+    rows = (await db.execute(stmt)).all()
+    members = [
+        OpportunityTeamMemberResponse(
+            user_id=user.id,
+            login=user.login,
+            fullname=user.fullname,
+            role=membership.role,
+            is_founder=user.id == workspace.team.founder_id,
+        )
+        for membership, user in rows
+    ]
+    members.sort(key=lambda m: (not m.is_founder, m.fullname.lower()))
+    return members
+
+
+@router.delete(
+    "/teams/opportunities/{opportunity_id}/members/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+@router.delete(
+    "/api/v1/teams/opportunities/{opportunity_id}/members/{user_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def kick_opportunity_team_member(
+    opportunity_id: UUID,
+    user_id: UUID,
+    db: AsyncSession = Depends(get_db_session),
+    current_user: Users = Depends(_resolve_team_user),
+) -> None:
+    opportunity = await db.get(Opportunity, opportunity_id)
+    if opportunity is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Opportunity not found",
+        )
+
+    pitch = await db.get(Pitch, opportunity.project_id)
+    founder_id = (
+        pitch.author_id
+        if pitch is not None and pitch.author_id is not None
+        else None
+    )
+
+    team = await db.scalar(
+        select(WorkspaceTeam).where(WorkspaceTeam.opportunity_id == opportunity_id)
+    )
+    if current_user.id != founder_id:
+        if team is None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the opportunity owner can remove team members",
+            )
+        await require_team_admin(db, team.id, current_user)
+
+    if user_id == founder_id or (team is not None and user_id == team.founder_id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The opportunity owner cannot be kicked from their own team",
+        )
+
+    if team is not None:
+        membership = await db.scalar(
+            select(WorkspaceTeamMember).where(
+                WorkspaceTeamMember.team_id == team.id,
+                WorkspaceTeamMember.user_id == user_id,
+            )
+        )
+        if membership is not None:
+            await db.delete(membership)
+
+    if pitch is not None:
+        pitch_team = await db.scalar(
+            select(WorkspaceTeam).where(WorkspaceTeam.pitch_id == pitch.id)
+        )
+        if pitch_team is not None:
+            pitch_membership = await db.scalar(
+                select(WorkspaceTeamMember).where(
+                    WorkspaceTeamMember.team_id == pitch_team.id,
+                    WorkspaceTeamMember.user_id == user_id,
+                )
+            )
+            if pitch_membership is not None:
+                await db.delete(pitch_membership)
+
+    # Also mark any accepted application for this user on this opportunity as rejected
+    # so the opportunity is removed from their Opportunities list and they lose access.
+    accepted_apps = list(
+        (
+            await db.scalars(
+                select(Application).where(
+                    Application.opportunity_id == opportunity_id,
+                    Application.user_id == user_id,
+                    Application.status == "accepted",
+                )
+            )
+        ).all()
+    )
+    for app_row in accepted_apps:
+        app_row.status = "rejected"
+
+    await db.commit()
 
 
 @router.post(

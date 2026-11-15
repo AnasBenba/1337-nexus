@@ -20,12 +20,29 @@ interface Pitch {
   state?: string;
 }
 
+interface OpportunityTeamMember {
+  user_id: string;
+  login: string;
+  fullname: string;
+  role: string;
+  is_founder: boolean;
+}
+
 export const OpportunitiesPage: React.FC = () => {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [myPitches, setMyPitches] = useState<Pitch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+
+  // Team Members Modal state
+  const [teamModalOpp, setTeamModalOpp] = useState<{ opp: Opportunity; isOwner: boolean } | null>(
+    null,
+  );
+  const [teamMembers, setTeamMembers] = useState<OpportunityTeamMember[]>([]);
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [teamError, setTeamError] = useState<string | null>(null);
+  const [kickingUserId, setKickingUserId] = useState<string | null>(null);
 
   // Create Opportunity Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -140,6 +157,47 @@ export const OpportunitiesPage: React.FC = () => {
   };
 
   const pitchTitleById = new Map(myPitches.map((p) => [p.id, p.title]));
+
+  const openTeamModal = async (opp: Opportunity, isOwner: boolean) => {
+    setTeamModalOpp({ opp, isOwner });
+    setTeamMembers([]);
+    setTeamError(null);
+    setTeamLoading(true);
+    try {
+      const res = await authFetch(`/api/teams/opportunities/${opp.id}/members`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Could not load team members (${res.status})`);
+      }
+      const data = (await res.json()) as OpportunityTeamMember[];
+      setTeamMembers(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setTeamError(err instanceof Error ? err.message : 'Could not load team members');
+    } finally {
+      setTeamLoading(false);
+    }
+  };
+
+  const handleKickMember = async (member: OpportunityTeamMember) => {
+    if (!teamModalOpp) return;
+    setKickingUserId(member.user_id);
+    setTeamError(null);
+    try {
+      const res = await authFetch(
+        `/api/teams/opportunities/${teamModalOpp.opp.id}/members/${member.user_id}`,
+        { method: 'DELETE' },
+      );
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Failed to remove member (${res.status})`);
+      }
+      setTeamMembers((prev) => prev.filter((m) => m.user_id !== member.user_id));
+    } catch (err) {
+      setTeamError(err instanceof Error ? err.message : 'Failed to kick member');
+    } finally {
+      setKickingUserId(null);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-300">
@@ -280,6 +338,15 @@ export const OpportunitiesPage: React.FC = () => {
                     <span>View Board</span>
                   </Link>
 
+                  <button
+                    type="button"
+                    onClick={() => void openTeamModal(opp, isOwner)}
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-outline-variant bg-surface-container-low text-on-surface hover:border-primary hover:text-primary text-xs font-semibold transition-all cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">info</span>
+                    <span>Details</span>
+                  </button>
+
                   {isOwner && (
                     <Link
                       to={`/opportunities/${opp.id}/applications`}
@@ -418,6 +485,186 @@ export const OpportunitiesPage: React.FC = () => {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Opportunity Details & Accepted Users Modal */}
+      {teamModalOpp && (
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setTeamModalOpp(null)}
+        >
+          <div
+            className="bg-surface rounded-2xl border border-outline-variant/60 max-w-xl w-full p-6 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-outline-variant/40 pb-4">
+              <div className="space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      teamModalOpp.opp.status === 'open'
+                        ? 'bg-emerald-500/10 text-emerald-600'
+                        : 'bg-amber-500/15 text-amber-700'
+                    }`}
+                  >
+                    {teamModalOpp.opp.status}
+                  </span>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                      teamModalOpp.isOwner
+                        ? 'bg-primary/10 text-primary'
+                        : 'bg-emerald-500/15 text-emerald-700'
+                    }`}
+                  >
+                    {teamModalOpp.isOwner ? 'Owner' : 'Accepted Member'}
+                  </span>
+                  {pitchTitleById.get(teamModalOpp.opp.project_id) && (
+                    <span className="text-[11px] font-medium text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
+                      Pitch: {pitchTitleById.get(teamModalOpp.opp.project_id)}
+                    </span>
+                  )}
+                  {teamModalOpp.opp.created_at && (
+                    <span className="text-[11px] text-on-surface-variant">
+                      Created {new Date(teamModalOpp.opp.created_at).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-xl font-bold text-on-surface">
+                  {teamModalOpp.opp.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTeamModalOpp(null)}
+                className="text-outline hover:text-on-surface text-sm cursor-pointer p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Full Description */}
+            <div className="space-y-1.5">
+              <h4 className="text-[11px] font-bold uppercase tracking-wider text-outline">
+                Description &amp; Responsibilities
+              </h4>
+              <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/40 text-xs text-on-surface whitespace-pre-wrap leading-relaxed">
+                {teamModalOpp.opp.description}
+              </div>
+            </div>
+
+            {/* Required Skills */}
+            {teamModalOpp.opp.required_skills && teamModalOpp.opp.required_skills.length > 0 && (
+              <div className="space-y-1.5">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-outline">
+                  Required Skills
+                </h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {teamModalOpp.opp.required_skills.map((skill, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface text-xs font-medium border border-outline-variant/40"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Accepted Users List */}
+            <div className="space-y-2.5 pt-2 border-t border-outline-variant/40">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[11px] font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px]">groups</span>
+                  Accepted Users on Opportunity (
+                  {teamMembers.filter((m) => !m.is_founder).length})
+                </h4>
+              </div>
+
+              {teamError && (
+                <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-600 text-xs rounded-xl">
+                  {teamError}
+                </div>
+              )}
+
+              {teamLoading ? (
+                <div className="py-6 text-center text-xs text-on-surface-variant">
+                  Loading accepted users...
+                </div>
+              ) : teamMembers.filter((m) => !m.is_founder).length === 0 ? (
+                <div className="py-6 text-center rounded-xl border border-dashed border-outline-variant/60 bg-surface-container-lowest text-xs text-on-surface-variant">
+                  No users have been accepted on this opportunity yet.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                  {teamMembers
+                    .filter((m) => !m.is_founder)
+                    .map((member) => (
+                      <div
+                        key={member.user_id}
+                        className="flex items-center justify-between gap-3 p-3 rounded-xl border border-outline-variant/50 bg-surface-container-low"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-9 h-9 rounded-full bg-primary/15 text-primary font-bold text-xs flex items-center justify-center shrink-0">
+                            {(member.fullname || member.login || '?').charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-on-surface truncate">
+                                {member.fullname}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/15 text-emerald-700">
+                                Accepted
+                              </span>
+                            </div>
+                            <p className="text-[11px] font-mono text-on-surface-variant truncate">
+                              @{member.login}
+                            </p>
+                          </div>
+                        </div>
+
+                        {teamModalOpp.isOwner && (
+                          <button
+                            type="button"
+                            disabled={kickingUserId === member.user_id}
+                            onClick={() => void handleKickMember(member)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-600 hover:bg-red-500 hover:text-white text-xs font-bold transition-colors disabled:opacity-50 shrink-0 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">
+                              person_remove
+                            </span>
+                            <span>
+                              {kickingUserId === member.user_id ? 'Kicking...' : 'Kick'}
+                            </span>
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2">
+              {teamModalOpp.isOwner && (
+                <Link
+                  to={`/opportunities/${teamModalOpp.opp.id}/applications`}
+                  onClick={() => setTeamModalOpp(null)}
+                  className="px-4 py-2 rounded-xl border border-outline-variant bg-surface-container-low text-on-surface hover:border-primary hover:text-primary text-xs font-semibold"
+                >
+                  View Pending Applicants
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={() => setTeamModalOpp(null)}
+                className="px-4 py-2 rounded-xl bg-surface-container-high text-on-surface text-xs font-semibold hover:bg-surface-container-highest cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
