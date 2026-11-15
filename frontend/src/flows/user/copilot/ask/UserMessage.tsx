@@ -8,8 +8,8 @@ interface UserMessageProps {
 
 export const UserMessage: React.FC<UserMessageProps> = ({
   content,
-  timestamp = '11:42 AM',
-  userName = 'Soufiane El B.',
+  timestamp = '',
+  userName,
 }) => {
   return (
     <div className="flex justify-end w-full mb-space-lg">
@@ -20,8 +20,12 @@ export const UserMessage: React.FC<UserMessageProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-space-xs mt-1 text-outline font-label-code-tag text-[11px]">
-          <span>{userName}</span>
-          <span>•</span>
+          {userName && (
+            <>
+              <span>{userName}</span>
+              <span>•</span>
+            </>
+          )}
           <span>{timestamp}</span>
           <span className="material-symbols-outlined text-[14px] text-primary">done_all</span>
         </div>
