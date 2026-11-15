@@ -105,3 +105,65 @@ class TestGeminiAIProvider:
         monkeypatch.setenv("GEMINI_API_KEY", "gemini_primary_key")
         p2 = GeminiAIProvider(client=MagicMock())
         assert p2.api_key == "gemini_primary_key"
+
+    @pytest.mark.asyncio
+    async def test_stream_complete_defaults_to_gemini_3_8_flash_and_falls_back_on_deprecated_model(
+        self, monkeypatch
+    ):
+        monkeypatch.setenv("CHAT_MODEL", "gemini-2.5-flash")
+
+        chunk = MagicMock()
+        chunk.text = "Critique response"
+
+        async def _mock_stream():
+            yield chunk
+
+        call_models: list[str] = []
+
+        async def _side_effect(model: str, contents):
+            call_models.append(model)
+            if model == "gemini-2.5-flash":
+                raise RuntimeError(
+                    "404 NOT_FOUND: This model models/gemini-2.5-flash is no longer available to new users."
+                )
+            return _mock_stream()
+
+        mock_client = MagicMock()
+        mock_client.aio = MagicMock()
+        mock_client.aio.models = MagicMock()
+        mock_client.aio.models.generate_content_stream = AsyncMock(side_effect=_side_effect)
+
+        provider = GeminiAIProvider(api_key="AQ.Ab8_test_key", client=mock_client)
+        tokens = [
+            t async for t in provider.stream_complete([{"role": "user", "content": "Hello"}])
+        ]
+
+        assert tokens == ["Critique response"]
+        assert call_models == ["gemini-2.5-flash", "gemini-3.8-flash"]
+
+    @pytest.mark.asyncio
+    async def test_aq_key_switches_to_vertexai_on_api_key_invalid(self, monkeypatch):
+        mock_embedding = MagicMock()
+        mock_embedding.values = [0.5] * 1536
+        mock_response = MagicMock()
+        mock_response.embeddings = [mock_embedding]
+
+        first_client = MagicMock()
+        first_client.aio.models.embed_content = AsyncMock(
+            side_effect=RuntimeError("400 INVALID_ARGUMENT: API_KEY_INVALID - API key not valid")
+        )
+
+        second_client = MagicMock()
+        second_client.aio.models.embed_content = AsyncMock(return_value=mock_response)
+
+        monkeypatch.setattr(
+            "app.shared.ai.gemini.genai.Client",
+            lambda **kwargs: second_client if kwargs.get("vertexai") else first_client,
+        )
+
+        provider = GeminiAIProvider(api_key="AQ.Ab8_vertex_express_key")
+        vectors = await provider.embed(["test text"])
+
+        assert provider._vertexai is True
+        assert len(vectors) == 1
+        assert len(vectors[0]) == 1536
