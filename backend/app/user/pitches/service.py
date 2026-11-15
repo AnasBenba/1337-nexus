@@ -152,6 +152,16 @@ async def get_all_pitches(db: AsyncSession) -> list[Pitch]:
     return list(result.scalars().all())
 
 
+async def get_pitches_for_user(db: AsyncSession, user_id: UUID) -> list[Pitch]:
+    query = (
+        select(Pitch)
+        .where(Pitch.author_id == user_id)
+        .order_by(Pitch.created_at.desc())
+    )
+    result = await db.execute(query)
+    return list(result.scalars().all())
+
+
 async def get_one_pitch(db: AsyncSession, pitch_id: uuid.UUID) -> Pitch:
     result = await db.execute(select(Pitch).where(Pitch.id == pitch_id))
     pitch = result.scalar_one_or_none()

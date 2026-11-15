@@ -771,9 +771,9 @@ google-auth==2.62.0 \
     --hash=sha256:0bef0ce54bdf9ce226c5d66e4264413bd918141c31bbe49fb52eac882f513d69 \
     --hash=sha256:4ff4319aeb4ad128409759d397a9fcafad126d0031d241cc0dd6b9a00b43e3f3
     # via google-genai
-google-genai==2.31.0 \
-    --hash=sha256:71518537de2ba967a61960cba844691dca3dd4ff07726c01a6917d132213541e \
-    --hash=sha256:c87b9d495a24b09dedb29b852a201bea69ecd0b3f6c2561dc68f4055451b1b90
+google-genai==3.3.0 \
+    --hash=sha256:86bd1830fec4b12e474237414fa52383aa0f49458910f6c9c938c207715559b5 \
+    --hash=sha256:c0ab7bfbf13d4a24a5798ec9e4200773b2fa150eb620317db337f751a9c9576c
     # via 1337-nexus-backend (pyproject.toml)
 greenlet==3.5.6 \
     --hash=sha256:0616b8f878098c5681fd8f0dc92d887551717402342a70f0abcbfea5f5ad8a44 \
@@ -929,12 +929,13 @@ httpx==0.28.1 \
     --hash=sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad
     # via
     #   1337-nexus-backend (pyproject.toml)
-    #   google-genai
     #   langchain-core
 httpx2==2.13.1 \
     --hash=sha256:6dff50fabc270ee5fd25d845d0b078ed20564579744d6d962850975996d2f9a4 \
     --hash=sha256:e48744a19e3af5ee48313d0ce5fe941d5422fae5705ea922a4aabf94d7800dfa
-    # via langsmith
+    # via
+    #   google-genai
+    #   langsmith
 idna==3.20 \
     --hash=sha256:a7db850025b95ded1eae8a46181a1a6c56c92c96f0e2b005d9ff8dc0210cab44 \
     --hash=sha256:ab7ae7122974553370f0bdb919e1a960b2cd1bc1ef0276416d896db81c14582c

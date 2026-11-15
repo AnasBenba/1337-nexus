@@ -2,13 +2,16 @@ import base64
 import hashlib
 import os
 import secrets
+from urllib.parse import urlencode
 
 from fastapi.responses import RedirectResponse
 
 
 class AuthClient:
     def __init__(self, redirect_uri: str):
-        self.authorize_url = os.getenv("AUTH_URL")
+        self.authorize_url = (
+            os.getenv("AUTH_URL") or "https://api.intra.42.fr/oauth/authorize"
+        ).rstrip("?")
         self.client = os.getenv("UID")
         self.redirect_uri = redirect_uri
         self.state = self.generate_state()
@@ -28,20 +31,30 @@ class AuthClient:
         return finale_hash.rstrip(b"=").decode()
 
     def get_FortyTwo_auth_url(self) -> str:
-        return (
-            f"{self.authorize_url}"
-            f"&client_id={self.client}"
-            f"&state={self.state}"
-            f"&code_challenge={self.code_challenge}"
-            f"&code_challenge_method=S256"
-            f"&redirect_uri={self.redirect_uri}"
-            f"&response_type=code"
+        base_url = (
+            self.authorize_url or "https://api.intra.42.fr/oauth/authorize"
+        ).rstrip("?")
+        params = urlencode(
+            {
+                "client_id": self.client,
+                "redirect_uri": self.redirect_uri,
+                "response_type": "code",
+                "state": self.state,
+                "code_challenge": self.code_challenge,
+                "code_challenge_method": "S256",
+            }
         )
+        return f"{base_url}?{params}"
 
 
 async def redirect_to_forttytwo():
-    client = AuthClient(redirect_uri="http://localhost:8000/api/v1/auth/oauth/42/callback")
+    redirect_uri = os.getenv(
+        "REDIRECT_URL", "http://localhost:8000/api/v1/auth/oauth/42/callback"
+    )
+    client = AuthClient(redirect_uri=redirect_uri)
     response = RedirectResponse(client.get_FortyTwo_auth_url())
-    response.set_cookie(key="state", value=client.state, httponly=True)
-    response.set_cookie(key="code_verifier", value=client.code_verifier, httponly=True)
+    response.set_cookie(key="state", value=client.state, httponly=True, path="/")
+    response.set_cookie(
+        key="code_verifier", value=client.code_verifier, httponly=True, path="/"
+    )
     return response

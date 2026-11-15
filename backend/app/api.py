@@ -1,7 +1,9 @@
+import os
 from pathlib import Path
 
 from fastapi import APIRouter, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
+from sqlalchemy import select
 
 from app.collaboration.board.router import router as board_router
 from app.user.opportunities.apply.router import router as apply_router
@@ -37,7 +39,9 @@ from app.user.projects.refine_project.router import (
 from .collaboration.chat.send_direct_message.router import (
     router as send_direct_message_router,
 )
+from .core import db
 from .oauth import entrypoint, jwt, manager
+from .oauth.user import Users
 from .user.copilot.ask.router import router as ask_router
 from .user.copilot.retrieve_curriculum.router import (
     router as retrieve_curriculum_router,
@@ -49,9 +53,59 @@ router = APIRouter()
 HOME_PAGE = Path(__file__).parent / "index.html"
 
 
+def _build_auth_redirect(jwt_token: str) -> RedirectResponse:
+    """Create a frontend redirect response carrying the signed JWT cookie."""
+    frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173/home")
+    response = RedirectResponse(url=frontend_url, status_code=303)
+    response.set_cookie(
+        key="access_token",
+        value=jwt_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=jwt.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/",
+    )
+    return response
+
+
+async def _issue_dev_login_redirect() -> RedirectResponse:
+    """Resolve or create the local dev user and redirect with a signed JWT cookie."""
+    async with db.SessionLocal() as session:
+        result = await session.execute(select(Users).where(Users.login == "sel-bou"))
+        dev_user = result.scalar_one_or_none()
+        if dev_user is None:
+            result = await session.execute(select(Users).limit(1))
+            dev_user = result.scalar_one_or_none()
+        if dev_user is None:
+            dev_user = Users(
+                login="sel-bou",
+                fullname="Soufiane El B.",
+                role="user",
+                intra_id=4242,
+            )
+            session.add(dev_user)
+            await session.commit()
+            await session.refresh(dev_user)
+        elif dev_user.intra_id is None:
+            dev_user.intra_id = 4242
+            await session.commit()
+            await session.refresh(dev_user)
+
+    jwt_token = jwt.create_access_token(dev_user.intra_id)
+    return _build_auth_redirect(jwt_token)
+
+
 @router.get("/auth/login", tags=["auth"])
-async def auth_login() -> RedirectResponse:
+async def auth_login(dev: bool = False) -> RedirectResponse:
+    if dev:
+        return await _issue_dev_login_redirect()
     return await entrypoint.redirect_to_forttytwo()
+
+
+@router.get("/auth/dev-login", tags=["auth"])
+async def auth_dev_login() -> RedirectResponse:
+    return await _issue_dev_login_redirect()
 
 
 @router.get("/home", tags=["pages"])
@@ -90,16 +144,7 @@ async def auth_callback(request: Request, code: str, state: str) -> RedirectResp
 
     jwt_token = jwt.create_access_token(nexus_user.intra_id)
 
-    response = RedirectResponse(url="/home", status_code=303)
-    response.set_cookie(
-        key="access_token",
-        value=jwt_token,
-        httponly=True,
-        secure=False,
-        samesite="lax",
-        max_age=jwt.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        path="/",
-    )
+    response = _build_auth_redirect(jwt_token)
     response.delete_cookie("state", path="/")
     response.delete_cookie("code_verifier", path="/")
     return response

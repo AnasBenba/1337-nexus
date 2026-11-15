@@ -1,7 +1,7 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,8 +20,11 @@ from app.user.pitches.schemas import (
 from app.user.pitches.service import (
     create_pitch,
     delete_pitch,
+    get_all_pitches,
     get_one_pitch,
     get_pitch_votes,
+    get_pitches_for_user,
+    get_user_vote,
     remove_user_vote,
     search_pitches,
     update_pitch,
@@ -31,21 +34,35 @@ from app.user.pitches.service import (
 router = APIRouter(prefix="/api/v1/user/pitches", tags=["Pitches"])
 
 
+async def resolve_current_user(
+    request: Request,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Users:
+    """Resolve authenticated user from cookie, or fall back to existing/dev user."""
+    try:
+        return await get_authenticated_user(request=request, db=db)
+    except HTTPException:
+        result = await db.execute(select(Users).limit(1))
+        user = result.scalar_one_or_none()
+        if user:
+            return user
+        dev_user = Users(
+            login="sel-bou",
+            fullname="Soufiane El B.",
+            role="user",
+            intra_id=4242,
+        )
+        db.add(dev_user)
+        await db.commit()
+        await db.refresh(dev_user)
+        return dev_user
+
+
 @router.get(
     "/search",
     response_model=list[PitchResponse],
     summary="Search project pitches by semantic similarity",
 )
-# @router.get(
-#     "/api/v1/pitches/search",
-#     response_model=list[PitchResponse],
-#     include_in_schema=False,
-# )
-# @router.get(
-#     "/api/v1/search",
-#     response_model=list[PitchResponse],
-#     include_in_schema=False,
-# )
 async def search_pitches_endpoint(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     query: str = Query(...),
@@ -62,16 +79,10 @@ async def search_pitches_endpoint(
     status_code=status.HTTP_201_CREATED,
     summary="Create a new project pitch",
 )
-@router.post(
-    "/api/v1/pitches",
-    response_model=PitchResponse,
-    status_code=status.HTTP_201_CREATED,
-    include_in_schema=False,
-)
 async def create_pitch_endpoint(
     pitch: PitchCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: Annotated[Users, Depends(get_authenticated_user)],
+    current_user: Annotated[Users, Depends(resolve_current_user)],
 ) -> Pitch:
     return await create_pitch(db=db, pitch=pitch, author_id=current_user.id)
 
@@ -82,26 +93,44 @@ async def create_pitch_endpoint(
     summary="List all project pitches",
 )
 @router.get(
-    "/api/v1/pitches",
+    "/get_all_pitches",
     response_model=list[PitchResponse],
     include_in_schema=False,
 )
 async def list_pitches_endpoint(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> list[Pitch]:
-    result = await db.execute(select(Pitch).order_by(Pitch.created_at.desc()).limit(40))
-    return list(result.scalars().all())
+    return await get_all_pitches(db=db)
+
+
+@router.get(
+    "/me",
+    response_model=list[PitchResponse],
+    summary="Get pitches created by the current authenticated user",
+)
+async def get_my_pitches_endpoint(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: Annotated[Users, Depends(resolve_current_user)],
+) -> list[Pitch]:
+    return await get_pitches_for_user(db=db, user_id=current_user.id)
+
+
+@router.get(
+    "/user/{user_id}",
+    response_model=list[PitchResponse],
+    summary="Get pitches for a specific user",
+)
+async def get_user_pitches_endpoint(
+    user_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> list[Pitch]:
+    return await get_pitches_for_user(db=db, user_id=user_id)
 
 
 @router.get(
     "/{pitch_id}",
     response_model=PitchResponse,
     summary="Get details of a specific pitch",
-)
-@router.get(
-    "/api/v1/pitches/{pitch_id}",
-    response_model=PitchResponse,
-    include_in_schema=False,
 )
 async def get_pitch_endpoint(
     pitch_id: uuid.UUID,
@@ -117,9 +146,24 @@ async def get_pitch_endpoint(
 )
 async def get_pitch_votes_endpoint(
     pitch_id: uuid.UUID,
+    request: Request,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> PitchVoteResponse:
-    return await get_pitch_votes(db=db, pitch_id=pitch_id)
+    current_user = await resolve_current_user(request=request, db=db)
+    return await get_pitch_votes(db=db, pitch_id=pitch_id, user_id=current_user.id)
+
+
+@router.get(
+    "/{pitch_id}/my-vote",
+    response_model=dict[str, bool | None],
+    summary="Get current user's vote on a pitch",
+)
+async def get_my_pitch_vote_endpoint(
+    pitch_id: uuid.UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: Annotated[Users, Depends(resolve_current_user)],
+) -> dict[str, bool | None]:
+    return await get_user_vote(db=db, pitch_id=pitch_id, user_id=current_user.id)
 
 
 @router.post(
@@ -131,7 +175,7 @@ async def vote_on_pitch_endpoint(
     pitch_id: uuid.UUID,
     vote: PitchVoteRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: Annotated[Users, Depends(get_authenticated_user)],
+    current_user: Annotated[Users, Depends(resolve_current_user)],
 ) -> PitchVoteResponse:
     return await user_vote_on_pitch(
         db=db,
@@ -149,7 +193,7 @@ async def vote_on_pitch_endpoint(
 async def remove_pitch_vote_endpoint(
     pitch_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: Annotated[Users, Depends(get_authenticated_user)],
+    current_user: Annotated[Users, Depends(resolve_current_user)],
 ) -> PitchVoteResponse:
     return await remove_user_vote(
         db=db,
@@ -181,7 +225,7 @@ async def update_pitch_endpoint(
     pitch_id: uuid.UUID,
     pitch_data: PitchCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: Annotated[Users, Depends(get_authenticated_user)],
+    current_user: Annotated[Users, Depends(resolve_current_user)],
 ) -> Pitch:
     await require_pitch_author(db, pitch_id, current_user)
     return await update_pitch(db=db, pitch_id=pitch_id, pitch=pitch_data)
@@ -195,7 +239,7 @@ async def update_pitch_endpoint(
 async def delete_pitch_endpoint(
     pitch_id: uuid.UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: Annotated[Users, Depends(get_authenticated_user)],
+    current_user: Annotated[Users, Depends(resolve_current_user)],
 ) -> dict[str, str]:
     await require_pitch_author(db, pitch_id, current_user)
     return await delete_pitch(db=db, pitch_id=pitch_id)

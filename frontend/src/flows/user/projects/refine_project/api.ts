@@ -40,6 +40,7 @@ export async function requestRefine(
 ): Promise<RefineResponse> {
   const res = await fetch(`/api/user/projects/refine-project/${pitchId}/refine`, {
     method: 'POST',
+    credentials: 'include',
     headers: getHeaders(userId),
     body: JSON.stringify({}),
   });
@@ -58,6 +59,7 @@ export async function getRefineStatus(
 ): Promise<RefineStatusResponse> {
   const res = await fetch(`/api/user/projects/refine-project/${pitchId}/status`, {
     method: 'GET',
+    credentials: 'include',
     headers: getHeaders(userId),
   });
 
@@ -79,6 +81,7 @@ export async function applySuggestion(
     `/api/user/projects/refine-project/${pitchId}/suggestions/${suggestionId}/apply`,
     {
       method: 'POST',
+      credentials: 'include',
       headers: getHeaders(userId),
       body: JSON.stringify({ version_token: versionToken }),
     }
@@ -101,6 +104,7 @@ export async function dismissSuggestion(
     `/api/user/projects/refine-project/${pitchId}/suggestions/${suggestionId}/dismiss`,
     {
       method: 'POST',
+      credentials: 'include',
       headers: getHeaders(userId),
     }
   );

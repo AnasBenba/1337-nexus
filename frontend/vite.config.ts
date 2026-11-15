@@ -16,9 +16,18 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      '/auth': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
       '/messages': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        bypass(req) {
+          if (req.headers.accept?.includes('text/html')) {
+            return '/index.html';
+          }
+        },
       },
       '/socket.io': {
         target: 'http://localhost:8000',

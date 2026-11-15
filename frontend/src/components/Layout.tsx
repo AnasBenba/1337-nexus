@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 
 export const Layout: React.FC = () => {
   const [unreadMessages, setUnreadMessages] = useState<number>(0);
+  const location = useLocation();
+  const isHomeRoute = location.pathname === '/' || location.pathname === '/home';
 
   useEffect(() => {
     let isMounted = true;
@@ -133,7 +135,7 @@ export const Layout: React.FC = () => {
             end
             className={({ isActive }) =>
               `flex items-center justify-between px-space-md py-space-sm rounded-DEFAULT transition-all ${
-                isActive
+                isActive || isHomeRoute
                   ? 'bg-primary-fixed text-on-primary-fixed font-bold'
                   : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
               }`

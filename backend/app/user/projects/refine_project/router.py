@@ -1,11 +1,12 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Query, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
+from app.oauth.dependencies import get_authenticated_user
 from app.oauth.user import Users
 from app.user.projects.refine_project.schemas import (
     ApplySuggestionRequest,
@@ -28,16 +29,22 @@ async def get_current_user_dep(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db_session)],
     x_user_id: Annotated[str | None, Header()] = None,
-    user_id: Annotated[int | None, Query()] = None,
+    user_id: Annotated[uuid.UUID | None, Query()] = None,
 ) -> Users:
     """
     Resolve the current authenticated user.
-    Supports X-User-Id header, query param, or fallback to database user.
+    Supports authenticated cookie, X-User-Id header, query param, or fallback to database user.
     """
+    # 0. Authenticated session cookie
+    try:
+        return await get_authenticated_user(request=request, db=db)
+    except HTTPException:
+        pass
+
     # 1. Explicit Header
     if x_user_id:
         try:
-            uid = int(x_user_id)
+            uid = uuid.UUID(x_user_id)
             user = await db.get(Users, uid)
             if user:
                 return user
@@ -45,7 +52,7 @@ async def get_current_user_dep(
             pass
 
     # 2. Query parameter
-    if user_id:
+    if user_id is not None:
         user = await db.get(Users, user_id)
         if user:
             return user
@@ -58,7 +65,6 @@ async def get_current_user_dep(
 
     # 4. Dev seed user if database is empty
     dev_user = Users(
-        id=1,
         login="sel-bou",
         fullname="Soufiane El B.",
         role="user",

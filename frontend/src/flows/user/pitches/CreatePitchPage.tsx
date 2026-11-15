@@ -1,4 +1,5 @@
-import { FormEvent, useMemo, useRef, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { RefineProjectModal } from '@/flows/user/projects/refine_project';
@@ -79,6 +80,8 @@ export const CATEGORIES = [
 export type PitchCategory = (typeof CATEGORIES)[number]['id'];
 export type PitchStatus = 'draft' | 'published';
 
+type ViewMode = 'hub' | 'write' | 'detail';
+
 type PitchForm = {
   title: string;
   description: string;
@@ -86,13 +89,14 @@ type PitchForm = {
   category: PitchCategory | '';
 };
 
-type CreatedPitch = {
+type SavedPitch = {
   id: string;
   title: string;
   state: string;
   category: string;
   description: string | null;
   content: string;
+  created_at?: string | null;
 };
 
 const emptyForm: PitchForm = {
@@ -101,6 +105,10 @@ const emptyForm: PitchForm = {
   content: '',
   category: '',
 };
+
+const CATEGORY_MAP = new Map<string, (typeof CATEGORIES)[number]>(
+  CATEGORIES.map((category) => [category.id, category]),
+);
 
 const TITLE_SUGGESTIONS = [
   'StudySync — 1337 Peer Defense Matcher',
@@ -163,6 +171,101 @@ Build and demonstrate a working prototype of a collaborative code scratchpad for
   },
 };
 
+const markdownComponents = {
+  h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h1
+      className="text-xl font-extrabold text-on-surface border-b pb-1 mt-4 mb-2"
+      {...props}
+    />
+  ),
+  h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h2
+      className="text-base font-bold text-on-surface border-b border-outline-variant/30 pb-1 mt-3 mb-2"
+      {...props}
+    />
+  ),
+  h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
+    <h3 className="text-sm font-semibold text-on-surface mt-2 mb-1" {...props} />
+  ),
+  p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
+    <p className="text-sm text-on-surface-variant leading-relaxed mb-2" {...props} />
+  ),
+  ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
+    <ul className="list-disc list-inside space-y-1 text-sm text-on-surface-variant my-2" {...props} />
+  ),
+  ol: (props: React.HTMLAttributes<HTMLOListElement>) => (
+    <ol className="list-decimal list-inside space-y-1 text-sm text-on-surface-variant my-2" {...props} />
+  ),
+  blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
+    <blockquote
+      className="border-l-4 border-brand bg-brand/5 px-3 py-1.5 rounded-r text-on-surface-variant italic text-xs my-2"
+      {...props}
+    />
+  ),
+  code: ({ children, ...props }: React.HTMLAttributes<HTMLElement>) => (
+    <code
+      className="bg-surface-container px-1.5 py-0.5 rounded font-mono text-xs text-primary font-semibold"
+      {...props}
+    >
+      {children}
+    </code>
+  ),
+};
+
+function formatRelativeDate(isoDate?: string | null): string {
+  if (!isoDate) return 'Recently';
+  const date = new Date(isoDate);
+  const timestamp = date.getTime();
+  if (Number.isNaN(timestamp)) return 'Recently';
+
+  const now = new Date();
+  const diffSeconds = Math.floor((now.getTime() - timestamp) / 1000);
+  if (diffSeconds < 60) return 'Just now';
+
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+  });
+}
+
+function getExcerpt(pitch: SavedPitch): string {
+  if (pitch.description && pitch.description.trim()) {
+    return pitch.description.trim();
+  }
+  const plain = pitch.content
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^\s*[-*+]\s+(\[[ xX]\]\s+)?/gm, '')
+    .replace(/[*_`>#]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!plain) return 'No summary provided yet.';
+  return plain.length > 150 ? `${plain.slice(0, 147).trimEnd()}...` : plain;
+}
+
+function getStatusBadgeClasses(state: string): string {
+  switch (state.toLowerCase()) {
+    case 'published':
+      return 'bg-emerald-500/15 text-emerald-700 border-emerald-500/30';
+    case 'draft':
+      return 'bg-amber-500/15 text-amber-800 border-amber-500/30';
+    default:
+      return 'bg-surface-container text-outline border-outline-variant/60';
+  }
+}
+
 function getErrorMessage(body: unknown): string | null {
   if (typeof body !== 'object' || body === null || !('detail' in body)) {
     return null;
@@ -188,6 +291,15 @@ function getErrorMessage(body: unknown): string | null {
   return null;
 }
 
+class HttpStatusError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
 async function fetchPitchApi<T = unknown>(url: string, options: RequestInit): Promise<T> {
   let response: Response;
   try {
@@ -211,20 +323,27 @@ async function fetchPitchApi<T = unknown>(url: string, options: RequestInit): Pr
   if (!response.ok) {
     const errorMsg = getErrorMessage(data);
     if (errorMsg) {
-      throw new Error(errorMsg);
+      throw new HttpStatusError(response.status, errorMsg);
     }
     if (response.status === 401) {
-      throw new Error('Authentication required: Please sign in via 42 Intra to save or publish pitches.');
+      throw new HttpStatusError(
+        401,
+        'Authentication required: Please sign in via 42 Intra to view or save your pitches.',
+      );
     }
     if (response.status === 403) {
-      throw new Error('Permission denied: You can only edit your own pitches.');
+      throw new HttpStatusError(403, 'Permission denied: You can only edit your own pitches.');
     }
     if (response.status === 500 || response.status === 502 || response.status === 504) {
-      throw new Error(
+      throw new HttpStatusError(
+        response.status,
         text.trim() || 'Backend server is not responding (port 8000). Please make sure the backend service is running.',
       );
     }
-    throw new Error(text.trim() || `Request failed with HTTP status ${response.status}`);
+    throw new HttpStatusError(
+      response.status,
+      text.trim() || `Request failed with HTTP status ${response.status}`,
+    );
   }
 
   if (data === null) {
@@ -235,19 +354,111 @@ async function fetchPitchApi<T = unknown>(url: string, options: RequestInit): Pr
 }
 
 export const CreatePitchPage = () => {
+  const [viewMode, setViewMode] = useState<ViewMode>('hub');
+  const [myPitches, setMyPitches] = useState<SavedPitch[]>([]);
+  const [loadingPitches, setLoadingPitches] = useState(true);
+  const [authRequired, setAuthRequired] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>(undefined);
+
   const [form, setForm] = useState<PitchForm>(emptyForm);
-  const [createdPitch, setCreatedPitch] = useState<CreatedPitch | null>(null);
+  const [createdPitch, setCreatedPitch] = useState<SavedPitch | null>(null);
   const [error, setError] = useState('');
   const [notification, setNotification] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [preparingRefine, setPreparingRefine] = useState(false);
   const [isRefinerOpen, setIsRefinerOpen] = useState(false);
   const [editorMode, setEditorMode] = useState<'write' | 'split' | 'preview'>('split');
   const [categoryQuery, setCategoryQuery] = useState('');
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const loadMyPitches = useCallback(async () => {
+    setLoadingPitches(true);
+    setError('');
+
+    try {
+      const [pitchesRes, meRes] = await Promise.allSettled([
+        fetchPitchApi<SavedPitch[]>('/api/v1/user/pitches/me', {
+          credentials: 'include',
+        }),
+        fetch('/api/v1/users/me', { credentials: 'include' }),
+      ]);
+
+      if (meRes.status === 'fulfilled' && meRes.value.ok) {
+        const meData = (await meRes.value.json()) as { id?: string };
+        if (typeof meData?.id === 'string') {
+          setCurrentUserId(meData.id);
+        }
+      }
+
+      if (pitchesRes.status === 'fulfilled') {
+        setMyPitches(pitchesRes.value);
+        setAuthRequired(false);
+      } else {
+        const reason = pitchesRes.reason;
+        if (reason instanceof HttpStatusError && reason.status === 401) {
+          setAuthRequired(true);
+          setMyPitches([]);
+        } else {
+          setError(
+            reason instanceof Error ? reason.message : 'Unable to load your pitches right now.',
+          );
+        }
+      }
+    } finally {
+      setLoadingPitches(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadMyPitches();
+  }, [loadMyPitches]);
+
   const updateForm = <K extends keyof PitchForm>(key: K, value: PitchForm[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const populateFormFromPitch = (pitch: SavedPitch) => {
+    const matchedCategory = CATEGORY_MAP.has(pitch.category)
+      ? (pitch.category as PitchCategory)
+      : '';
+    setForm({
+      title: pitch.title,
+      description: pitch.description ?? '',
+      content: pitch.content,
+      category: matchedCategory,
+    });
+  };
+
+  const startNewPitch = () => {
+    setCreatedPitch(null);
+    setForm(emptyForm);
+    setError('');
+    setNotification(null);
+    setViewMode('write');
+  };
+
+  const openPitchDetail = (pitch: SavedPitch) => {
+    setCreatedPitch(pitch);
+    populateFormFromPitch(pitch);
+    setError('');
+    setNotification(null);
+    setViewMode('detail');
+  };
+
+  const openPitchEditor = (pitch: SavedPitch) => {
+    setCreatedPitch(pitch);
+    populateFormFromPitch(pitch);
+    setError('');
+    setNotification(null);
+    setViewMode('write');
+  };
+
+  const backToHub = () => {
+    setError('');
+    setNotification(null);
+    setViewMode('hub');
+    void loadMyPitches();
   };
 
   // Word and character stats
@@ -294,7 +505,6 @@ export const CreatePitchPage = () => {
     const newContent = text.slice(0, start) + prefix + insertion + suffix + text.slice(end);
     updateForm('content', newContent);
 
-    // Reposition cursor
     setTimeout(() => {
       textarea.focus();
       const newCursorPos = start + prefix.length + insertion.length;
@@ -314,8 +524,10 @@ export const CreatePitchPage = () => {
     updateForm('content', template.markdown);
   };
 
-  // Simple and direct save action: handles both 'draft' and 'published'
-  const handleSave = async (targetStatus: PitchStatus) => {
+  // Step 1 ("Next"): persist pitch to DB as draft so it has a DB id, then move to 'detail' view
+  const handleNextStep = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
     if (!form.title.trim()) {
       setError('Please provide a title for your pitch.');
       return;
@@ -334,172 +546,130 @@ export const CreatePitchPage = () => {
     setNotification(null);
 
     try {
-      const pitchId = createdPitch?.id;
       const pitchTitle = form.title.trim();
       const pitchDesc = form.description.trim() || null;
       const pitchContent = form.content.trim();
+      const existingId = createdPitch?.id;
 
-      if (pitchId) {
-        // Update existing pitch
-        await fetchPitchApi(`/api/v1/user/pitches/${pitchId}`, {
-          method: 'PUT',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: pitchTitle,
-            description: pitchDesc,
-            content: pitchContent,
-            category: form.category,
-            status: targetStatus,
-          }),
-        });
+      const saved = existingId
+        ? await fetchPitchApi<SavedPitch>(`/api/v1/user/pitches/${existingId}`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: pitchTitle,
+              description: pitchDesc,
+              content: pitchContent,
+              category: form.category,
+              status: 'draft',
+            }),
+          })
+        : await fetchPitchApi<SavedPitch>('/api/v1/user/pitches', {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: pitchTitle,
+              description: pitchDesc,
+              content: pitchContent,
+              category: form.category,
+              status: 'draft',
+            }),
+          });
 
-        setCreatedPitch({
-          id: pitchId,
-          title: pitchTitle,
-          state: targetStatus,
-          category: form.category,
-          description: pitchDesc,
-          content: pitchContent,
-        });
-
-        setNotification(
-          targetStatus === 'published'
-            ? '🚀 Pitch published successfully to the campus community!'
-            : '💾 Pitch draft saved successfully.',
-        );
-      } else {
-        // Create new pitch
-        const data = await fetchPitchApi<{
-          id: string;
-          title: string;
-          state: string;
-        }>('/api/v1/user/pitches', {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: pitchTitle,
-            description: pitchDesc,
-            content: pitchContent,
-            category: form.category,
-            status: targetStatus,
-          }),
-        });
-
-        setCreatedPitch({
-          id: data.id,
-          title: data.title,
-          state: data.state,
-          category: form.category,
-          description: pitchDesc,
-          content: pitchContent,
-        });
-
-        setNotification(
-          targetStatus === 'published'
-            ? '🚀 Pitch published successfully to the campus community!'
-            : '💾 Pitch draft saved successfully.',
-        );
-      }
-    } catch (saveError) {
-      setError(
-        saveError instanceof Error ? saveError.message : 'Could not save pitch.',
+      setCreatedPitch(saved);
+      setMyPitches((prev) => {
+        const filtered = prev.filter((item) => item.id !== saved.id);
+        return [saved, ...filtered];
+      });
+      setNotification(
+        'Pitch saved to the database! You can now optionally refine it with AI, keep it as a draft, or publish it.',
       );
+      setViewMode('detail');
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'Could not save pitch.');
     } finally {
       setSaving(false);
     }
   };
 
-  // Direct trigger when finished writing: saves draft seamlessly and opens RefineProjectModal
-  const handleRefineWithAI = async () => {
-    if (!form.title.trim()) {
-      setError('Please provide a pitch title before refining with AI.');
-      return;
-    }
-    if (!form.category) {
-      setError('Please select a category before refining with AI.');
-      return;
-    }
-    if (!form.content.trim()) {
-      setError('Please write your pitch idea or problem statement before refining with AI.');
-      return;
-    }
+  // Step 2 ("Save as Draft" / "Publish Pitch" on the detail screen)
+  const handleSetPitchStatus = async (targetStatus: PitchStatus) => {
+    if (!createdPitch) return;
 
     setSaving(true);
     setError('');
+    setNotification(null);
 
     try {
-      let pitchId = createdPitch?.id;
-      const pitchTitle = form.title.trim();
-      const pitchDesc = form.description.trim() || null;
-      const pitchContent = form.content.trim();
-
-      if (pitchId) {
-        // Pitch already exists, update draft with current editor state
-        await fetchPitchApi(`/api/v1/user/pitches/${pitchId}`, {
+      const updated = await fetchPitchApi<SavedPitch>(
+        `/api/v1/user/pitches/${createdPitch.id}`,
+        {
           method: 'PUT',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            title: pitchTitle,
-            description: pitchDesc,
-            content: pitchContent,
-            category: form.category,
-            status: createdPitch?.state || 'draft',
+            title: createdPitch.title,
+            description: createdPitch.description,
+            content: createdPitch.content,
+            category: createdPitch.category,
+            status: targetStatus,
           }),
-        });
+        },
+      );
 
-        setCreatedPitch((prev) =>
-          prev
-            ? {
-                ...prev,
-                title: pitchTitle,
-                description: pitchDesc,
-                content: pitchContent,
-              }
-            : null,
-        );
-      } else {
-        // Save new pitch draft
-        const data = await fetchPitchApi<{
-          id: string;
-          title: string;
-          state: string;
-        }>('/api/v1/user/pitches', {
-          method: 'POST',
+      setCreatedPitch(updated);
+      setMyPitches((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      setNotification(
+        targetStatus === 'published'
+          ? '🚀 Pitch published successfully to the 1337 campus feed!'
+          : '💾 Pitch saved as draft. You can come back and refine or publish it later.',
+      );
+    } catch (statusError) {
+      setError(statusError instanceof Error ? statusError.message : 'Could not update pitch status.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Trigger AI Refiner from detail mode (ensures pitch is in 'draft' status in DB first)
+  const handleOpenRefine = async () => {
+    if (!createdPitch) return;
+
+    setError('');
+    if (createdPitch.state.toLowerCase() === 'draft') {
+      setIsRefinerOpen(true);
+      return;
+    }
+
+    setPreparingRefine(true);
+    try {
+      const updated = await fetchPitchApi<SavedPitch>(
+        `/api/v1/user/pitches/${createdPitch.id}`,
+        {
+          method: 'PUT',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            title: pitchTitle,
-            description: pitchDesc,
-            content: pitchContent,
-            category: form.category,
+            title: createdPitch.title,
+            description: createdPitch.description,
+            content: createdPitch.content,
+            category: createdPitch.category,
             status: 'draft',
           }),
-        });
-
-        pitchId = data.id;
-        setCreatedPitch({
-          id: data.id,
-          title: data.title,
-          state: data.state,
-          category: form.category,
-          description: pitchDesc,
-          content: pitchContent,
-        });
-      }
-
-      // Open the AI Refiner modal
+        },
+      );
+      setCreatedPitch(updated);
+      setMyPitches((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
       setIsRefinerOpen(true);
-    } catch (refineError) {
+    } catch (refinePrepError) {
       setError(
-        refineError instanceof Error
-          ? refineError.message
-          : 'Could not initialize AI pitch refiner.',
+        refinePrepError instanceof Error
+          ? refinePrepError.message
+          : 'Could not prepare this pitch for AI refinement.',
       );
     } finally {
-      setSaving(false);
+      setPreparingRefine(false);
     }
   };
 
@@ -507,68 +677,451 @@ export const CreatePitchPage = () => {
   const handlePitchUpdated = async () => {
     if (!createdPitch?.id) return;
     try {
-      const data = await fetchPitchApi<{
-        content?: string;
-        title?: string;
-        description?: string | null;
-      }>(`/api/v1/user/pitches/${createdPitch.id}`, {
-        credentials: 'include',
-      });
-      if (typeof data.content === 'string') {
-        updateForm('content', data.content);
-      }
-      if (typeof data.title === 'string') {
-        updateForm('title', data.title);
-      }
-      if (typeof data.description === 'string' || data.description === null) {
-        updateForm('description', data.description || '');
-      }
-      setCreatedPitch((prev) =>
-        prev
-          ? {
-              ...prev,
-              title: data.title ?? prev.title,
-              content: data.content ?? prev.content,
-              description: data.description ?? prev.description,
-            }
-          : null,
+      const refreshed = await fetchPitchApi<SavedPitch>(
+        `/api/v1/user/pitches/${createdPitch.id}`,
+        { credentials: 'include' },
       );
-      setNotification('✨ AI critique suggestions applied to your idea!');
-      setTimeout(() => setNotification(null), 5000);
+      setCreatedPitch(refreshed);
+      populateFormFromPitch(refreshed);
+      setMyPitches((prev) => prev.map((item) => (item.id === refreshed.id ? refreshed : item)));
+      setNotification('✨ AI critique suggestions applied to your pitch!');
     } catch {
       // Non-critical background refresh
     }
   };
 
-  const handleFormSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    // Default form submit saves as draft
-    handleSave('draft');
-  };
+  // ============================================================================
+  // VIEW 1: MY PITCHES HUB
+  // ============================================================================
+  if (viewMode === 'hub') {
+    return (
+      <div className="mx-auto max-w-6xl space-y-6 pb-16">
+        {/* Hub Header */}
+        <section className="flex flex-col gap-5 rounded-3xl border border-outline-variant/50 bg-gradient-to-br from-surface-container-lowest via-surface-container-low to-primary-fixed/40 p-6 md:p-8 shadow-sm md:flex-row md:items-center md:justify-between">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary-fixed px-3 py-1 text-xs font-mono font-bold text-on-primary-fixed">
+              <span className="material-symbols-outlined text-[15px] text-primary">folder_special</span>
+              <span>Pitch Workspace</span>
+            </div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-on-surface lg:text-4xl">
+              Your Pitches
+            </h1>
+            <p className="text-sm leading-relaxed text-on-surface-variant">
+              Select one of your existing pitches to view, refine with AI later, or publish — or start
+              a brand new pitch from scratch.
+            </p>
+          </div>
 
+          <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => void loadMyPitches()}
+              disabled={loadingPitches}
+              title="Refresh my pitches"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-outline-variant/70 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all disabled:opacity-50"
+            >
+              <span className={`material-symbols-outlined text-[20px] ${loadingPitches ? 'animate-spin' : ''}`}>
+                refresh
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={startNewPitch}
+              className="inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-3 text-sm font-bold text-white shadow-md shadow-brand/25 transition-all hover:bg-brand-hover active:scale-95"
+            >
+              <span className="material-symbols-outlined text-[20px]">add_circle</span>
+              <span>Create New Pitch</span>
+            </button>
+          </div>
+        </section>
+
+        {/* Auth Notice or Error */}
+        {authRequired && (
+          <div
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-amber-50 p-4 text-sm text-amber-900 shadow-sm"
+            role="status"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="material-symbols-outlined text-amber-700">lock</span>
+              <span>Sign in via 42 Intra to load your saved pitches and persist new ones.</span>
+            </div>
+            <a
+              href="/auth/login"
+              className="rounded-xl bg-amber-900 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-amber-800 transition-colors"
+            >
+              Sign in with 42 Intra
+            </a>
+          </div>
+        )}
+
+        {error && (
+          <div
+            className="flex items-center justify-between gap-3 rounded-2xl border border-error/30 bg-error-container p-4 text-sm text-on-error-container shadow-sm"
+            role="alert"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="material-symbols-outlined text-xl text-error">error</span>
+              <span className="font-medium">{error}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => void loadMyPitches()}
+              className="rounded-xl bg-surface-container-lowest px-3 py-1.5 text-xs font-bold text-on-surface hover:bg-surface-container"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* My Pitches Grid / Empty State */}
+        {loadingPitches ? (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={index}
+                className="animate-pulse rounded-3xl border border-outline-variant/50 bg-surface-container-lowest p-6 space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="h-6 w-28 rounded-full bg-surface-container" />
+                  <div className="h-5 w-16 rounded-full bg-surface-container" />
+                </div>
+                <div className="h-6 w-2/3 rounded-lg bg-surface-container" />
+                <div className="space-y-2">
+                  <div className="h-4 w-full rounded bg-surface-container-low" />
+                  <div className="h-4 w-4/5 rounded bg-surface-container-low" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : myPitches.length === 0 ? (
+          <section className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-outline-variant bg-surface-container-lowest px-6 py-16 text-center space-y-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-fixed text-primary">
+              <span className="material-symbols-outlined text-3xl">edit_note</span>
+            </div>
+            <div className="space-y-1 max-w-md">
+              <h2 className="text-lg font-bold text-on-surface">
+                You haven&apos;t created any pitches yet
+              </h2>
+              <p className="text-sm text-on-surface-variant">
+                Draft your idea first, save it to the database, and optionally refine it with the
+                1337 AI Copilot whenever you&apos;re ready.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={startNewPitch}
+              className="inline-flex items-center gap-2 rounded-2xl bg-brand px-6 py-3 text-sm font-bold text-white shadow-md shadow-brand/20 hover:bg-brand-hover transition-all"
+            >
+              <span className="material-symbols-outlined text-[20px]">add</span>
+              <span>Create New Pitch</span>
+            </button>
+          </section>
+        ) : (
+          <section className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            {myPitches.map((pitch) => {
+              const catMeta = CATEGORY_MAP.get(pitch.category);
+              return (
+                <article
+                  key={pitch.id}
+                  onClick={() => openPitchDetail(pitch)}
+                  className="group cursor-pointer flex flex-col justify-between rounded-3xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-sm transition-all hover:border-brand/60 hover:shadow-md"
+                >
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-fixed/80 px-3 py-1 text-xs font-semibold text-on-primary-fixed">
+                        <span className="material-symbols-outlined text-[15px] text-primary">
+                          {catMeta?.icon ?? 'category'}
+                        </span>
+                        <span>{catMeta?.name ?? pitch.category}</span>
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold capitalize ${getStatusBadgeClasses(pitch.state)}`}
+                        >
+                          {pitch.state}
+                        </span>
+                        <span className="font-mono text-[11px] text-outline">
+                          {formatRelativeDate(pitch.created_at)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <h2 className="text-lg font-extrabold tracking-tight text-on-surface group-hover:text-primary transition-colors line-clamp-2">
+                      {pitch.title}
+                    </h2>
+
+                    <p className="text-sm leading-relaxed text-on-surface-variant line-clamp-3">
+                      {getExcerpt(pitch)}
+                    </p>
+                  </div>
+
+                  <div className="mt-5 flex items-center justify-between border-t border-outline-variant/40 pt-4">
+                    <span className="font-mono text-[11px] text-outline truncate max-w-[180px]">
+                      ID: {pitch.id}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-brand/10 px-3 py-1.5 text-xs font-bold text-brand group-hover:bg-brand group-hover:text-white transition-all">
+                      <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
+                      <span>View &amp; Refine</span>
+                    </span>
+                  </div>
+                </article>
+              );
+            })}
+          </section>
+        )}
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // VIEW 3: PITCH DETAIL, OPTIONAL AI REFINE & PUBLISH/DRAFT
+  // ============================================================================
+  if (viewMode === 'detail' && createdPitch) {
+    const categoryMeta = CATEGORY_MAP.get(createdPitch.category);
+    const isDraft = createdPitch.state.toLowerCase() === 'draft';
+
+    return (
+      <div className="mx-auto max-w-5xl space-y-6 pb-16">
+        {/* Top Action Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={backToHub}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-outline-variant/70 bg-surface-container-lowest px-3.5 py-2 text-xs font-bold text-on-surface hover:bg-surface-container transition-all"
+          >
+            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+            <span>Back to My Pitches</span>
+          </button>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => openPitchEditor(createdPitch)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-outline-variant/70 bg-surface-container-lowest px-3.5 py-2 text-xs font-bold text-on-surface hover:bg-surface-container transition-all"
+            >
+              <span className="material-symbols-outlined text-[16px]">edit</span>
+              <span>Edit Pitch</span>
+            </button>
+            <button
+              type="button"
+              onClick={startNewPitch}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-outline-variant/70 bg-surface-container-lowest px-3.5 py-2 text-xs font-bold text-on-surface hover:bg-surface-container transition-all"
+            >
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              <span>Create New Pitch</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Ephemeral Notification */}
+        {notification && (
+          <div
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-50 p-4 text-sm text-emerald-900 shadow-sm"
+            role="status"
+          >
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-emerald-600">check_circle</span>
+              <span className="font-semibold">{notification}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              {createdPitch.state.toLowerCase() === 'published' && (
+                <Link to="/" className="text-xs font-bold text-emerald-800 underline">
+                  View on Home Feed →
+                </Link>
+              )}
+              <button
+                type="button"
+                onClick={() => setNotification(null)}
+                className="text-xs text-emerald-700 hover:underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Error Banner */}
+        {error && (
+          <div
+            className="flex items-center gap-3 rounded-2xl border border-error/30 bg-error-container p-4 text-sm text-on-error-container shadow-sm"
+            role="alert"
+          >
+            <span className="material-symbols-outlined text-xl text-error">error</span>
+            <span className="font-medium">{error}</span>
+          </div>
+        )}
+
+        {/* Saved Pitch Overview Card */}
+        <section className="rounded-3xl border border-outline-variant/60 bg-surface-container-lowest p-6 md:p-8 shadow-sm space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant/40 pb-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-fixed px-3 py-1 text-xs font-semibold text-on-primary-fixed">
+                <span className="material-symbols-outlined text-[15px] text-primary">
+                  {categoryMeta?.icon ?? 'category'}
+                </span>
+                <span>{categoryMeta?.name ?? createdPitch.category}</span>
+              </span>
+              <span
+                className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold capitalize ${getStatusBadgeClasses(createdPitch.state)}`}
+              >
+                {createdPitch.state}
+              </span>
+              <span className="font-mono text-xs text-outline">
+                {formatRelativeDate(createdPitch.created_at)}
+              </span>
+            </div>
+            <span className="font-mono text-[11px] text-outline">
+              ID: {createdPitch.id}
+            </span>
+          </div>
+
+          <div className="space-y-2">
+            <h1 className="text-2xl font-extrabold tracking-tight text-on-surface md:text-3xl">
+              {createdPitch.title}
+            </h1>
+            {createdPitch.description && (
+              <p className="text-sm font-medium text-on-surface-variant">
+                {createdPitch.description}
+              </p>
+            )}
+          </div>
+
+          <div className="rounded-2xl border border-outline-variant/40 bg-surface/70 p-5">
+            <div className="prose prose-slate max-w-none text-sm leading-relaxed text-on-surface">
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                {createdPitch.content}
+              </ReactMarkdown>
+            </div>
+          </div>
+        </section>
+
+        {/* Optional AI Pitch Refiner Card */}
+        <section className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-3xl border border-brand/40 bg-gradient-to-r from-brand/15 via-brand/5 to-surface-container-low p-6 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand text-white shadow-md shadow-brand/25">
+              <span className="material-symbols-outlined text-2xl animate-pulse">auto_awesome</span>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-on-surface">
+                  Refine Your Pitch with AI (Optional)
+                </h2>
+                <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-mono font-bold text-brand">
+                  1337 Copilot
+                </span>
+              </div>
+              <p className="text-xs text-on-surface-variant">
+                {isDraft
+                  ? 'Your pitch is saved in the database. Run an AI critique on your problem statement, scope, and milestones — or skip straight to publishing.'
+                  : 'This pitch is currently published. Clicking Refine with AI will switch it back to draft so you can review and apply AI improvements.'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={preparingRefine || saving}
+            onClick={() => void handleOpenRefine()}
+            className="inline-flex items-center gap-2 rounded-2xl bg-brand px-5 py-3 text-xs font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand-hover active:scale-95 disabled:opacity-50 shrink-0"
+          >
+            {preparingRefine ? (
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+            ) : (
+              <span className="material-symbols-outlined text-base">auto_awesome</span>
+            )}
+            <span>Refine with AI</span>
+          </button>
+        </section>
+
+        {/* Final Decision Bar: Save as Draft or Publish Pitch */}
+        <section className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-3xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-sm">
+          <p className="text-xs text-on-surface-variant">
+            Keep this pitch private as a draft to refine later, or publish it to share with the
+            1337 community feed.
+          </p>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => void handleSetPitchStatus('draft')}
+              className="flex items-center gap-2 rounded-2xl border border-outline-variant/70 bg-surface px-5 py-3 text-xs font-bold text-on-surface hover:bg-surface-container transition-all disabled:opacity-50"
+            >
+              {saving ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              ) : (
+                <span className="material-symbols-outlined text-base">save</span>
+              )}
+              <span>Save as Draft</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => void handleSetPitchStatus('published')}
+              className="flex items-center gap-2 rounded-2xl bg-primary px-6 py-3 text-xs font-bold text-on-primary shadow-md transition-all hover:bg-primary/90 disabled:opacity-50"
+            >
+              {saving ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <span className="material-symbols-outlined text-base">send</span>
+              )}
+              <span>Publish Pitch</span>
+            </button>
+          </div>
+        </section>
+
+        {/* AI Refiner Modal */}
+        <RefineProjectModal
+          isOpen={isRefinerOpen}
+          onClose={() => setIsRefinerOpen(false)}
+          pitchId={createdPitch.id}
+          projectTitle={createdPitch.title}
+          currentUserId={currentUserId}
+          onPitchUpdated={() => void handlePitchUpdated()}
+        />
+      </div>
+    );
+  }
+
+  // ============================================================================
+  // VIEW 2: PITCH CREATION / EDIT FORM ("Next" saves to DB & opens detail view)
+  // ============================================================================
   return (
     <div className="mx-auto max-w-6xl space-y-8 pb-16">
-      {/* Top Banner / Breadcrumb & Header */}
+      {/* Top Bar: Back to My Pitches */}
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={backToHub}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-outline-variant/70 bg-surface-container-lowest px-3.5 py-2 text-xs font-bold text-on-surface hover:bg-surface-container transition-all"
+        >
+          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          <span>Back to My Pitches</span>
+        </button>
+      </div>
+
+      {/* Top Banner / Breadcrumb & Readiness Meter */}
       <div className="flex flex-col gap-4 border-b border-outline-variant/50 pb-6 md:flex-row md:items-end md:justify-between">
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-xs font-mono font-medium text-outline">
             <span>Pitches &amp; Ideas</span>
             <span>/</span>
-            <span className="text-primary font-bold">New Pitch Incubator</span>
-            <span className="rounded-full bg-primary-fixed px-2 py-0.5 text-[11px] font-sans font-semibold text-on-primary-fixed">
-              Peer Review Ready
+            <span className="text-primary font-bold">
+              {createdPitch ? 'Edit Pitch' : 'New Pitch Incubator'}
             </span>
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-on-surface lg:text-4xl">
-            Pitch Your Idea to 1337
+            {createdPitch ? 'Update Your Pitch' : 'Pitch Your Idea to 1337'}
           </h1>
           <p className="max-w-2xl text-sm leading-relaxed text-on-surface-variant">
-            Articulate the problem, propose your solution, and find passionate peer teammates.
-            Your idea supports live Markdown and can be refined instantly with the 1337 AI Copilot.
+            Articulate the problem and propose your solution. Click <strong>Next</strong> when
+            you&apos;re done to save your pitch and unlock optional AI refinement and publishing.
           </p>
         </div>
 
-        {/* Readiness Meter & AI Refine Shortcut */}
+        {/* Readiness Meter */}
         <div className="flex items-center gap-3 rounded-2xl border border-outline-variant/60 bg-surface-container-low px-4 py-3 shadow-sm">
           <div className="relative flex h-11 w-11 items-center justify-center">
             <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
@@ -594,23 +1147,10 @@ export const CreatePitchPage = () => {
             </span>
           </div>
           <div className="text-xs">
-            <div className="flex items-center gap-2">
-              <p className="font-bold text-on-surface">Pitch Readiness</p>
-              {progress >= 60 && (
-                <button
-                  type="button"
-                  onClick={handleRefineWithAI}
-                  disabled={saving}
-                  className="flex items-center gap-1 rounded-md bg-brand/10 px-2 py-0.5 text-[11px] font-bold text-brand hover:bg-brand hover:text-white transition-all"
-                >
-                  <span className="material-symbols-outlined text-[13px]">auto_awesome</span>
-                  Refine
-                </button>
-              )}
-            </div>
+            <p className="font-bold text-on-surface">Pitch Readiness</p>
             <p className="text-on-surface-variant">
               {progress === 100
-                ? 'Ready to refine or publish!'
+                ? 'Ready for Next step!'
                 : progress >= 60
                   ? 'Idea content required'
                   : 'Title & category needed'}
@@ -618,91 +1158,6 @@ export const CreatePitchPage = () => {
           </div>
         </div>
       </div>
-
-      {/* Ephemeral Notification Banner */}
-      {notification && (
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-50 p-4 text-sm text-emerald-900 shadow-sm transition-all">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-emerald-600">check_circle</span>
-            <span className="font-semibold">{notification}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setNotification(null)}
-            className="text-xs text-emerald-700 hover:underline"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      {/* Success Notification Banner & AI Refiner Trigger */}
-      {createdPitch && (
-        <section
-          className="relative overflow-hidden rounded-3xl border border-brand/40 bg-gradient-to-r from-brand/10 via-brand/5 to-surface-container-lowest p-6 shadow-md transition-all"
-          role="status"
-        >
-          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand text-white">
-                  <span className="material-symbols-outlined text-base">check</span>
-                </span>
-                <span className="text-xs font-mono font-bold uppercase tracking-wider text-brand">
-                  Pitch Saved Successfully
-                </span>
-                <span className="rounded-full bg-surface-container px-2 py-0.5 text-xs font-semibold capitalize text-on-surface">
-                  {createdPitch.state}
-                </span>
-              </div>
-              <h2 className="text-xl font-bold text-on-surface">
-                “{createdPitch.title}”
-              </h2>
-              <p className="text-xs font-mono text-outline">
-                Reference ID: {createdPitch.id} &bull; Category: {createdPitch.category}
-              </p>
-              <p className="text-xs text-on-surface-variant">
-                Your pitch is safely saved. You can run the 1337 AI Pitch Refiner anytime
-                to analyze your problem statement, target users, and defense milestones.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                className="flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand-hover active:scale-95"
-                onClick={handleRefineWithAI}
-                type="button"
-              >
-                <span className="material-symbols-outlined text-base animate-pulse">
-                  auto_awesome
-                </span>
-                Refine with AI
-              </button>
-              <button
-                className="rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-2.5 text-xs font-semibold text-on-surface transition-all hover:bg-surface-container"
-                onClick={() => {
-                  setCreatedPitch(null);
-                  setForm(emptyForm);
-                }}
-                type="button"
-              >
-                Create Another
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* AI Refiner Modal */}
-      {createdPitch && (
-        <RefineProjectModal
-          isOpen={isRefinerOpen}
-          onClose={() => setIsRefinerOpen(false)}
-          pitchId={createdPitch.id}
-          projectTitle={createdPitch.title}
-          onPitchUpdated={handlePitchUpdated}
-        />
-      )}
 
       {/* Error Banner */}
       {error && (
@@ -716,7 +1171,7 @@ export const CreatePitchPage = () => {
       )}
 
       {/* Main Pitch Creation Form */}
-      <form onSubmit={handleFormSubmit} className="space-y-8">
+      <form onSubmit={handleNextStep} className="space-y-8">
         {/* 1. Title Section */}
         <div className="rounded-3xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-sm transition-all md:p-8 space-y-4">
           <div className="flex flex-col justify-between gap-1 sm:flex-row sm:items-center">
@@ -918,7 +1373,7 @@ export const CreatePitchPage = () => {
           />
         </div>
 
-        {/* 4. Idea Workspace & Live Markdown Editor ("Place to write his idea") */}
+        {/* 4. Idea Workspace & Live Markdown Editor */}
         <div className="rounded-3xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-sm transition-all md:p-8 space-y-5">
           <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
             <div>
@@ -1098,37 +1553,7 @@ export const CreatePitchPage = () => {
 
                 {form.content.trim() ? (
                   <div className="prose prose-slate max-w-none text-on-surface leading-relaxed text-sm space-y-3">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        h1: ({ ...props }) => (
-                          <h1 className="text-xl font-extrabold text-on-surface border-b pb-1 mt-4 mb-2" {...props} />
-                        ),
-                        h2: ({ ...props }) => (
-                          <h2 className="text-base font-bold text-on-surface border-b border-outline-variant/30 pb-1 mt-3 mb-2" {...props} />
-                        ),
-                        h3: ({ ...props }) => (
-                          <h3 className="text-sm font-semibold text-on-surface mt-2 mb-1" {...props} />
-                        ),
-                        p: ({ ...props }) => (
-                          <p className="text-sm text-on-surface-variant leading-relaxed mb-2" {...props} />
-                        ),
-                        ul: ({ ...props }) => (
-                          <ul className="list-disc list-inside space-y-1 text-sm text-on-surface-variant my-2" {...props} />
-                        ),
-                        ol: ({ ...props }) => (
-                          <ol className="list-decimal list-inside space-y-1 text-sm text-on-surface-variant my-2" {...props} />
-                        ),
-                        blockquote: ({ ...props }) => (
-                          <blockquote className="border-l-4 border-brand bg-brand/5 px-3 py-1.5 rounded-r text-on-surface-variant italic text-xs my-2" {...props} />
-                        ),
-                        code: ({ children, ...props }) => (
-                          <code className="bg-surface-container px-1.5 py-0.5 rounded font-mono text-xs text-primary font-semibold" {...props}>
-                            {children}
-                          </code>
-                        ),
-                      }}
-                    >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                       {form.content}
                     </ReactMarkdown>
                   </div>
@@ -1157,71 +1582,36 @@ export const CreatePitchPage = () => {
               <span>Server-side HTML sanitization enabled</span>
             </div>
           </div>
-
-          {/* Finished Writing Callout: Refine with AI */}
-          <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border border-brand/40 bg-gradient-to-r from-brand/15 via-brand/5 to-surface-container-low p-4 shadow-sm transition-all hover:border-brand/60">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand text-white shadow-md shadow-brand/25">
-                <span className="material-symbols-outlined text-2xl animate-pulse">auto_awesome</span>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-on-surface">Finished writing your idea?</p>
-                  <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-mono font-bold text-brand">
-                    1337 Copilot
-                  </span>
-                </div>
-                <p className="text-xs text-on-surface-variant">
-                  Have the AI critique your problem statement, target audience, and defense feasibility before sharing.
-                </p>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              disabled={saving}
-              onClick={handleRefineWithAI}
-              className="flex items-center gap-2 rounded-xl bg-brand px-5 py-3 text-xs font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand-hover active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 shrink-0"
-            >
-              <span className="material-symbols-outlined text-base">auto_awesome</span>
-              <span>Refine with AI</span>
-            </button>
-          </div>
         </div>
 
-        {/* 5. Simple Action Bar: Save as Draft & Publish */}
+        {/* 5. Next Step Action Bar (saves pitch to database first, then reveals Refine & Draft/Publish) */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-3xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-sm">
           <p className="text-xs text-on-surface-variant">
-            Save your draft to work on it privately, or publish to share it with the 1337 community.
+            Clicking <strong>Next</strong> saves your pitch to the database so you can review,
+            optionally refine with AI, or publish it.
           </p>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-3">
             <button
               type="button"
-              disabled={saving}
-              onClick={() => handleSave('draft')}
-              className="flex items-center gap-2 rounded-2xl border border-outline-variant/70 bg-surface px-5 py-3 text-xs font-bold text-on-surface hover:bg-surface-container transition-all active:scale-98 disabled:opacity-50"
+              onClick={backToHub}
+              className="rounded-2xl border border-outline-variant/70 bg-surface px-5 py-3 text-xs font-bold text-on-surface hover:bg-surface-container transition-all"
             >
-              {saving ? (
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              ) : (
-                <span className="material-symbols-outlined text-base">save</span>
-              )}
-              <span>Save as Draft</span>
+              Cancel
             </button>
-
             <button
-              type="button"
+              type="submit"
               disabled={saving}
-              onClick={() => handleSave('published')}
-              className="flex items-center gap-2 rounded-2xl bg-brand px-6 py-3 text-xs font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand-hover active:scale-98 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-2xl bg-brand px-7 py-3 text-xs font-bold text-white shadow-md shadow-brand/20 transition-all hover:bg-brand-hover active:scale-95 disabled:opacity-50"
             >
               {saving ? (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
-                <span className="material-symbols-outlined text-base">send</span>
+                <>
+                  <span>Next</span>
+                  <span className="material-symbols-outlined text-base">arrow_forward</span>
+                </>
               )}
-              <span>Publish</span>
             </button>
           </div>
         </div>

@@ -1,6 +1,12 @@
 from app.user.pitches.models import Pitch
 from app.user.pitches.schemas import PitchCategory, PitchCreate, PitchResponse, PitchStatus
-from app.user.pitches.service import create_pitch, get_one_pitch, update_pitch
+from app.user.pitches.service import (
+    create_pitch,
+    get_all_pitches,
+    get_one_pitch,
+    get_pitches_for_user,
+    update_pitch,
+)
 
 __all__ = [
     "Pitch",
@@ -9,6 +15,8 @@ __all__ = [
     "PitchResponse",
     "PitchStatus",
     "create_pitch",
+    "get_all_pitches",
     "get_one_pitch",
+    "get_pitches_for_user",
     "update_pitch",
 ]

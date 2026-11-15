@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from uuid import UUID
 
@@ -59,3 +60,4 @@ class PitchResponse(BaseModel):
     state: PitchStatus
     description: str | None = None
     author_id: UUID | None = None
+    created_at: datetime | None = None
