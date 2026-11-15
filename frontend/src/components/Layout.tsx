@@ -13,6 +13,7 @@ export type LayoutContext = { me: Me; setMe: (me: Me) => void };
 export const Layout: React.FC = () => {
   // undefined = still checking, null = not signed in
   const [me, setMe] = useState<Me | null | undefined>(undefined);
+  const [unreadMessages, setUnreadMessages] = useState<number>(0);
 
   useEffect(() => {
     // Ask /auth/session first: it never answers 401, so a logged-out visitor's console stays
@@ -30,6 +31,36 @@ export const Layout: React.FC = () => {
     if (signedInId === undefined) return;
     connectPresence();
     return disconnectPresence;
+  }, [signedInId]);
+
+  useEffect(() => {
+    if (signedInId === undefined) return;
+    let isMounted = true;
+
+    const fetchCounts = async () => {
+      try {
+        const res = await fetch('/api/v1/messages/unread-count', { credentials: 'include' });
+        if (res.ok) {
+          const data = (await res.json()) as { unread_messages?: number };
+          if (isMounted && typeof data.unread_messages === 'number') {
+            setUnreadMessages(data.unread_messages);
+          }
+        }
+      } catch {
+        // Dev / offline fallback
+      }
+    };
+
+    void fetchCounts();
+    const handleUpdate = () => void fetchCounts();
+    window.addEventListener('messages:unread-updated', handleUpdate);
+    const interval = setInterval(fetchCounts, 15000);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('messages:unread-updated', handleUpdate);
+      clearInterval(interval);
+    };
   }, [signedInId]);
 
   // Renew the 15-minute access token before it runs out while the app is open, so
@@ -99,23 +130,13 @@ export const Layout: React.FC = () => {
             >
               <span className="material-symbols-outlined text-[20px]">dark_mode</span>
             </button>
-            <button
-              type="button"
-              aria-label="Notifications"
-              className="relative w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[20px]">notifications</span>
-              <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-error text-on-error font-label-code-tag text-[10px] flex items-center justify-center font-bold">
-                3
-              </span>
-            </button>
-            <button
-              type="button"
+            <Link
+              to="/messages"
               aria-label="Direct Messages"
               className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer"
             >
               <span className="material-symbols-outlined text-[20px]">chat</span>
-            </button>
+            </Link>
           </div>
 
           <Link to={profilePath} aria-label="My profile" className="rounded-full shadow-sm">
@@ -221,7 +242,7 @@ export const Layout: React.FC = () => {
           </NavLink>
 
           <NavLink
-            to="/projects"
+            to="/opportunities"
             className={({ isActive }) =>
               `flex items-center justify-between px-space-md py-space-sm rounded transition-all ${
                 isActive
@@ -231,12 +252,25 @@ export const Layout: React.FC = () => {
             }
           >
             <div className="flex items-center gap-space-sm">
-              <span className="material-symbols-outlined text-[20px]">folder_open</span>
-              <span className="font-label-md text-label-md">My Projects</span>
+              <span className="material-symbols-outlined text-[20px]">work</span>
+              <span className="font-label-md text-label-md">Opportunities</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-code-tag text-[10px]">
-              2
-            </span>
+          </NavLink>
+
+          <NavLink
+            to="/pitches"
+            className={({ isActive }) =>
+              `flex items-center justify-between px-space-md py-space-sm rounded transition-all ${
+                isActive
+                  ? 'bg-primary-fixed text-on-primary-fixed font-bold'
+                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+              }`
+            }
+          >
+            <div className="flex items-center gap-space-sm">
+              <span className="material-symbols-outlined text-[20px]">edit_note</span>
+              <span className="font-label-md text-label-md">Pitches</span>
+            </div>
           </NavLink>
 
           <NavLink
@@ -253,8 +287,14 @@ export const Layout: React.FC = () => {
               <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
               <span className="font-label-md text-label-md">Messages</span>
             </div>
-            <span className="px-2 py-0.5 rounded-full bg-primary text-on-primary font-label-code-tag text-[10px] font-bold">
-              4
+            <span
+              className={`px-2 py-0.5 rounded-full font-label-code-tag text-[10px] ${
+                unreadMessages > 0
+                  ? 'bg-primary text-on-primary font-bold'
+                  : 'bg-surface-container text-outline'
+              }`}
+            >
+              {unreadMessages}
             </span>
           </NavLink>
 

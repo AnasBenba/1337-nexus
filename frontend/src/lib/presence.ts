@@ -2,7 +2,7 @@ import { io, type Socket } from 'socket.io-client';
 import { refreshSession } from '@/lib/http';
 
 /** Sent by the backend to my friends when I come online / go offline. */
-export type PresenceEvent = { user_id: number; online: boolean };
+export type PresenceEvent = { user_id: string; online: boolean };
 
 let socket: Socket | null = null;
 const listeners = new Set<(event: PresenceEvent) => void>();
@@ -15,6 +15,12 @@ export function connectPresence(): void {
   const s = io('/presence', { withCredentials: true });
   socket = s;
   s.on('presence', (event: PresenceEvent) => listeners.forEach((listener) => listener(event)));
+  s.on('new_dm_notification', () => {
+    window.dispatchEvent(new CustomEvent('messages:unread-updated'));
+  });
+  s.on('dm_read_notification', () => {
+    window.dispatchEvent(new CustomEvent('messages:unread-updated'));
+  });
 
   // The handshake is refused when the access token has expired (e.g. reconnecting after a
   // backend restart). Refresh once and retry; give up if that still fails.

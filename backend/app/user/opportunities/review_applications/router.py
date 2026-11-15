@@ -6,17 +6,38 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_db_session
 from app.oauth.user import Users
 from app.user.dependencies import get_current_user
-from app.user.projects.models import Project
 from app.user.opportunities.browse_opportunities.models import Opportunity
 from app.user.opportunities.match_scoring.service import (
     calculate_match_score,
     score_opportunity_applications,
 )
+from app.user.pitches.models import Pitch
 
+from app.user.opportunities.apply.models import Application
 from .schemas import ReviewedApplicationResponse, UpdateApplicationStatusRequest
 from .service import update_application_status
 
 router = APIRouter(tags=["opportunities"])
+
+
+def _reviewed_application_response(
+    application: Application,
+    match_score: float,
+    applicant: Users | None = None,
+) -> ReviewedApplicationResponse:
+    return ReviewedApplicationResponse(
+        id=application.id,
+        opportunity_id=application.opportunity_id,
+        user_id=application.user_id,
+        applicant_login=applicant.login if applicant is not None else None,
+        applicant_name=applicant.fullname if applicant is not None else None,
+        status=application.status,
+        message=application.message,
+        candidate_skills=application.candidate_skills,
+        match_score=match_score,
+        created_at=application.created_at,
+        updated_at=application.updated_at,
+    )
 
 
 @router.get(
@@ -32,9 +53,9 @@ async def list_applications(
         opportunity = await db.get(Opportunity, opportunity_id)
         if opportunity is None:
             raise HTTPException(status_code=404, detail="Opportunity not found")
-        project = await db.get(Project, opportunity.project_id)
-        if project is None or project.owner_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Only the project owner can review applications")
+        pitch = await db.get(Pitch, opportunity.project_id)
+        if pitch is None or pitch.author_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Only the pitch owner can review applications")
         applications = await score_opportunity_applications(
             db=db,
             opportunity_id=opportunity_id,
@@ -45,13 +66,11 @@ async def list_applications(
             detail=str(error),
         ) from error
 
-    return [
-        ReviewedApplicationResponse.model_validate(
-            application,
-            from_attributes=True,
-        ).model_copy(update={"match_score": score})
-        for application, score in applications
-    ]
+    results: list[ReviewedApplicationResponse] = []
+    for application, score in applications:
+        applicant = await db.get(Users, application.user_id)
+        results.append(_reviewed_application_response(application, score, applicant))
+    return results
 
 
 @router.patch(
@@ -95,7 +114,5 @@ async def change_application_status(
         opportunity.required_skills,
         application.candidate_skills,
     )
-    return ReviewedApplicationResponse.model_validate(
-        application,
-        from_attributes=True,
-    ).model_copy(update={"match_score": score})
+    applicant = await db.get(Users, application.user_id)
+    return _reviewed_application_response(application, score, applicant)

@@ -42,3 +42,23 @@ class CardResponse(BaseModel):
     rank: str
 
     model_config = {"from_attributes": True}
+
+
+class ColumnDetailResponse(BaseModel):
+    id: UUID
+    board_id: UUID
+    name: str
+    position: int
+    cards: list[CardResponse] = []
+
+    model_config = {"from_attributes": True}
+
+
+class BoardDetailResponse(BaseModel):
+    id: UUID
+    team_id: UUID
+    name: str
+    board_revision: int
+    columns: list[ColumnDetailResponse] = []
+
+    model_config = {"from_attributes": True}

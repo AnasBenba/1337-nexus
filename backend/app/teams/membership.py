@@ -7,7 +7,7 @@ from .models import WorkspaceTeam, WorkspaceTeamMember
 
 
 async def invite_member(
-    db: AsyncSession, *, team_id: UUID, inviter_id: int, user_id: int
+    db: AsyncSession, *, team_id: UUID, inviter_id: UUID, user_id: UUID
 ) -> WorkspaceTeamMember:
     team = await db.get(WorkspaceTeam, team_id)
     if team is None:
@@ -30,7 +30,7 @@ async def invite_member(
 
 
 async def accept_member(
-    db: AsyncSession, *, team_id: UUID, user_id: int
+    db: AsyncSession, *, team_id: UUID, user_id: UUID
 ) -> WorkspaceTeamMember:
     member = await db.scalar(
         select(WorkspaceTeamMember).where(
@@ -49,7 +49,7 @@ async def accept_member(
 
 
 async def remove_member(
-    db: AsyncSession, *, team_id: UUID, remover_id: int, user_id: int
+    db: AsyncSession, *, team_id: UUID, remover_id: UUID, user_id: UUID
 ) -> None:
     team = await db.get(WorkspaceTeam, team_id)
     if team is None:

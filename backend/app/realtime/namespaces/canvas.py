@@ -7,6 +7,10 @@ from typing import Any
 
 import socketio  # type: ignore[import-untyped]
 
+from app.collaboration.canvas.join_canvas.service import (
+    get_document_updates,
+    get_or_create_document,
+)
 from app.collaboration.canvas.send_update.service import (
     record_canvas_update,
     validate_canvas_payload,
@@ -74,6 +78,17 @@ class CanvasNamespace(socketio.AsyncNamespace):  # type: ignore[misc]
         await self.enter_room(sid, room)
         await self.save_session(sid, {"document_id": room})
 
+        # Replay latest persisted canvas snapshot/update to the newly joined client
+        try:
+            async with SessionLocal() as db:
+                await get_or_create_document(db=db, document_id=doc_id)
+                updates = await get_document_updates(db=db, document_id=doc_id)
+                if updates:
+                    latest_update = updates[-1]
+                    await self.emit("canvas:update", latest_update.data, to=sid)
+        except Exception as err:
+            logger.warning("Could not replay canvas state on join for %s: %s", room, err)
+
         logger.info("Socket %s joined canvas room %s", sid, room)
         return {"status": "ok", "document_id": room}
 
@@ -128,4 +143,6 @@ class CanvasNamespace(socketio.AsyncNamespace):  # type: ignore[misc]
         session = await self.get_session(sid)
         room = session.get("document_id") if session else None
         if room:
-            await self.emit("canvas:awareness", data, room=room, skip_sid=sid)
+            payload = dict(data) if isinstance(data, dict) else {"data": data}
+            payload["sid"] = sid
+            await self.emit("canvas:awareness", payload, room=room, skip_sid=sid)

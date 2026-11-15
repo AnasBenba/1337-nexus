@@ -23,7 +23,7 @@ class BoardValidationError(ValueError):
 
 
 async def _authorize_board(
-    db: AsyncSession, board: WorkspaceBoard, user_id: int | None
+    db: AsyncSession, board: WorkspaceBoard, user_id: UUID | None
 ) -> None:
     if user_id is None:
         return
@@ -43,7 +43,7 @@ async def create_board(
     *,
     team_id: UUID,
     name: str = "Main Board",
-    user_id: int | None = None,
+    user_id: UUID | None = None,
 ) -> WorkspaceBoard:
     if user_id is not None:
         member = await db.scalar(
@@ -76,7 +76,7 @@ async def _lock_board(
     db: AsyncSession,
     board_id: UUID,
     expected_revision: int,
-    user_id: int | None = None,
+    user_id: UUID | None = None,
 ) -> WorkspaceBoard:
     board = await db.scalar(
         select(WorkspaceBoard).where(WorkspaceBoard.id == board_id).with_for_update()
@@ -147,7 +147,7 @@ async def create_board_column(
     board_id: UUID,
     name: str,
     expected_board_revision: int,
-    user_id: int | None = None,
+    user_id: UUID | None = None,
 ) -> BoardColumn:
     board = await _lock_board(db, board_id, expected_board_revision, user_id)
     max_position = await db.scalar(
@@ -172,7 +172,7 @@ async def create_board_card(
     expected_board_revision: int,
     description: str | None = None,
     before_card_id: UUID | None = None,
-    user_id: int | None = None,
+    user_id: UUID | None = None,
 ) -> BoardCard:
     column = await db.scalar(select(BoardColumn).where(BoardColumn.id == column_id))
     if column is None:
@@ -195,7 +195,7 @@ async def move_board_card(
     expected_board_revision: int,
     before_card_id: UUID | None = None,
     board_id: UUID | None = None,
-    user_id: int | None = None,
+    user_id: UUID | None = None,
 ) -> BoardCard:
     card = await db.scalar(select(BoardCard).where(BoardCard.id == card_id))
     destination = await db.scalar(
@@ -227,7 +227,7 @@ async def delete_board_column(
     column_id: UUID,
     expected_board_revision: int,
     board_id: UUID | None = None,
-    user_id: int | None = None,
+    user_id: UUID | None = None,
 ) -> None:
     column = await db.scalar(select(BoardColumn).where(BoardColumn.id == column_id))
     if column is None:

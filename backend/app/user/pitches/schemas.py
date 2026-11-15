@@ -1,7 +1,24 @@
+from datetime import datetime
 from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, computed_field
+
+
+class VoteDirection(str, Enum):
+    UP = "up"
+    DOWN = "down"
+
+
+class PitchVoteRequest(BaseModel):
+    direction: VoteDirection
+
+
+class PitchVoteResponse(BaseModel):
+    pitch_id: UUID
+    upvotes: int
+    downvotes: int
+    my_vote: VoteDirection | None
 
 
 class PitchStatus(str, Enum):
@@ -29,6 +46,7 @@ class PitchCreate(BaseModel):
     content: str
     category: PitchCategory
     description: str | None = None
+    status: PitchStatus = PitchStatus.DRAFT
 
 
 class PitchResponse(BaseModel):
@@ -41,4 +59,10 @@ class PitchResponse(BaseModel):
     category: PitchCategory
     status: PitchStatus
     description: str | None = None
-    author_id: int | None = None
+    author_id: UUID | None = None
+    created_at: datetime | None = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def state(self) -> PitchStatus:
+        return self.status

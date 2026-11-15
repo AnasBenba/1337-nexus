@@ -64,31 +64,19 @@ from app.user.projects.refine_project.router import (
     router as refine_project_router,
 )
 from app.teams.router import router as teams_router
-from app.user.projects.archive_project.router import router as archive_project_router
-from app.user.projects.create_project.router import router as create_project_router
-from app.user.projects.edit_project.router import router as edit_project_router
-from app.user.projects.my_projects.router import router as my_projects_router
-from app.user.projects.publish_project.router import router as publish_project_router
-from app.user.projects.recommended_projects.router import (
-    router as recommended_projects_router,
-)
-from app.user.quick_actions.router import router as quick_actions_router
 
 from .oauth import entrypoint, jwt, manager, refresh_tokens
 from .oauth.user import Users
 from .admin.users.router import router as admin_users_router
 from .oauth.email_auth import router as email_auth_router
 from .user.friends.router import router as friends_router
+from .user.notifications.router import router as notifications_router
 from .user.profile.router import router as profile_router
-from .collaboration.chat.send_direct_message.router import (
-    router as send_direct_message_router,
-)
-from .oauth import entrypoint, jwt, manager
+from .realtime.namespaces.chat import router as chat_router
 from .user.copilot.ask.router import router as ask_router
 from .user.copilot.retrieve_curriculum.router import (
     router as retrieve_curriculum_router,
 )
-from .user.pitches.router import router as pitches_router
 
 router = APIRouter()
 HOME_PAGE = Path(__file__).parent / "index.html"
@@ -213,6 +201,7 @@ async def health_ready() -> dict[str, object]:
 def register_routes(app: FastAPI) -> None:
     app.include_router(router)
     app.include_router(pitches_router)
+    app.include_router(notifications_router)
     app.include_router(opportunities_router)
     app.include_router(create_opportunity_router)
     app.include_router(update_opportunity_router)
@@ -225,18 +214,24 @@ def register_routes(app: FastAPI) -> None:
     app.include_router(apply_router)
     app.include_router(withdraw_application_router)
     app.include_router(refine_project_router)
-    app.include_router(create_project_router)
-    app.include_router(my_projects_router)
-    app.include_router(recommended_projects_router)
-    app.include_router(edit_project_router)
-    app.include_router(publish_project_router)
-    app.include_router(archive_project_router)
-    app.include_router(quick_actions_router)
     app.include_router(teams_router)
-    app.include_router(pitches_router)
     app.include_router(profile_router)
     app.include_router(friends_router)
     app.include_router(admin_users_router)
     app.include_router(email_auth_router)
     app.include_router(board_router)
-    app.include_router(send_direct_message_router, tags=["Chat"])
+    for api_router in (
+        opportunities_router,
+        create_opportunity_router,
+        update_opportunity_router,
+        publish_opportunity_router,
+        match_scoring_router,
+        review_applications_router,
+        view_opportunity_router,
+        apply_router,
+        withdraw_application_router,
+        teams_router,
+        board_router,
+    ):
+        app.include_router(api_router, prefix="/api")
+    app.include_router(chat_router, tags=["Chat"])

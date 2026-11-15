@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime
 
 from pgvector.sqlalchemy import Vector  # type: ignore[import-untyped]
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -10,6 +10,28 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.shared.ai.config import EMBEDDING_DIMENSIONS
 from app.shared.models import Base
 from app.user.pitches.schemas import PitchCategory, PitchStatus
+
+
+class PitchVote(Base):  # type: ignore[misc]
+    __tablename__ = "pitch_votes"
+    __table_args__ = (
+        UniqueConstraint("pitch_id", "user_id", name="uq_pitch_votes_pitch_user"),
+    )
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    pitch_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("pitches.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    is_upvote = Column(Boolean, nullable=False)
 
 
 class Pitch(Base):  # type: ignore[misc]
@@ -48,7 +70,7 @@ class Pitch(Base):  # type: ignore[misc]
         Vector(EMBEDDING_DIMENSIONS), nullable=True
     )
     author_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
 
     @property
