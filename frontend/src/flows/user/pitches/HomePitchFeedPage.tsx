@@ -272,7 +272,6 @@ export const HomePitchFeedPage: React.FC = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [votingPitchId, setVotingPitchId] = useState<string | null>(null);
   const [deletingPitchId, setDeletingPitchId] = useState<string | null>(null);
-  const [copiedPitchId, setCopiedPitchId] = useState<string | null>(null);
   const [selectedPitch, setSelectedPitch] = useState<FeedPitch | null>(null);
   const [refiningPitch, setRefiningPitch] = useState<FeedPitch | null>(null);
 
@@ -518,20 +517,6 @@ export const HomePitchFeedPage: React.FC = () => {
       setError(deleteError instanceof Error ? deleteError.message : 'Unable to delete pitch.');
     } finally {
       setDeletingPitchId(null);
-    }
-  };
-
-  const handleCopyPitchId = async (pitchId: string) => {
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(pitchId);
-      }
-      setCopiedPitchId(pitchId);
-      window.setTimeout(() => {
-        setCopiedPitchId((current) => (current === pitchId ? null : current));
-      }, 2000);
-    } catch {
-      showNotice(`Pitch ID: ${pitchId}`);
     }
   };
 
@@ -1042,18 +1027,6 @@ export const HomePitchFeedPage: React.FC = () => {
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => void handleCopyPitchId(pitch.id)}
-                      title="Copy pitch UUID for team workspace"
-                      className="inline-flex items-center gap-1 rounded-xl border border-outline-variant/60 bg-surface px-2.5 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"
-                    >
-                      <span className="material-symbols-outlined text-[15px]">
-                        {copiedPitchId === pitch.id ? 'check' : 'content_copy'}
-                      </span>
-                      <span>{copiedPitchId === pitch.id ? 'Copied' : 'ID'}</span>
-                    </button>
-
                     {isAuthor && pitch.state.toLowerCase() === 'draft' && (
                       <button
                         type="button"
@@ -1156,21 +1129,7 @@ export const HomePitchFeedPage: React.FC = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-outline-variant/50 bg-surface-container-low px-6 py-4">
-              <div className="flex items-center gap-2 text-xs font-mono text-outline">
-                <span>Pitch ID:</span>
-                <code className="rounded bg-surface-container px-2 py-0.5 text-on-surface">
-                  {selectedPitch.id}
-                </code>
-                <button
-                  type="button"
-                  onClick={() => void handleCopyPitchId(selectedPitch.id)}
-                  className="font-sans font-bold text-primary hover:underline"
-                >
-                  {copiedPitchId === selectedPitch.id ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
-
+            <div className="flex flex-wrap items-center justify-end gap-3 border-t border-outline-variant/50 bg-surface-container-low px-6 py-4">
               <div className="flex items-center gap-2">
                 <button
                   type="button"

@@ -106,7 +106,7 @@ async def request_pitch_refinement(
     # 5. Compute canonical hash
     content_hash = compute_pitch_hash(pitch.title, pitch.description, pitch.content)
 
-    # 6. Check existing active job (queued or running) with same pitch_id and base_hash
+    # 6. Check existing active job (queued or running) with same pitch_id
     jobs_stmt = (
         select(AIJob)
         .where(
@@ -118,13 +118,18 @@ async def request_pitch_refinement(
     active_jobs = (await db.execute(jobs_stmt)).scalars().all()
     for job in active_jobs:
         payload = job.payload or {}
-        if payload.get("pitch_id") == str(pitch_id) and payload.get("base_hash") == content_hash:
-            return RefineResponse(
-                job_id=job.id,
-                status=job.status,
-                base_hash=content_hash,
-                message="A refinement job for this exact pitch version is already in progress",
-            )
+        if payload.get("pitch_id") == str(pitch_id):
+            if payload.get("base_hash") == content_hash:
+                return RefineResponse(
+                    job_id=job.id,
+                    status=job.status,
+                    base_hash=content_hash,
+                    message="A refinement job for this exact pitch version is already in progress",
+                )
+            else:
+                # Pitch has been edited; supersede older active job for previous version
+                job.status = "superseded"
+                flag_modified(job, "status")
 
     # Rate limit check for new AI refinement job
     limiter = rate_limiter or pitch_refine_rate_limiter
@@ -181,13 +186,20 @@ async def get_pitch_refine_status(
 
     current_hash = compute_pitch_hash(pitch.title, pitch.description, pitch.content)
 
-    # Find latest AIJob for this pitch
+    # Find latest AIJob for this pitch (ignoring superseded jobs)
     jobs_stmt = (
-        select(AIJob).where(AIJob.job_type == "pitch.refine").order_by(AIJob.created_at.desc())
+        select(AIJob)
+        .where(AIJob.job_type == "pitch.refine")
+        .order_by(AIJob.created_at.desc(), AIJob.id.desc())
     )
     all_jobs = (await db.execute(jobs_stmt)).scalars().all()
     latest_job = next(
-        (j for j in all_jobs if (j.payload or {}).get("pitch_id") == str(pitch_id)),
+        (
+            j
+            for j in all_jobs
+            if (j.payload or {}).get("pitch_id") == str(pitch_id)
+            and j.status != "superseded"
+        ),
         None,
     )
 

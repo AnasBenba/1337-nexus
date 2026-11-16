@@ -123,13 +123,6 @@ export const Layout: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-space-xs text-on-surface-variant">
-            <button
-              type="button"
-              aria-label="Theme Switcher"
-              className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[20px]">dark_mode</span>
-            </button>
             <Link
               to="/messages"
               aria-label="Direct Messages"
@@ -182,12 +175,6 @@ export const Layout: React.FC = () => {
                 <span className="text-[11px]">Benguerir</span>
               </div>
             </div>
-          </div>
-          <div className="mt-space-sm flex items-center justify-between font-label-code-tag text-label-code-tag">
-            <span className="px-space-xs py-0.5 rounded bg-surface-container-highest text-on-primary-container font-semibold">
-              Lvl 9.42
-            </span>
-            <span className="text-outline text-[11px]">Circle 05</span>
           </div>
         </div>
 
@@ -295,27 +282,6 @@ export const Layout: React.FC = () => {
               }`}
             >
               {unreadMessages}
-            </span>
-          </NavLink>
-
-          <NavLink
-            to="/refine-project"
-            className={({ isActive }) =>
-              `flex items-center justify-between px-space-md py-space-sm rounded transition-all group ${
-                isActive
-                  ? 'bg-primary-fixed text-on-primary-fixed font-bold'
-                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
-              }`
-            }
-          >
-            <div className="flex items-center gap-space-sm">
-              <span className="material-symbols-outlined text-[20px] text-primary-container">
-                auto_awesome
-              </span>
-              <span className="font-label-md text-label-md">Pitch Refiner</span>
-            </div>
-            <span className="px-2 py-0.5 rounded-full bg-brand/10 text-brand font-label-code-tag text-[10px] font-bold">
-              AI
             </span>
           </NavLink>
 

@@ -180,6 +180,8 @@ export const RefineProjectModal: React.FC<RefineProjectModalProps> = ({
   // Request critique handler (State A -> B -> C)
   const handleRequestCritique = async () => {
     try {
+      setGeneralError(null);
+      setConflictErrors({});
       setModalState('B');
       const res = await requestRefine(pitchId, currentUserId);
       setJobId(res.job_id);
@@ -313,6 +315,19 @@ export const RefineProjectModal: React.FC<RefineProjectModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
+            {(modalState === 'D' || modalState === 'G' || modalState === 'J') && (
+              <button
+                type="button"
+                onClick={() => void handleRequestCritique()}
+                disabled={!!applyingSuggestionId}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-brand bg-brand/10 hover:bg-brand/20 rounded-lg transition-colors cursor-pointer disabled:opacity-40"
+                title="Run a new critique on this pitch"
+              >
+                <span className="material-symbols-outlined text-[16px]">refresh</span>
+                <span>Run New Critique</span>
+              </button>
+            )}
+
             {/* Stale Warning Badge in Header if pitch modified */}
             {isStale && modalState === 'D' && (
               <span className="text-xs font-mono px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
@@ -509,9 +524,15 @@ export const RefineProjectModal: React.FC<RefineProjectModalProps> = ({
                     {appliedCount} applied · {remainingCount} remaining
                   </span>
                 </div>
-                <span className="text-xs text-slate-400">
-                  Independent apply actions
-                </span>
+                <button
+                  type="button"
+                  onClick={() => void handleRequestCritique()}
+                  disabled={!!applyingSuggestionId}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline cursor-pointer disabled:opacity-40"
+                >
+                  <span className="material-symbols-outlined text-sm">refresh</span>
+                  <span>Re-run critique</span>
+                </button>
               </div>
 
               {/* Suggestions Cards List */}
@@ -543,10 +564,22 @@ export const RefineProjectModal: React.FC<RefineProjectModalProps> = ({
 
           {/* STATE J: EMPTY RESULTS */}
           {modalState === 'J' && (
-            <EmptyCritiqueState
-              strengths={summary?.strengths || []}
-              onDone={onClose}
-            />
+            <div className="space-y-4">
+              <EmptyCritiqueState
+                strengths={summary?.strengths || []}
+                onDone={onClose}
+              />
+              <div className="flex justify-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => void handleRequestCritique()}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-brand hover:bg-brand-hover rounded-xl shadow-sm transition-all cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm">refresh</span>
+                  <span>Request Another Critique</span>
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

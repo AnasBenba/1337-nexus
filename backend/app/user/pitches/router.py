@@ -13,6 +13,7 @@ from app.user.pitches.schemas import (
     PitchCategory,
     PitchCreate,
     PitchResponse,
+    PitchStatus,
     PitchVoteRequest,
     PitchVoteResponse,
     VoteDirection,

@@ -34,6 +34,7 @@ export const OpportunitiesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
+  const [deletingOppId, setDeletingOppId] = useState<string | null>(null);
 
   // Team Members Modal state
   const [teamModalOpp, setTeamModalOpp] = useState<{ opp: Opportunity; isOwner: boolean } | null>(
@@ -53,6 +54,23 @@ export const OpportunitiesPage: React.FC = () => {
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
+  const availablePitches = myPitches.filter(
+    (p) => !opportunities.some((opp) => opp.project_id === p.id),
+  );
+
+  const handleOpenCreateModal = () => {
+    const available = myPitches.filter(
+      (p) => !opportunities.some((opp) => opp.project_id === p.id),
+    );
+    if (available.length > 0) {
+      setSelectedPitchId(available[0].id);
+    } else {
+      setSelectedPitchId('');
+    }
+    setCreateError(null);
+    setShowCreateModal(true);
+  };
+
   const loadData = async () => {
     setLoading(true);
     setError(null);
@@ -68,9 +86,6 @@ export const OpportunitiesPage: React.FC = () => {
       if (pitchRes.status === 'fulfilled' && Array.isArray(pitchRes.value)) {
         const pitches = pitchRes.value as Pitch[];
         setMyPitches(pitches);
-        if (pitches.length > 0 && !selectedPitchId) {
-          setSelectedPitchId(pitches[0].id);
-        }
       }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Could not load your opportunities');
@@ -102,6 +117,31 @@ export const OpportunitiesPage: React.FC = () => {
       setError(reason instanceof Error ? reason.message : 'Failed to publish opportunity');
     } finally {
       setPublishingId(null);
+    }
+  };
+
+  const handleDeleteOpportunity = async (opportunityId: string, oppTitle?: string) => {
+    const confirmMsg = `Are you sure you want to delete "${oppTitle || 'this opportunity'}"? This action cannot be undone and will remove associated applications and workspace team data.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setDeletingOppId(opportunityId);
+    setError(null);
+    try {
+      const res = await authFetch(`/opportunities/${opportunityId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Failed to delete opportunity');
+      }
+      setOpportunities((current) => current.filter((item) => item.id !== opportunityId));
+      if (teamModalOpp?.opp.id === opportunityId) {
+        setTeamModalOpp(null);
+      }
+    } catch (delError) {
+      setError(delError instanceof Error ? delError.message : 'Could not delete opportunity');
+    } finally {
+      setDeletingOppId(null);
     }
   };
 
@@ -223,7 +263,7 @@ export const OpportunitiesPage: React.FC = () => {
           </Link>
           <button
             type="button"
-            onClick={() => setShowCreateModal(true)}
+            onClick={handleOpenCreateModal}
             className="px-4 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold flex items-center gap-1.5 hover:opacity-90 shadow-sm cursor-pointer"
           >
             <span className="material-symbols-outlined text-[16px]">add_circle</span>
@@ -251,7 +291,7 @@ export const OpportunitiesPage: React.FC = () => {
           </p>
           <button
             type="button"
-            onClick={() => setShowCreateModal(true)}
+            onClick={handleOpenCreateModal}
             className="inline-flex items-center gap-1.5 mt-2 px-4 py-2.5 rounded-xl bg-primary text-white text-xs font-semibold cursor-pointer"
           >
             <span className="material-symbols-outlined text-[16px]">add_circle</span>
@@ -367,6 +407,18 @@ export const OpportunitiesPage: React.FC = () => {
                       {publishingId === opp.id ? 'Publishing...' : 'Publish to Discover'}
                     </button>
                   )}
+
+                  {isOwner && (
+                    <button
+                      type="button"
+                      disabled={deletingOppId === opp.id}
+                      onClick={() => void handleDeleteOpportunity(opp.id, opp.title)}
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 hover:bg-red-600 hover:text-white text-xs font-semibold transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">delete</span>
+                      <span>{deletingOppId === opp.id ? 'Deleting...' : 'Delete Opportunity'}</span>
+                    </button>
+                  )}
                 </div>
               </article>
             );
@@ -405,6 +457,16 @@ export const OpportunitiesPage: React.FC = () => {
                   Go to Pitches
                 </Link>
               </div>
+            ) : availablePitches.length === 0 ? (
+              <div className="text-center py-6 text-xs text-on-surface-variant space-y-3">
+                <p>All your pitches already have an opportunity created. Only one opportunity can be created per pitch.</p>
+                <Link
+                  to="/pitches"
+                  className="inline-block px-4 py-2 bg-primary text-white rounded-xl font-semibold"
+                >
+                  Create New Pitch
+                </Link>
+              </div>
             ) : (
               <form onSubmit={handleCreateOpportunity} className="space-y-4">
                 <div>
@@ -417,7 +479,7 @@ export const OpportunitiesPage: React.FC = () => {
                     required
                     className="w-full px-3 py-2 bg-surface-container-low rounded-xl text-xs text-on-surface border border-outline-variant/60 focus:border-primary outline-none"
                   >
-                    {myPitches.map((p) => (
+                    {availablePitches.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.title}
                       </option>
@@ -647,23 +709,38 @@ export const OpportunitiesPage: React.FC = () => {
               )}
             </div>
 
-            <div className="pt-2 flex justify-end gap-2">
-              {teamModalOpp.isOwner && (
-                <Link
-                  to={`/opportunities/${teamModalOpp.opp.id}/applications`}
+            <div className="pt-2 flex flex-wrap justify-between items-center gap-2">
+              <div>
+                {teamModalOpp.isOwner && (
+                  <button
+                    type="button"
+                    disabled={deletingOppId === teamModalOpp.opp.id}
+                    onClick={() => void handleDeleteOpportunity(teamModalOpp.opp.id, teamModalOpp.opp.title)}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 hover:bg-red-600 hover:text-white text-xs font-semibold cursor-pointer transition-all disabled:opacity-50"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">delete</span>
+                    <span>{deletingOppId === teamModalOpp.opp.id ? 'Deleting...' : 'Delete Opportunity'}</span>
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {teamModalOpp.isOwner && (
+                  <Link
+                    to={`/opportunities/${teamModalOpp.opp.id}/applications`}
+                    onClick={() => setTeamModalOpp(null)}
+                    className="px-4 py-2 rounded-xl border border-outline-variant bg-surface-container-low text-on-surface hover:border-primary hover:text-primary text-xs font-semibold"
+                  >
+                    View Pending Applicants
+                  </Link>
+                )}
+                <button
+                  type="button"
                   onClick={() => setTeamModalOpp(null)}
-                  className="px-4 py-2 rounded-xl border border-outline-variant bg-surface-container-low text-on-surface hover:border-primary hover:text-primary text-xs font-semibold"
+                  className="px-4 py-2 rounded-xl bg-surface-container-high text-on-surface text-xs font-semibold hover:bg-surface-container-highest cursor-pointer"
                 >
-                  View Pending Applicants
-                </Link>
-              )}
-              <button
-                type="button"
-                onClick={() => setTeamModalOpp(null)}
-                className="px-4 py-2 rounded-xl bg-surface-container-high text-on-surface text-xs font-semibold hover:bg-surface-container-highest cursor-pointer"
-              >
-                Close
-              </button>
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

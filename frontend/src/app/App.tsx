@@ -8,7 +8,6 @@ import { OpportunityApplicantsPage } from '@/flows/user/opportunities/Opportunit
 import { OpportunityWorkspacePage } from '@/flows/user/opportunities/OpportunityWorkspacePage';
 import { WhiteboardPage } from '@/flows/user/canvas';
 import { BoardPage } from '@/flows/user/board/BoardPage';
-import { RefineProjectDemoPage } from '@/flows/user/projects/refine_project';
 import { ProfilePage } from '@/flows/user/profile';
 import { FriendsPage } from '@/flows/user/friends';
 import { AdminUsersPage } from '@/flows/admin/users';
@@ -36,7 +35,6 @@ export const App: React.FC = () => {
           <Route path="whiteboard" element={<WhiteboardPage />} />
           <Route path="projects/*" element={<Navigate to="/opportunities" replace />} />
           <Route path="boards/:boardId" element={<BoardPage />} />
-          <Route path="refine-project" element={<RefineProjectDemoPage />} />
           <Route path="messages" element={<ChatPage />} />
           <Route path="chat" element={<Navigate to="/messages" replace />} />
           <Route path="users/:login" element={<ProfilePage />} />

@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.user.opportunities.browse_opportunities.models import Opportunity
@@ -19,6 +20,14 @@ async def create_opportunity(
         raise ValueError("Pitch not found")
     if current_user_id is not None and pitch.author_id != current_user_id:
         raise PermissionError("Only the pitch owner can create opportunities")
+
+    # Enforce strictly one opportunity per pitch
+    existing_opp = await db.execute(
+        select(Opportunity.id).where(Opportunity.project_id == project_id)
+    )
+    if existing_opp.scalar_one_or_none() is not None:
+        raise ValueError("An opportunity has already been created for this pitch")
+
     opportunity = Opportunity(
         project_id=project_id,
         title=title,

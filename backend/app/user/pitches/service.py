@@ -7,6 +7,9 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.shared.ai.client import get_ai_provider
+from app.teams.models import WorkspaceTeam
+from app.user.opportunities.apply.models import Application
+from app.user.opportunities.browse_opportunities.models import Opportunity
 from app.user.pitches.models import Pitch, PitchVote
 from app.user.pitches.schemas import (
     PitchCategory,
@@ -189,6 +192,26 @@ async def get_one_pitch(db: AsyncSession, pitch_id: uuid.UUID) -> Pitch:
 
 async def delete_pitch(db: AsyncSession, pitch_id: uuid.UUID) -> dict[str, str]:
     pitch = await get_one_pitch(db=db, pitch_id=pitch_id)
+
+    # Clean up any opportunities and related applications/workspace teams for this pitch
+    opps_stmt = select(Opportunity.id).where(Opportunity.project_id == pitch_id)
+    opp_ids = (await db.execute(opps_stmt)).scalars().all()
+    if opp_ids:
+        await db.execute(
+            delete(Application).where(Application.opportunity_id.in_(opp_ids))
+        )
+        await db.execute(
+            delete(WorkspaceTeam).where(WorkspaceTeam.opportunity_id.in_(opp_ids))
+        )
+        await db.execute(
+            delete(Opportunity).where(Opportunity.id.in_(opp_ids))
+        )
+
+    # Clean up workspace team directly pointing to this pitch
+    await db.execute(
+        delete(WorkspaceTeam).where(WorkspaceTeam.pitch_id == pitch_id)
+    )
+
     await db.delete(pitch)
     await db.commit()
     return {"message": "Pitch deleted successfully"}

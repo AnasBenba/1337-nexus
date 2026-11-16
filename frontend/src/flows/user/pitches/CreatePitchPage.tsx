@@ -367,11 +367,13 @@ export const CreatePitchPage = () => {
   const [saving, setSaving] = useState(false);
   const [preparingRefine, setPreparingRefine] = useState(false);
   const [isRefinerOpen, setIsRefinerOpen] = useState(false);
+  const [deletingPitchId, setDeletingPitchId] = useState<string | null>(null);
   const [editorMode, setEditorMode] = useState<'write' | 'split' | 'preview'>('split');
   const [categoryQuery, setCategoryQuery] = useState('');
 
   // Create Opportunity from Pitch modal state
   const [opportunityTargetPitch, setOpportunityTargetPitch] = useState<SavedPitch | null>(null);
+  const [existingOpportunityPitchIds, setExistingOpportunityPitchIds] = useState<Set<string>>(new Set());
   const [oppTitle, setOppTitle] = useState('');
   const [oppSkills, setOppSkills] = useState('');
   const [oppDesc, setOppDesc] = useState('');
@@ -380,6 +382,10 @@ export const CreatePitchPage = () => {
 
   const openOpportunityModal = (pitch: SavedPitch, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    if (existingOpportunityPitchIds.has(pitch.id)) {
+      setError(`An opportunity has already been created for "${pitch.title}".`);
+      return;
+    }
     setOpportunityTargetPitch(pitch);
     setOppTitle('');
     setOppSkills('');
@@ -416,6 +422,7 @@ export const CreatePitchPage = () => {
         return;
       }
       const created = (await res.json()) as { id: string; title: string };
+      setExistingOpportunityPitchIds((prev) => new Set([...prev, opportunityTargetPitch.id]));
       await fetch(`/api/opportunities/${created.id}/publish`, {
         method: 'POST',
         credentials: 'include',
@@ -529,12 +536,22 @@ export const CreatePitchPage = () => {
     setError('');
 
     try {
-      const [pitchesRes, meRes] = await Promise.allSettled([
+      const [pitchesRes, meRes, oppsRes] = await Promise.allSettled([
         fetchPitchApi<SavedPitch[]>('/api/v1/user/pitches/me', {
           credentials: 'include',
         }),
         fetch('/api/v1/users/me', { credentials: 'include' }),
+        fetch('/api/opportunities/mine', { credentials: 'include' }).then((r) =>
+          r.ok ? r.json() : [],
+        ),
       ]);
+
+      if (oppsRes.status === 'fulfilled' && Array.isArray(oppsRes.value)) {
+        const pitchIds = new Set<string>(
+          oppsRes.value.map((o: any) => o.project_id).filter(Boolean),
+        );
+        setExistingOpportunityPitchIds(pitchIds);
+      }
 
       if (meRes.status === 'fulfilled' && meRes.value.ok) {
         const meData = (await meRes.value.json()) as { id?: string };
@@ -784,6 +801,47 @@ export const CreatePitchPage = () => {
     }
   };
 
+  // Delete a pitch
+  const handleDeletePitch = async (
+    pitchId: string,
+    pitchTitle?: string,
+    e?: React.MouseEvent,
+  ) => {
+    if (e) {
+      e.stopPropagation();
+    }
+
+    const confirmMsg = `Are you sure you want to delete "${pitchTitle || 'this pitch'}"? If an opportunity was created from this pitch, it will also be deleted. This action cannot be undone.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setDeletingPitchId(pitchId);
+    setError('');
+    setNotification(null);
+
+    try {
+      await fetchPitchApi(`/api/v1/user/pitches/${pitchId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      setMyPitches((prev) => prev.filter((p) => p.id !== pitchId));
+      setExistingOpportunityPitchIds((prev) => {
+        const next = new Set(prev);
+        next.delete(pitchId);
+        return next;
+      });
+      if (createdPitch?.id === pitchId) {
+        setCreatedPitch(null);
+        setViewMode('hub');
+      }
+      setNotification('Pitch and its associated opportunities were successfully deleted.');
+    } catch (delError) {
+      setError(delError instanceof Error ? delError.message : 'Could not delete pitch.');
+    } finally {
+      setDeletingPitchId(null);
+    }
+  };
+
   // Trigger AI Refiner from detail mode (ensures pitch is in 'draft' status in DB first)
   const handleOpenRefine = async () => {
     if (!createdPitch) return;
@@ -1008,19 +1066,37 @@ export const CreatePitchPage = () => {
                     </p>
                   </div>
 
-                  <div className="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-outline-variant/40 pt-4">
-                    <span className="font-mono text-[11px] text-outline truncate max-w-[140px]">
-                      ID: {pitch.id}
-                    </span>
+                  <div className="mt-5 flex flex-wrap items-center justify-end gap-2 border-t border-outline-variant/40 pt-4">
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={(e) => openOpportunityModal(pitch, e)}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary hover:text-white transition-all cursor-pointer"
+                        onClick={(e) => handleDeletePitch(pitch.id, pitch.title, e)}
+                        disabled={deletingPitchId === pitch.id}
+                        title="Delete pitch"
+                        className="inline-flex items-center gap-1 rounded-xl bg-error/10 px-2.5 py-1.5 text-xs font-bold text-error hover:bg-error hover:text-white transition-all cursor-pointer disabled:opacity-50"
                       >
-                        <span className="material-symbols-outlined text-[15px]">work</span>
-                        <span>Create Opportunity</span>
+                        <span className="material-symbols-outlined text-[15px]">delete</span>
+                        <span>Delete</span>
                       </button>
+                      {existingOpportunityPitchIds.has(pitch.id) ? (
+                        <Link
+                          to="/opportunities"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-white transition-all cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[15px]">work</span>
+                          <span>View Opportunity</span>
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => openOpportunityModal(pitch, e)}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary hover:bg-primary hover:text-white transition-all cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[15px]">work</span>
+                          <span>Create Opportunity</span>
+                        </button>
+                      )}
                       <span className="inline-flex items-center gap-1.5 rounded-xl bg-brand/10 px-3 py-1.5 text-xs font-bold text-brand group-hover:bg-brand group-hover:text-white transition-all">
                         <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
                         <span>View &amp; Refine</span>
@@ -1060,12 +1136,32 @@ export const CreatePitchPage = () => {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => openOpportunityModal(createdPitch)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-white hover:opacity-90 transition-all cursor-pointer shadow-sm"
+              onClick={() => handleDeletePitch(createdPitch.id, createdPitch.title)}
+              disabled={deletingPitchId === createdPitch.id}
+              title="Delete this pitch"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-error/30 bg-error/10 px-3.5 py-2 text-xs font-bold text-error hover:bg-error hover:text-white transition-all cursor-pointer disabled:opacity-50"
             >
-              <span className="material-symbols-outlined text-[16px]">work</span>
-              <span>Create Opportunity</span>
+              <span className="material-symbols-outlined text-[16px]">delete</span>
+              <span>Delete Pitch</span>
             </button>
+            {existingOpportunityPitchIds.has(createdPitch.id) ? (
+              <Link
+                to="/opportunities"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-primary/40 bg-primary/10 px-3.5 py-2 text-xs font-bold text-primary hover:bg-primary hover:text-white transition-all cursor-pointer shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[16px]">work</span>
+                <span>View Opportunity</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => openOpportunityModal(createdPitch)}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-white hover:opacity-90 transition-all cursor-pointer shadow-sm"
+              >
+                <span className="material-symbols-outlined text-[16px]">work</span>
+                <span>Create Opportunity</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => openPitchEditor(createdPitch)}
@@ -1142,9 +1238,6 @@ export const CreatePitchPage = () => {
                 {formatRelativeDate(createdPitch.created_at)}
               </span>
             </div>
-            <span className="font-mono text-[11px] text-outline">
-              ID: {createdPitch.id}
-            </span>
           </div>
 
           <div className="space-y-2">
