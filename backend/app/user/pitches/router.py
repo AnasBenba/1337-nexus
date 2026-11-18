@@ -13,7 +13,6 @@ from app.user.pitches.schemas import (
     PitchCategory,
     PitchCreate,
     PitchResponse,
-    PitchStatus,
     PitchVoteRequest,
     PitchVoteResponse,
     VoteDirection,
@@ -83,16 +82,6 @@ async def resolve_current_user(
     response_model=list[PitchResponse],
     summary="Search project pitches by semantic similarity",
 )
-@router.get(
-    "/api/v1/pitches/search",
-    response_model=list[PitchResponse],
-    include_in_schema=False,
-)
-@router.get(
-    "/api/v1/search",
-    response_model=list[PitchResponse],
-    include_in_schema=False,
-)
 async def search_pitches_endpoint(
     db: Annotated[AsyncSession, Depends(get_db_session)],
     query: str = Query(...),
@@ -109,12 +98,6 @@ async def search_pitches_endpoint(
     status_code=status.HTTP_201_CREATED,
     summary="Create a new project pitch",
 )
-@router.post(
-    "/api/v1/pitches",
-    response_model=PitchResponse,
-    status_code=status.HTTP_201_CREATED,
-    include_in_schema=False,
-)
 async def create_pitch_endpoint(
     pitch: PitchCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
@@ -128,16 +111,6 @@ async def create_pitch_endpoint(
     response_model=list[PitchResponse],
     summary="List all project pitches",
 )
-@router.get(
-    "/api/v1/user/pitches/get_all_pitches",
-    response_model=list[PitchResponse],
-    include_in_schema=False,
-)
-@router.get(
-    "/api/v1/pitches",
-    response_model=list[PitchResponse],
-    include_in_schema=False,
-)
 async def list_pitches_endpoint(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> list[Pitch]:
@@ -148,11 +121,6 @@ async def list_pitches_endpoint(
     "/api/v1/user/pitches/published",
     response_model=list[PitchResponse],
     summary="List only published project pitches for the home feed",
-)
-@router.get(
-    "/api/v1/pitches/published",
-    response_model=list[PitchResponse],
-    include_in_schema=False,
 )
 async def list_published_pitches_endpoint(
     request: Request,
@@ -197,11 +165,6 @@ async def get_user_pitches_endpoint(
     "/api/v1/user/pitches/{pitch_id}",
     response_model=PitchResponse,
     summary="Get details of a specific pitch",
-)
-@router.get(
-    "/api/v1/pitches/{pitch_id}",
-    response_model=PitchResponse,
-    include_in_schema=False,
 )
 async def get_pitch_endpoint(
     pitch_id: uuid.UUID,
@@ -292,11 +255,6 @@ async def require_pitch_author(
     response_model=PitchResponse,
     summary="Update a pitch you created",
 )
-@router.put(
-    "/api/v1/pitches/{pitch_id}",
-    response_model=PitchResponse,
-    include_in_schema=False,
-)
 async def update_pitch_endpoint(
     pitch_id: uuid.UUID,
     pitch_data: PitchCreate,
@@ -311,11 +269,6 @@ async def update_pitch_endpoint(
     "/api/v1/user/pitches/{pitch_id}",
     response_model=dict[str, str],
     summary="Delete a pitch you created",
-)
-@router.delete(
-    "/api/v1/pitches/{pitch_id}",
-    response_model=dict[str, str],
-    include_in_schema=False,
 )
 async def delete_pitch_endpoint(
     pitch_id: uuid.UUID,

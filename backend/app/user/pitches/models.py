@@ -12,7 +12,7 @@ from app.shared.models import Base
 from app.user.pitches.schemas import PitchCategory, PitchStatus
 
 
-class PitchVote(Base):  # type: ignore[misc]
+class PitchVote(Base):
     __tablename__ = "pitch_votes"
     __table_args__ = (
         UniqueConstraint("pitch_id", "user_id", name="uq_pitch_votes_pitch_user"),
@@ -34,7 +34,7 @@ class PitchVote(Base):  # type: ignore[misc]
     is_upvote = Column(Boolean, nullable=False)
 
 
-class Pitch(Base):  # type: ignore[misc]
+class Pitch(Base):
     __tablename__ = "pitches"
 
     id: Mapped[uuid.UUID] = mapped_column(

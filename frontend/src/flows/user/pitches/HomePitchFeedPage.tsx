@@ -549,16 +549,6 @@ export const HomePitchFeedPage: React.FC = () => {
     return counts;
   }, [pitches]);
 
-  const feedStats = useMemo(() => {
-    const publishedCount = pitches.filter((p) => p.state.toLowerCase() === 'published').length;
-    const categoryCount = new Set(pitches.map((p) => p.category)).size;
-    return {
-      total: pitches.length,
-      published: publishedCount,
-      categories: categoryCount,
-    };
-  }, [pitches]);
-
   const displayedPitches = useMemo(() => {
     if (semanticResults !== null) {
       return filterAndSortPitches(
@@ -638,21 +628,6 @@ export const HomePitchFeedPage: React.FC = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-            <div className="grid grid-cols-3 gap-2 rounded-2xl border border-outline-variant/60 bg-surface-container-lowest/90 px-4 py-3 text-center">
-              <div className="px-2">
-                <p className="font-mono text-lg font-extrabold text-on-surface">{feedStats.total}</p>
-                <p className="text-[11px] font-medium text-outline">Pitches</p>
-              </div>
-              <div className="border-x border-outline-variant/40 px-3">
-                <p className="font-mono text-lg font-extrabold text-primary">{feedStats.published}</p>
-                <p className="text-[11px] font-medium text-outline">Published</p>
-              </div>
-              <div className="px-2">
-                <p className="font-mono text-lg font-extrabold text-on-surface">{feedStats.categories}</p>
-                <p className="text-[11px] font-medium text-outline">Domains</p>
-              </div>
-            </div>
-
             <Link
               to="/pitches"
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand px-5 py-3.5 text-sm font-bold text-white shadow-md shadow-brand/25 transition-all hover:bg-brand-hover active:scale-95"
