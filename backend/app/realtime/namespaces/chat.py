@@ -17,36 +17,12 @@ from app.teams.models import WorkspaceTeamMember
 
 router = APIRouter()
 
-DEV_PEERS = [
-    {"login": "zombie00Y", "fullname": "Zoubair", "role": "user", "intra_id": 1001},
-    {"login": "AnasBenba", "fullname": "Anas Benba", "role": "user", "intra_id": 1002},
-    {"login": "aykaouf", "fullname": "Ayoub Kaouf", "role": "user", "intra_id": 1003},
-    {"login": "Yassine", "fullname": "Yassine Atmouioud", "role": "user", "intra_id": 1004},
-]
-
-
 async def resolve_current_user(
     request: Request,
     db: AsyncSession,
 ) -> Users:
-    """Helper to get authenticated user or dev fallback user."""
-    try:
-        return await get_authenticated_user(request=request, db=db)
-    except HTTPException:
-        result = await db.execute(select(Users).limit(1))
-        user = result.scalar_one_or_none()
-        if user:
-            return user
-        dev_user = Users(
-            login="sel-bou",
-            fullname="Soufiane El B.",
-            role="user",
-            intra_id=4242,
-        )
-        db.add(dev_user)
-        await db.commit()
-        await db.refresh(dev_user)
-        return dev_user
+    """Helper to get authenticated user."""
+    return await get_authenticated_user(request=request, db=db)
 
 
 @router.get("/messages/users/me")
@@ -94,15 +70,6 @@ async def get_peers_list(
     stmt = select(Users).order_by(Users.login.asc())
     result = await db.execute(stmt)
     users = list(result.scalars().all())
-
-    if len(users) <= 1:
-        for peer_data in DEV_PEERS:
-            if not any(u.login == peer_data["login"] for u in users):
-                p = Users(**peer_data)
-                db.add(p)
-        await db.commit()
-        refreshed = await db.execute(select(Users).order_by(Users.login.asc()))
-        users = list(refreshed.scalars().all())
 
     online_ids = presence_manager.get_online_user_ids()
 

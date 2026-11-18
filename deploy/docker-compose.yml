@@ -42,14 +42,6 @@ services:
     env_file:
       - .env
 
-
-    environment:
-    
-      # DATABASE_URL: ${DATABASE_URL}
-      # MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL}
-      # TRUSTED_PROXY_SUBNET: ${TRUSTED_PROXY_SUBNET}
-      UVICORN_RELOAD: "1"
-
     depends_on:
       postgres:
         condition: service_healthy
@@ -78,9 +70,6 @@ services:
 
     env_file:
       - .env
-    # environment:
-    #   TLS_CERT_PEM: ${TLS_CERT_PEM}
-    #   TLS_KEY_PEM: ${TLS_KEY_PEM}
 
     depends_on:
       backend:

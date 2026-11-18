@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { authFetch } from '@/lib/http';
+import type { LayoutContext } from '@/components/Layout';
 
 interface Opportunity {
   id: string;
@@ -16,6 +18,8 @@ interface Pitch {
 }
 
 export const DiscoverPage: React.FC = () => {
+  const navigate = useNavigate();
+  const outletCtx = useOutletContext<LayoutContext | undefined>();
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [myPitchIds, setMyPitchIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -196,6 +200,10 @@ export const DiscoverPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
+                    if (!outletCtx?.me) {
+                      navigate('/login');
+                      return;
+                    }
                     setSelectedOpp(opp);
                     setApplySkills(opp.required_skills?.slice(0, 2).join(', ') || '');
                   }}

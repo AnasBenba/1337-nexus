@@ -4,6 +4,7 @@ COMPOSE = $(DOCKER) compose -p 1337-nexus --env-file deploy/.env -f deploy/docke
 # Production / standard mode
 up:
 	$(COMPOSE) up -d --build
+	$(COMPOSE) exec -u 0 backend python -m app.cli.ingest_subjects
 # Development mode (adds hot reload mounts & exposed ports)
 dev:
 	$(COMPOSE) -f deploy/docker-compose.dev.yml up -d --build
@@ -43,3 +44,5 @@ logs-node-exporter:
 	$(COMPOSE) logs -f node-exporter
 ingest:
 	$(COMPOSE) exec -u 0 backend python -m app.cli.ingest_subjects
+.lock:
+	uv pip compile pyproject.toml --generate-hashes -o requirements.lock

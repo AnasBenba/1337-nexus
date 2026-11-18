@@ -21,7 +21,6 @@ COPY backend/content ./content
 RUN chmod +x /app/entrypoint.sh \
     && mkdir -p /media/avatars \
     && chown -R app:app /app /media
-RUN chmod +x /app/entrypoint.sh && chown -R app:app /app
 
 USER app
 EXPOSE 8000
