@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, Navigate, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet } from 'react-router-dom';
 import { getMe, isSignedIn, logout, type Me } from '@/app/authentication/login/Auth.api';
 import { Avatar } from '@/components/Avatar';
 import { RoleBadge } from '@/flows/admin/users';
@@ -28,13 +28,13 @@ export const Layout: React.FC = () => {
   // Closing the tab or logging out (me -> null) disconnects it.
   const signedInId = me?.id;
   useEffect(() => {
-    if (signedInId === undefined) return;
+    if (!signedInId) return;
     connectPresence();
     return disconnectPresence;
   }, [signedInId]);
 
   useEffect(() => {
-    if (signedInId === undefined) return;
+    if (!signedInId) return;
     let isMounted = true;
 
     const fetchCounts = async () => {
@@ -66,19 +66,19 @@ export const Layout: React.FC = () => {
   // Renew the 15-minute access token before it runs out while the app is open, so
   // requests don't hit a 401 first (the 401 -> refresh -> retry path stays as a fallback).
   useEffect(() => {
-    if (signedInId === undefined) return;
+    if (!signedInId) return;
     const timer = setInterval(() => void refreshSession(), 10 * 60 * 1000);
     return () => clearInterval(timer);
   }, [signedInId]);
 
   if (me === undefined) return null;
-  if (me === null) return <Navigate to="/login" replace />;
 
-  const profilePath = `/users/${me.login}`;
+  const profilePath = me ? `/users/${me.login}` : '/login';
 
   const handleLogout = async () => {
     await logout().catch(() => undefined); // even if the request fails, leave the app
-    setMe(null); // the check above then redirects to /login
+    setMe(null);
+    window.location.href = '/';
   };
 
   return (
@@ -94,89 +94,92 @@ export const Layout: React.FC = () => {
           </span>
         </div>
 
-        <div className="hidden md:flex items-center flex-1 max-w-2xl mx-space-lg">
-          <div className="flex items-center w-full bg-surface-container-low px-space-md py-space-xs rounded-full gap-space-sm">
-            <span className="material-symbols-outlined text-outline text-[18px]">search</span>
-            <input
-              type="text"
-              placeholder="Search projects, people, stack, or campus..."
-              className="w-full bg-transparent border-0 outline-none font-body-sm text-body-sm text-on-surface placeholder:text-outline"
-            />
-            <span className="font-label-code-tag text-label-code-tag bg-surface-container px-space-xs py-0.5 rounded text-on-surface-variant font-mono">
-              ⌘K
-            </span>
-            <div className="h-4 w-[1px] bg-surface-container-highest" />
+        {me ? (
+          <div className="flex items-center gap-space-md">
+            <div className="flex items-center gap-space-xs text-on-surface-variant">
+              <Link
+                to="/messages"
+                aria-label="Direct Messages"
+                className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[20px]">chat</span>
+              </Link>
+            </div>
+
+            <Link to={profilePath} aria-label="My profile" className="rounded-full shadow-sm">
+              <Avatar name={me.fullname} src={me.avatar_url} />
+            </Link>
             <button
               type="button"
-              className="flex items-center gap-1 font-label-sm text-label-sm text-on-surface-variant shrink-0 hover:text-on-surface transition-colors cursor-pointer"
+              onClick={() => void handleLogout()}
+              aria-label="Log out"
+              title="Log out"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors cursor-pointer"
             >
-              <span>Benguerir</span>
-              <span className="material-symbols-outlined text-[16px]">expand_more</span>
+              <span className="material-symbols-outlined text-[20px]">logout</span>
             </button>
           </div>
-        </div>
-
-        <div className="flex items-center gap-space-md">
-          <div className="hidden lg:flex items-center gap-space-xs font-label-code-tag text-label-code-tag px-space-sm py-1 rounded-full bg-primary-fixed text-on-primary-fixed">
-            <span className="w-2 h-2 rounded-full bg-primary-container animate-pulse" />
-            <span>1337 Benguerir</span>
-          </div>
-
-          <div className="flex items-center gap-space-xs text-on-surface-variant">
+        ) : (
+          <div className="flex items-center gap-space-sm">
             <Link
-              to="/messages"
-              aria-label="Direct Messages"
-              className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-surface-container hover:text-on-surface transition-colors cursor-pointer"
+              to="/login"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-on-primary font-bold text-sm shadow-sm hover:opacity-90 transition-opacity"
             >
-              <span className="material-symbols-outlined text-[20px]">chat</span>
+              <span className="material-symbols-outlined text-[18px]">login</span>
+              <span>Sign In</span>
             </Link>
           </div>
-
-          <Link to={profilePath} aria-label="My profile" className="rounded-full shadow-sm">
-            <Avatar name={me.fullname} src={me.avatar_url} />
-          </Link>
-          <button
-            type="button"
-            onClick={() => void handleLogout()}
-            aria-label="Log out"
-            title="Log out"
-            className="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-error-container hover:text-on-error-container transition-colors cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[20px]">logout</span>
-          </button>
-        </div>
+        )}
       </header>
 
       {/* Left Navigation Sidebar */}
       <aside className="fixed left-0 top-16 bottom-0 w-64 bg-surface-container-lowest z-40 flex flex-col p-space-md shadow-[0_1px_8px_rgba(0,0,0,0.03)] overflow-y-auto">
-        <div className="bg-surface-container-low rounded p-space-md mb-space-md relative overflow-hidden">
-          <div className="h-12 -mx-space-md -mt-space-md bg-gradient-to-r from-primary-container to-secondary-fixed" />
-          <div className="flex items-start gap-space-sm">
-            <Link to={profilePath} aria-label="My profile" className="-mt-6 rounded-full">
-              <Avatar
-                name={me.fullname}
-                src={me.avatar_url}
-                className="w-12 h-12 text-label-md ring-4 ring-surface-container-low"
-              />
-            </Link>
-            <div className="overflow-hidden">
-              <Link
-                to={profilePath}
-                className="block font-label-md text-label-md text-on-surface truncate font-bold hover:text-primary"
-              >
-                {me.fullname}
+        {me ? (
+          <div className="bg-surface-container-low rounded p-space-md mb-space-md relative overflow-hidden">
+            <div className="h-12 -mx-space-md -mt-space-md bg-gradient-to-r from-primary-container to-secondary-fixed" />
+            <div className="flex items-start gap-space-sm">
+              <Link to={profilePath} aria-label="My profile" className="-mt-6 rounded-full">
+                <Avatar
+                  name={me.fullname}
+                  src={me.avatar_url}
+                  className="w-12 h-12 text-label-md ring-4 ring-surface-container-low"
+                />
               </Link>
-              <div className="flex min-w-0 items-center gap-1 font-body-sm text-[11px] text-on-surface-variant">
-                <span className="truncate">@{me.login}</span>
-                <RoleBadge role={me.role} />
-              </div>
-              <div className="flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
-                <span className="material-symbols-outlined text-[14px]">location_on</span>
-                <span className="text-[11px]">Benguerir</span>
+              <div className="overflow-hidden">
+                <Link
+                  to={profilePath}
+                  className="block font-label-md text-label-md text-on-surface truncate font-bold hover:text-primary"
+                >
+                  {me.fullname}
+                </Link>
+                <div className="flex min-w-0 items-center gap-1 font-body-sm text-[11px] text-on-surface-variant">
+                  <span className="truncate">@{me.login}</span>
+                  <RoleBadge role={me.role} />
+                </div>
+                <div className="flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
+                  <span className="material-symbols-outlined text-[14px]">location_on</span>
+                  <span className="text-[11px]">Benguerir</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-surface-container-low rounded p-space-md mb-space-md text-center">
+            <div className="w-10 h-10 rounded-full bg-primary/10 text-primary mx-auto flex items-center justify-center mb-2">
+              <span className="material-symbols-outlined text-[20px]">account_circle</span>
+            </div>
+            <p className="font-bold text-xs text-on-surface">1337 Nexus Guest</p>
+            <p className="text-[11px] text-on-surface-variant mt-0.5 mb-2.5">
+              Sign in to pitch, vote, and collaborate with peers.
+            </p>
+            <Link
+              to="/login"
+              className="block w-full py-1.5 px-3 rounded-lg bg-primary text-on-primary font-bold text-xs text-center shadow-sm hover:opacity-90"
+            >
+              Sign In
+            </Link>
+          </div>
+        )}
 
         <nav className="flex-1 flex flex-col gap-space-xs">
           <NavLink
@@ -213,7 +216,7 @@ export const Layout: React.FC = () => {
           </NavLink>
 
           <NavLink
-            to="/friends"
+            to={me ? "/friends" : "/login"}
             className={({ isActive }) =>
               `flex items-center justify-between px-space-md py-space-sm rounded transition-all ${
                 isActive
@@ -245,7 +248,7 @@ export const Layout: React.FC = () => {
           </NavLink>
 
           <NavLink
-            to="/pitches"
+            to={me ? "/pitches" : "/login"}
             className={({ isActive }) =>
               `flex items-center justify-between px-space-md py-space-sm rounded transition-all ${
                 isActive
@@ -261,7 +264,7 @@ export const Layout: React.FC = () => {
           </NavLink>
 
           <NavLink
-            to="/messages"
+            to={me ? "/messages" : "/login"}
             className={({ isActive }) =>
               `flex items-center justify-between px-space-md py-space-sm rounded transition-all ${
                 isActive
@@ -274,22 +277,24 @@ export const Layout: React.FC = () => {
               <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
               <span className="font-label-md text-label-md">Messages</span>
             </div>
-            <span
-              className={`px-2 py-0.5 rounded-full font-label-code-tag text-[10px] ${
-                unreadMessages > 0
-                  ? 'bg-primary text-on-primary font-bold'
-                  : 'bg-surface-container text-outline'
-              }`}
-            >
-              {unreadMessages}
-            </span>
+            {me && (
+              <span
+                className={`px-2 py-0.5 rounded-full font-label-code-tag text-[10px] ${
+                  unreadMessages > 0
+                    ? 'bg-primary text-on-primary font-bold'
+                    : 'bg-surface-container text-outline'
+                }`}
+              >
+                {unreadMessages}
+              </span>
+            )}
           </NavLink>
 
           <div className="my-space-sm h-[1px] bg-surface-container-high" />
 
           {/* AI Copilot Route */}
           <NavLink
-            to="/copilot"
+            to={me ? "/copilot" : "/login"}
             className={({ isActive }) =>
               `flex items-center justify-between px-space-md py-space-sm rounded transition-all group ${
                 isActive
@@ -310,7 +315,7 @@ export const Layout: React.FC = () => {
           </NavLink>
 
           {/* Only shown to roles that can manage users (admins). */}
-          {can(me, Permission.VIEW_USERS) && (
+          {me && can(me, Permission.VIEW_USERS) && (
             <>
               <div className="my-space-sm h-[1px] bg-surface-container-high" />
               <NavLink
@@ -332,22 +337,12 @@ export const Layout: React.FC = () => {
             </>
           )}
         </nav>
-
-        <div className="pt-space-md border-t border-surface-container-high">
-          <div className="flex items-center justify-between px-space-sm py-space-xs rounded bg-surface-container-low">
-            <div className="flex items-center gap-space-xs font-label-code-tag text-label-code-tag text-on-surface-variant">
-              <span className="w-2 h-2 rounded-full bg-secondary-container" />
-              <span>Intra Connected</span>
-            </div>
-            <span className="material-symbols-outlined text-[16px] text-primary">verified</span>
-          </div>
-        </div>
       </aside>
 
       {/* Main Content Area */}
       <div className="pl-64">
         <main className="w-full min-h-screen pt-16 bg-surface p-margin">
-          <Outlet context={{ me, setMe } satisfies LayoutContext} />
+          <Outlet context={{ me: me as Me, setMe: setMe as (me: Me) => void } satisfies LayoutContext} />
         </main>
       </div>
     </div>

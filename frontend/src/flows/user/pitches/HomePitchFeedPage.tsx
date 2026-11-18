@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { RefineProjectModal } from '@/flows/user/projects/refine_project';
@@ -253,6 +253,7 @@ const markdownComponents = {
 };
 
 export const HomePitchFeedPage: React.FC = () => {
+  const navigate = useNavigate();
   const [pitches, setPitches] = useState<FeedPitch[]>([]);
   const [semanticResults, setSemanticResults] = useState<FeedPitch[] | null>(null);
   const [semanticQueryLabel, setSemanticQueryLabel] = useState<string>('');
@@ -454,6 +455,10 @@ export const HomePitchFeedPage: React.FC = () => {
   };
 
   const handleVote = async (pitchId: string, direction: 'up' | 'down') => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
     if (votingPitchId) return;
     setVotingPitchId(pitchId);
     setError('');
@@ -629,7 +634,7 @@ export const HomePitchFeedPage: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
             <Link
-              to="/pitches"
+              to={currentUser ? "/pitches" : "/login"}
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand px-5 py-3.5 text-sm font-bold text-white shadow-md shadow-brand/25 transition-all hover:bg-brand-hover active:scale-95"
             >
               <span className="material-symbols-outlined text-[20px]">edit_note</span>

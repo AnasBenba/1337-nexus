@@ -1,7 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
-import { TeamChatPanel } from './TeamChatPanel';
 
 type ChatMessage = {
   id: string;
@@ -127,7 +126,6 @@ export const ChatPage = () => {
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
-  const [activeTab, setActiveTab] = useState<'direct' | 'team'>('direct');
 
   useEffect(() => {
     receiverIdRef.current = receiverId;
@@ -456,7 +454,7 @@ export const ChatPage = () => {
             Messages
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-on-surface-variant">
-            Connect and communicate directly with peers or collaborate inside your project team workspaces.
+            Connect and communicate directly with peers.
           </p>
         </div>
 
@@ -488,36 +486,7 @@ export const ChatPage = () => {
         </div>
       </header>
 
-      {/* Unified Messages Tabs */}
-      <div className="flex items-center gap-2 border-b border-outline-variant/60 pb-1">
-        <button
-          type="button"
-          onClick={() => setActiveTab('direct')}
-          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold border-b-2 transition-all ${
-            activeTab === 'direct'
-              ? 'border-brand text-brand'
-              : 'border-transparent text-on-surface-variant hover:text-on-surface'
-          }`}
-        >
-          <span className="material-symbols-outlined text-lg">chat</span>
-          <span>Direct Messages</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('team')}
-          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-bold border-b-2 transition-all ${
-            activeTab === 'team'
-              ? 'border-brand text-brand'
-              : 'border-transparent text-on-surface-variant hover:text-on-surface'
-          }`}
-        >
-          <span className="material-symbols-outlined text-lg">groups</span>
-          <span>Team Workspaces</span>
-        </button>
-      </div>
-
-      {activeTab === 'direct' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
           {/* LEFT SIDEBAR: Friends / Peers List (Online & Offline) */}
           <aside className="rounded-3xl border border-outline-variant/60 bg-surface-container-lowest p-4 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3">
@@ -786,9 +755,6 @@ export const ChatPage = () => {
             </form>
           </section>
         </div>
-      ) : (
-        <TeamChatPanel />
-      )}
 
       {error && (
         <p
