@@ -66,9 +66,9 @@ async def refine_pitch_executor(
     job_id_str = payload.get("job_id")
     job_id = uuid.UUID(job_id_str) if job_id_str else None
 
-    title = snapshot.get("title", "")
-    description = snapshot.get("description", "")
-    content = snapshot.get("content", "")
+    title = snapshot.get("title") or ""
+    description = snapshot.get("description") or ""
+    content = snapshot.get("content") or ""
 
     total_len = len(title) + len(description) + len(content)
     if total_len > MAX_PITCH_CONTENT_LENGTH:
