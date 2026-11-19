@@ -178,26 +178,26 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
     const newShape: CanvasShape =
       tool === 'pen' || tool === 'eraser'
         ? {
-            id: shapeId,
-            type: tool,
-            color: tool === 'eraser' ? '#FFFFFF' : color,
-            strokeWidth: tool === 'eraser' ? strokeWidth * 3 : strokeWidth,
-            points: [coords],
-            userId: user?.login || 'Anonymous',
-            createdAt: Date.now(),
-          }
+          id: shapeId,
+          type: tool,
+          color: tool === 'eraser' ? '#FFFFFF' : color,
+          strokeWidth: tool === 'eraser' ? strokeWidth * 3 : strokeWidth,
+          points: [coords],
+          userId: user?.login || 'Anonymous',
+          createdAt: Date.now(),
+        }
         : {
-            id: shapeId,
-            type: tool,
-            color,
-            strokeWidth,
-            x: coords.x,
-            y: coords.y,
-            width: 0,
-            height: 0,
-            userId: user?.login || 'Anonymous',
-            createdAt: Date.now(),
-          };
+          id: shapeId,
+          type: tool,
+          color,
+          strokeWidth,
+          x: coords.x,
+          y: coords.y,
+          width: 0,
+          height: 0,
+          userId: user?.login || 'Anonymous',
+          createdAt: Date.now(),
+        };
 
     currentDrawingRef.current = newShape;
     setCurrentDrawing(newShape);
@@ -386,54 +386,53 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
     <div className={`flex flex-col ${hideHeader ? 'h-full space-y-2.5' : 'h-[calc(100vh-6rem)] space-y-4'}`}>
       {/* Top Header */}
       {!hideHeader && (
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
-        <div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[26px]">draw</span>
+              <h1 className="text-xl font-bold tracking-tight text-on-surface">
+                Collaborative Whiteboard
+              </h1>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-primary-fixed text-on-primary-fixed">
+                [CV-403]
+              </span>
+            </div>
+            <p className="text-xs text-on-surface-variant">
+              Real-time multi-user shared canvas synchronized with PostgreSQL & Socket.IO.
+            </p>
+          </div>
+
+          {/* Room Info & Connection Status */}
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-primary text-[26px]">draw</span>
-            <h1 className="text-xl font-bold tracking-tight text-on-surface">
-              Collaborative Whiteboard
-            </h1>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-primary-fixed text-on-primary-fixed">
-              [CV-403]
-            </span>
+            {/* Active Collaborators count */}
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-surface-container text-xs font-semibold text-on-surface">
+              <span className="material-symbols-outlined text-[16px] text-primary">group</span>
+              <span>{peers.size + 1} online</span>
+            </div>
+
+            {/* Connection Pill */}
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-surface-container text-xs font-semibold">
+              <span
+                className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-amber-500'
+                  }`}
+              />
+              <span className="text-[11px] text-on-surface-variant">
+                {isConnected ? 'Connected' : 'Connecting...'}
+              </span>
+            </div>
+
+            {/* Document ID badge */}
+            <button
+              type="button"
+              title="Click to copy Room ID"
+              onClick={() => navigator.clipboard.writeText(documentId)}
+              className="flex items-center gap-1 px-3 py-1 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-xs font-mono text-on-surface-variant transition-colors cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[15px]">content_copy</span>
+              <span>Room: {documentId.slice(0, 8)}...</span>
+            </button>
           </div>
-          <p className="text-xs text-on-surface-variant">
-            Real-time multi-user shared canvas synchronized with PostgreSQL & Socket.IO.
-          </p>
         </div>
-
-        {/* Room Info & Connection Status */}
-        <div className="flex items-center gap-2">
-          {/* Active Collaborators count */}
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-surface-container text-xs font-semibold text-on-surface">
-            <span className="material-symbols-outlined text-[16px] text-primary">group</span>
-            <span>{peers.size + 1} online</span>
-          </div>
-
-          {/* Connection Pill */}
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-surface-container text-xs font-semibold">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isConnected ? 'bg-green-500 animate-pulse' : 'bg-amber-500'
-              }`}
-            />
-            <span className="text-[11px] text-on-surface-variant">
-              {isConnected ? 'Connected' : 'Connecting...'}
-            </span>
-          </div>
-
-          {/* Document ID badge */}
-          <button
-            type="button"
-            title="Click to copy Room ID"
-            onClick={() => navigator.clipboard.writeText(documentId)}
-            className="flex items-center gap-1 px-3 py-1 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-xs font-mono text-on-surface-variant transition-colors cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[15px]">content_copy</span>
-            <span>Room: {documentId.slice(0, 8)}...</span>
-          </button>
-        </div>
-      </div>
       )}
 
       {!isAuthenticated && (
