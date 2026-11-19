@@ -44,5 +44,5 @@ logs-node-exporter:
 	$(COMPOSE) logs -f node-exporter
 ingest:
 	$(COMPOSE) exec -u 0 backend python -m app.cli.ingest_subjects
-.lock:
-	uv pip compile pyproject.toml --generate-hashes -o requirements.lock
+lock:
+	uv pip compile backend/pyproject.toml --generate-hashes -o backend/requirements.lock

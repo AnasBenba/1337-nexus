@@ -36,55 +36,37 @@ services:
     build:
       context: ..
       dockerfile: backend/Dockerfile
-
     restart: unless-stopped
-    
     env_file:
       - .env
-
     depends_on:
       postgres:
         condition: service_healthy
-
     expose:
       - "8000"
-
     volumes:
       - media_data:/media
-
     mem_limit: 400m
-
     networks:
       - nexus
-
 
   nginx:
     build:
       context: ..
       dockerfile: nginx/Dockerfile
-      args:
-        NODE_IMAGE: ${NODE_IMAGE}
-        NGINX_IMAGE: ${NGINX_IMAGE}
-
     restart: unless-stopped
-
     env_file:
       - .env
-
     depends_on:
       backend:
         condition: service_started
       grafana:
         condition: service_started
-
     ports:
-      - "${NGINX_PORT:-443}:8443"
-
+      - "${NGINX_PORT:-8443}:8443"
     volumes:
       - media_data:/media:ro
-
     mem_limit: 32m
-
     networks:
       - nexus
   

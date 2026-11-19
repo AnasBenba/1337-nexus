@@ -705,6 +705,10 @@ export const CreatePitchPage = () => {
       setError('Please choose a category that best describes your project.');
       return;
     }
+    if (!form.description.trim()) {
+      setError('Please provide an elevator pitch or tagline for your project.');
+      return;
+    }
     if (!form.content.trim()) {
       setError('Please describe your idea or solution in the pitch content.');
       return;
@@ -1609,9 +1613,7 @@ export const CreatePitchPage = () => {
                   3
                 </span>
                 Elevator Pitch / Tagline
-                <span className="rounded bg-surface-container px-1.5 py-0.5 text-[10px] font-semibold text-outline">
-                  Optional
-                </span>
+                <span className="text-xs font-normal text-error">*</span>
               </label>
               <p className="text-xs text-on-surface-variant">
                 A brief 1-2 sentence hook displayed on feed cards and peer search results.
@@ -1630,6 +1632,7 @@ export const CreatePitchPage = () => {
 
           <textarea
             id="pitch-description-input"
+            required
             className="w-full min-h-20 resize-y rounded-2xl border border-outline-variant/70 bg-surface px-4 py-3 text-sm text-on-surface placeholder:text-outline focus:border-brand focus:bg-surface-container-lowest focus:outline-none focus:ring-4 focus:ring-brand/10 transition-all"
             maxLength={300}
             onChange={(e) => updateForm('description', e.target.value)}

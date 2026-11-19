@@ -1,8 +1,4 @@
-ARG NODE_IMAGE=node:22-alpine
-
-ARG NGINX_IMAGE=nginx:1.27-alpine
-
-FROM ${NODE_IMAGE} AS frontend-build
+FROM node:22-alpine AS frontend-build
 
 WORKDIR /src
 
@@ -14,9 +10,7 @@ COPY frontend ./frontend
 
 RUN npm run build --prefix frontend
 
-
-
-FROM ${NGINX_IMAGE}
+FROM nginx:1.27-alpine
 
 COPY --from=frontend-build /src/frontend/dist /usr/share/nginx/html
 
@@ -32,8 +26,7 @@ RUN chmod 755 /usr/local/bin/nginx-entrypoint.sh \
        /tmp/uwsgi_temp \
        /tmp/scgi_temp \
     && chown -R nginx:nginx /tmp/nginx /tmp/client_temp /tmp/proxy_temp \
-       /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp \
-    && chown -R nginx:nginx /usr/share/nginx/html
+       /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp/scgi_temp /usr/share/nginx/html
 
 USER nginx
 

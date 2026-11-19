@@ -1,38 +1,12 @@
 import os
-from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db_session
 
-# from app.user.opportunities.apply.router import router as apply_router
-# from app.user.opportunities.browse_opportunities.router import (
-#     router as opportunities_router,
-# )
-# from app.user.opportunities.create_opportunity.router import (
-#     router as create_opportunity_router,
-# )
-# from app.user.opportunities.match_scoring.router import (
-#     router as match_scoring_router,
-# )
-# from app.user.opportunities.publish_opportunity.router import (
-#     router as publish_opportunity_router,
-# )
-# from app.user.opportunities.review_applications.router import (
-#     router as review_applications_router,
-# )
-# from app.user.opportunities.update_opportunity.router import (
-#     router as update_opportunity_router,
-# )
-# from app.user.opportunities.view_opportunity.router import (
-#     router as view_opportunity_router,
-# )
-# from app.user.opportunities.withdraw_application.router import (
-#     router as withdraw_application_router,
-# )
 from app.user.pitches.router import router as pitches_router
 from app.collaboration.board.router import router as board_router
 from app.user.opportunities.apply.router import router as apply_router
@@ -82,7 +56,6 @@ from .user.copilot.retrieve_curriculum.router import (
 )
 
 router = APIRouter()
-HOME_PAGE = Path(__file__).parent / "index.html"
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://localhost:8443/")
 DbSession = Annotated[AsyncSession, Depends(get_db_session)]
 
@@ -145,19 +118,6 @@ async def auth_logout(request: Request, session: DbSession) -> Response:
 @router.get("/auth/login", tags=["auth"])
 async def auth_login() -> RedirectResponse:
     return await entrypoint.redirect_to_forttytwo()
-
-
-@router.get("/home", tags=["pages"])
-async def home(request: Request) -> FileResponse:
-    token = request.cookies.get("access_token")
-    if not token:
-        raise HTTPException(
-            status_code=401,
-            detail="Not authenticated",
-        )
-
-    jwt.verify_access_token(token)
-    return FileResponse(HOME_PAGE, media_type="text/html")
 
 
 @router.get("/api/v1/auth/oauth/42/callback", tags=["auth"])

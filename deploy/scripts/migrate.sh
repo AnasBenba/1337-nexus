@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 set -e
-# Target container name
-CONTAINER="deploy-backend-1"
-# 1. Verify that the backend container is running
-if ! docker ps --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
-    echo "❌ Error: Container '${CONTAINER}' is not running."
-    echo "💡 Run 'cd deploy && docker compose up -d' first."
+
+# Dynamically locate the running backend container (works with both 'make' and 'docker compose')
+CONTAINER=$(docker ps --filter "name=backend" --filter "status=running" --format "{{.Names}}" | head -n 1)
+
+if [ -z "$CONTAINER" ]; then
+    echo "❌ Error: Backend container is not running."
+    echo "💡 Run 'make' or 'docker compose up -d' first."
     exit 1
 fi
+
 # Helper function to run alembic inside the container
 run_alembic() {
     docker exec -w /app "${CONTAINER}" alembic "$@"
