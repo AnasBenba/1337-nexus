@@ -59,6 +59,7 @@ export const CopilotPage: React.FC = () => {
       await streamCopilotAnswer({
         body: {
           question,
+          // u can change it what ever u want to test the chunks effect
           k: 8,
         },
         signal: controller.signal,
