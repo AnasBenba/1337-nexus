@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.jobs import job_worker_lifespan
@@ -14,14 +13,6 @@ def create_app() -> FastAPI:
         version="0.1.0",
         description="1337 Nexus backend API",
         lifespan=job_worker_lifespan,
-    )
-
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
     )
 
     register_routes(app)
