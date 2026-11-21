@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { authFetch } from '@/lib/http';
+import { api, authFetch } from '@/lib/http';
 
 interface Opportunity {
   id: string;
@@ -45,30 +45,46 @@ export const OpportunitiesPage: React.FC = () => {
   const [teamError, setTeamError] = useState<string | null>(null);
   const [kickingUserId, setKickingUserId] = useState<string | null>(null);
 
-  // Create Opportunity Modal state
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingOpportunity, setEditingOpportunity] = useState<Opportunity | null>(null);
+
+  // Opportunity form state
+  const [showOpportunityForm, setShowOpportunityForm] = useState(false);
   const [selectedPitchId, setSelectedPitchId] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newSkills, setNewSkills] = useState('');
-  const [createLoading, setCreateLoading] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
+  const [savingOpportunity, setSavingOpportunity] = useState(false);
+  const [opportunityFormError, setOpportunityFormError] = useState<string | null>(null);
 
-  const availablePitches = myPitches.filter(
+  const publishedPitches = myPitches.filter(
+    (p) => (p.state ?? p.status ?? '').toLowerCase() === 'published',
+  );
+
+  const availablePitches = publishedPitches.filter(
     (p) => !opportunities.some((opp) => opp.project_id === p.id),
   );
 
   const handleOpenCreateModal = () => {
-    const available = myPitches.filter(
-      (p) => !opportunities.some((opp) => opp.project_id === p.id),
-    );
-    if (available.length > 0) {
-      setSelectedPitchId(available[0].id);
+    if (availablePitches.length > 0) {
+      setSelectedPitchId(availablePitches[0].id);
     } else {
       setSelectedPitchId('');
     }
-    setCreateError(null);
-    setShowCreateModal(true);
+    setEditingOpportunity(null);
+    setNewTitle('');
+    setNewDesc('');
+    setNewSkills('');
+    setOpportunityFormError(null);
+    setShowOpportunityForm(true);
+  };
+
+  const handleOpenEditModal = (opportunity: Opportunity) => {
+    setEditingOpportunity(opportunity);
+    setNewTitle(opportunity.title);
+    setNewDesc(opportunity.description);
+    setNewSkills(opportunity.required_skills?.join(', ') ?? '');
+    setOpportunityFormError(null);
+    setShowOpportunityForm(true);
   };
 
   const loadData = async () => {
@@ -145,14 +161,15 @@ export const OpportunitiesPage: React.FC = () => {
     }
   };
 
-  const handleCreateOpportunity = async (e: React.FormEvent) => {
+  const handleSaveOpportunity = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedPitchId) {
-      setCreateError('Please select one of your pitches first.');
+    if (savingOpportunity) return;
+    if (!editingOpportunity && !selectedPitchId) {
+      setOpportunityFormError('Please select one of your pitches first.');
       return;
     }
-    setCreateLoading(true);
-    setCreateError(null);
+    setSavingOpportunity(true);
+    setOpportunityFormError(null);
 
     const skillsArray = newSkills
       .split(',')
@@ -160,6 +177,28 @@ export const OpportunitiesPage: React.FC = () => {
       .filter(Boolean);
 
     try {
+      if (editingOpportunity) {
+        const changes: Partial<Pick<Opportunity, 'title' | 'description' | 'required_skills'>> = {};
+        if (newTitle !== editingOpportunity.title) changes.title = newTitle.trim();
+        if (newDesc !== editingOpportunity.description) changes.description = newDesc.trim();
+        if (newSkills !== (editingOpportunity.required_skills?.join(', ') ?? '')) {
+          changes.required_skills = skillsArray;
+        }
+
+        if (Object.keys(changes).length > 0) {
+          const updated = await api<Opportunity>(`/opportunities/${editingOpportunity.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(changes),
+          });
+          setOpportunities((current) =>
+            current.map((item) => (item.id === updated.id ? updated : item)),
+          );
+        }
+        setShowOpportunityForm(false);
+        return;
+      }
+
       const res = await authFetch('/opportunities/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -173,7 +212,7 @@ export const OpportunitiesPage: React.FC = () => {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        setCreateError(err.detail || 'Failed to create opportunity');
+        setOpportunityFormError(err.detail || 'Failed to create opportunity');
         return;
       }
 
@@ -185,14 +224,18 @@ export const OpportunitiesPage: React.FC = () => {
       const finalOpp = pubRes.ok ? ((await pubRes.json()) as Opportunity) : created;
 
       setOpportunities((current) => [finalOpp, ...current.filter((item) => item.id !== finalOpp.id)]);
-      setShowCreateModal(false);
+      setShowOpportunityForm(false);
       setNewTitle('');
       setNewDesc('');
       setNewSkills('');
-    } catch {
-      setCreateError('Network error while creating opportunity');
+    } catch (reason) {
+      setOpportunityFormError(
+        editingOpportunity && reason instanceof Error
+          ? reason.message
+          : 'Network error while creating opportunity',
+      );
     } finally {
-      setCreateLoading(false);
+      setSavingOpportunity(false);
     }
   };
 
@@ -387,6 +430,17 @@ export const OpportunitiesPage: React.FC = () => {
                     <span>Details</span>
                   </button>
 
+                  {isOwner && (
+                    <button
+                      type="button"
+                      disabled={publishingId === opp.id || deletingOppId === opp.id}
+                      onClick={() => handleOpenEditModal(opp)}
+                      className="w-full px-3 py-2 rounded-xl border border-outline-variant text-on-surface hover:border-primary hover:text-primary text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer"
+                    >
+                      Edit Opportunity
+                    </button>
+                  )}
+
                   {isOwner && opp.status === 'draft' && (
                     <button
                       type="button"
@@ -404,30 +458,32 @@ export const OpportunitiesPage: React.FC = () => {
         </div>
       )}
 
-      {/* Create Opportunity from Pitch Modal */}
-      {showCreateModal && (
+      {/* Opportunity Form */}
+      {showOpportunityForm && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface rounded-2xl border border-outline-variant/60 max-w-lg w-full p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+          <div role="dialog" aria-modal="true" aria-labelledby="opportunity-form-title" className="bg-surface rounded-2xl border border-outline-variant/60 max-w-lg w-full p-6 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-on-surface">Create Opportunity from Pitch</h3>
+              <h3 id="opportunity-form-title" className="text-lg font-bold text-on-surface">{editingOpportunity ? 'Edit Opportunity' : 'Create Opportunity from Pitch'}</h3>
               <button
                 type="button"
-                onClick={() => setShowCreateModal(false)}
+                aria-label="Close opportunity form"
+                disabled={savingOpportunity}
+                onClick={() => setShowOpportunityForm(false)}
                 className="text-outline hover:text-on-surface text-sm cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            {createError && (
-              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-500 text-xs rounded-xl">
-                {createError}
+            {opportunityFormError && (
+              <div role="alert" className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-500 text-xs rounded-xl">
+                {opportunityFormError}
               </div>
             )}
 
-            {myPitches.length === 0 ? (
+            {!editingOpportunity && myPitches.length === 0 ? (
               <div className="text-center py-6 text-xs text-on-surface-variant space-y-3">
-                <p>You need to create a pitch first before creating an opportunity from it.</p>
+                <p>You need to create and publish a pitch first before creating an opportunity from it.</p>
                 <Link
                   to="/pitches"
                   className="inline-block px-4 py-2 bg-primary text-white rounded-xl font-semibold"
@@ -435,69 +491,102 @@ export const OpportunitiesPage: React.FC = () => {
                   Go to Pitches
                 </Link>
               </div>
-            ) : availablePitches.length === 0 ? (
+            ) : !editingOpportunity && publishedPitches.length === 0 ? (
               <div className="text-center py-6 text-xs text-on-surface-variant space-y-3">
-                <p>All your pitches already have an opportunity created. Only one opportunity can be created per pitch.</p>
+                <p>You only have draft pitches right now. Please publish a pitch before creating an opportunity from it.</p>
                 <Link
                   to="/pitches"
                   className="inline-block px-4 py-2 bg-primary text-white rounded-xl font-semibold"
                 >
-                  Create New Pitch
+                  Publish a Pitch
+                </Link>
+              </div>
+            ) : !editingOpportunity && availablePitches.length === 0 ? (
+              <div className="text-center py-6 text-xs text-on-surface-variant space-y-3">
+                <p>All your published pitches already have an opportunity created. Only one opportunity can be created per pitch.</p>
+                <Link
+                  to="/pitches"
+                  className="inline-block px-4 py-2 bg-primary text-white rounded-xl font-semibold"
+                >
+                  Go to Pitches
                 </Link>
               </div>
             ) : (
-              <form onSubmit={handleCreateOpportunity} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">
-                    Select Your Pitch
-                  </label>
-                  <select
-                    value={selectedPitchId}
-                    onChange={(e) => setSelectedPitchId(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-surface-container-low rounded-xl text-xs text-on-surface border border-outline-variant/60 focus:border-primary outline-none"
-                  >
-                    {availablePitches.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.title}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <form onSubmit={handleSaveOpportunity} className="space-y-4">
+                {!editingOpportunity && (
+                  <div>
+                    <label
+                      htmlFor="create-opp-pitch-select"
+                      className="block text-xs font-semibold text-on-surface mb-1"
+                    >
+                      Select Your Published Pitch
+                    </label>
+                    <select
+                      id="create-opp-pitch-select"
+                      name="project_id"
+                      value={selectedPitchId}
+                      onChange={(e) => setSelectedPitchId(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-surface-container-low rounded-xl text-xs text-on-surface border border-outline-variant/60 focus:border-primary outline-none"
+                    >
+                      {availablePitches.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">
+                  <label
+                    htmlFor="create-opp-title-input"
+                    className="block text-xs font-semibold text-on-surface mb-1"
+                  >
                     Opportunity Title / Role
                   </label>
                   <input
+                    id="create-opp-title-input"
+                    name="title"
                     type="text"
                     placeholder="e.g. Backend Engineer (Python / FastAPI / PostgreSQL)"
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
+                    maxLength={255}
                     required
                     className="w-full px-3 py-2 bg-surface-container-low rounded-xl text-xs text-on-surface border border-outline-variant/60 focus:border-primary outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">
+                  <label
+                    htmlFor="create-opp-skills-input"
+                    className="block text-xs font-semibold text-on-surface mb-1"
+                  >
                     Required Skills (comma separated)
                   </label>
                   <input
+                    id="create-opp-skills-input"
+                    name="required_skills"
                     type="text"
                     placeholder="e.g. Python, Docker, FastAPI, React"
                     value={newSkills}
                     onChange={(e) => setNewSkills(e.target.value)}
-                    required
+                    required={!editingOpportunity}
                     className="w-full px-3 py-2 bg-surface-container-low rounded-xl text-xs text-on-surface border border-outline-variant/60 focus:border-primary outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">
+                  <label
+                    htmlFor="create-opp-description-input"
+                    className="block text-xs font-semibold text-on-surface mb-1"
+                  >
                     Description &amp; Responsibilities
                   </label>
                   <textarea
+                    id="create-opp-description-input"
+                    name="description"
                     rows={4}
                     placeholder="Describe what the teammate will work on, timeline, and expectations..."
                     value={newDesc}
@@ -510,17 +599,18 @@ export const OpportunitiesPage: React.FC = () => {
                 <div className="flex justify-end gap-3 pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowCreateModal(false)}
+                    disabled={savingOpportunity}
+                    onClick={() => setShowOpportunityForm(false)}
                     className="px-4 py-2 rounded-xl text-xs font-medium text-on-surface-variant hover:bg-surface-container cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    disabled={createLoading}
+                    disabled={savingOpportunity}
                     className="px-5 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:opacity-90 disabled:opacity-50 shadow-sm cursor-pointer"
                   >
-                    {createLoading ? 'Creating...' : 'Create & Publish'}
+                    {savingOpportunity ? 'Saving...' : editingOpportunity ? 'Save Changes' : 'Create & Publish'}
                   </button>
                 </div>
               </form>

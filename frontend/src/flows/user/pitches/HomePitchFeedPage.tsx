@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import type { LayoutContext } from '@/components/Layout';
 import { RefineProjectModal } from '@/flows/user/projects/refine_project';
 import { CATEGORIES, PitchCategory } from './CreatePitchPage';
 
@@ -254,6 +255,8 @@ const markdownComponents = {
 
 export const HomePitchFeedPage: React.FC = () => {
   const navigate = useNavigate();
+  const outletCtx = useOutletContext<LayoutContext | undefined>();
+  const signedInMe = outletCtx?.me ?? null;
   const [pitches, setPitches] = useState<FeedPitch[]>([]);
   const [semanticResults, setSemanticResults] = useState<FeedPitch[] | null>(null);
   const [semanticQueryLabel, setSemanticQueryLabel] = useState<string>('');
@@ -309,50 +312,48 @@ export const HomePitchFeedPage: React.FC = () => {
   }, []);
 
   const loadAuthorsAndCurrentUser = useCallback(async () => {
-    const [meRes, peersRes] = await Promise.allSettled([
-      fetch('/api/v1/users/me', { credentials: 'include' }),
-      fetch('/messages/peers', { credentials: 'include' }),
-    ]);
-
     const nextAuthors: Record<string, AuthorProfile> = {};
 
-    if (peersRes.status === 'fulfilled' && peersRes.value.ok) {
-      const peersData = (await peersRes.value.json()) as unknown;
-      if (Array.isArray(peersData)) {
-        for (const item of peersData) {
-          if (
-            typeof item === 'object' &&
-            item !== null &&
-            typeof (item as AuthorProfile).id === 'string' &&
-            typeof (item as AuthorProfile).login === 'string' &&
-            typeof (item as AuthorProfile).fullname === 'string'
-          ) {
-            const peer = item as AuthorProfile;
-            nextAuthors[peer.id] = peer;
+    if (signedInMe) {
+      const me: AuthorProfile = {
+        id: signedInMe.id,
+        login: signedInMe.login,
+        fullname: signedInMe.fullname,
+        role: signedInMe.role,
+      };
+      setCurrentUser(me);
+      nextAuthors[me.id] = me;
+    } else {
+      setCurrentUser(null);
+    }
+
+    try {
+      const peersRes = await fetch('/messages/peers', { credentials: 'include' });
+      if (peersRes.ok) {
+        const peersData = (await peersRes.json()) as unknown;
+        if (Array.isArray(peersData)) {
+          for (const item of peersData) {
+            if (
+              typeof item === 'object' &&
+              item !== null &&
+              typeof (item as AuthorProfile).id === 'string' &&
+              typeof (item as AuthorProfile).login === 'string' &&
+              typeof (item as AuthorProfile).fullname === 'string'
+            ) {
+              const peer = item as AuthorProfile;
+              nextAuthors[peer.id] = peer;
+            }
           }
         }
       }
-    }
-
-    if (meRes.status === 'fulfilled' && meRes.value.ok) {
-      const meData = (await meRes.value.json()) as unknown;
-      if (
-        typeof meData === 'object' &&
-        meData !== null &&
-        typeof (meData as AuthorProfile).id === 'string' &&
-        typeof (meData as AuthorProfile).login === 'string' &&
-        typeof (meData as AuthorProfile).fullname === 'string'
-      ) {
-        const me = meData as AuthorProfile;
-        setCurrentUser(me);
-        nextAuthors[me.id] = me;
-      }
+    } catch {
+      // Ignore network failure while resolving optional author names
     }
 
     if (Object.keys(nextAuthors).length > 0) {
       setAuthorsById((current) => ({ ...current, ...nextAuthors }));
     }
-  }, []);
+  }, [signedInMe]);
 
   const loadFeed = useCallback(async () => {
     setLoading(true);
@@ -694,6 +695,8 @@ export const HomePitchFeedPage: React.FC = () => {
                 search
               </span>
               <input
+                id="pitch-search"
+                name="pitch-search"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => {
@@ -759,6 +762,8 @@ export const HomePitchFeedPage: React.FC = () => {
           {/* Sort */}
           <div className="flex flex-wrap items-center gap-2">
             <select
+              id="pitch-sort"
+              name="pitch-sort"
               aria-label="Sort pitches"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as PitchSortOption)}

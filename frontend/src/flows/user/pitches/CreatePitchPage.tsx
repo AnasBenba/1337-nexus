@@ -382,6 +382,10 @@ export const CreatePitchPage = () => {
 
   const openOpportunityModal = (pitch: SavedPitch, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
+    if (pitch.state.toLowerCase() !== 'published') {
+      setError(`Please publish "${pitch.title}" before creating an opportunity from it.`);
+      return;
+    }
     if (existingOpportunityPitchIds.has(pitch.id)) {
       setError(`An opportunity has already been created for "${pitch.title}".`);
       return;
@@ -467,10 +471,12 @@ export const CreatePitchPage = () => {
 
           <form onSubmit={handleCreateOpportunityFromPitch} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-on-surface mb-1">
+              <label htmlFor="opp-title-input" className="block text-xs font-semibold text-on-surface mb-1">
                 Opportunity Title / Role
               </label>
               <input
+                id="opp-title-input"
+                name="opp-title"
                 type="text"
                 placeholder="e.g. Backend Engineer (Python / FastAPI / PostgreSQL)"
                 value={oppTitle}
@@ -481,10 +487,12 @@ export const CreatePitchPage = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-on-surface mb-1">
+              <label htmlFor="opp-skills-input" className="block text-xs font-semibold text-on-surface mb-1">
                 Required Skills (comma separated)
               </label>
               <input
+                id="opp-skills-input"
+                name="opp-skills"
                 type="text"
                 placeholder="e.g. Python, Docker, FastAPI, React"
                 value={oppSkills}
@@ -495,10 +503,12 @@ export const CreatePitchPage = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-on-surface mb-1">
+              <label htmlFor="opp-desc-input" className="block text-xs font-semibold text-on-surface mb-1">
                 Description &amp; Responsibilities
               </label>
               <textarea
+                id="opp-desc-input"
+                name="opp-description"
                 rows={4}
                 placeholder="Describe what the teammate will work on, timeline, and expectations..."
                 value={oppDesc}
@@ -1091,7 +1101,7 @@ export const CreatePitchPage = () => {
                           <span className="material-symbols-outlined text-[15px]">work</span>
                           <span>View Opportunity</span>
                         </Link>
-                      ) : (
+                      ) : pitch.state.toLowerCase() === 'published' ? (
                         <button
                           type="button"
                           onClick={(e) => openOpportunityModal(pitch, e)}
@@ -1100,7 +1110,7 @@ export const CreatePitchPage = () => {
                           <span className="material-symbols-outlined text-[15px]">work</span>
                           <span>Create Opportunity</span>
                         </button>
-                      )}
+                      ) : null}
                       <span className="inline-flex items-center gap-1.5 rounded-xl bg-brand/10 px-3 py-1.5 text-xs font-bold text-brand group-hover:bg-brand group-hover:text-white transition-all">
                         <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
                         <span>View &amp; Refine</span>
@@ -1156,7 +1166,7 @@ export const CreatePitchPage = () => {
                 <span className="material-symbols-outlined text-[16px]">work</span>
                 <span>View Opportunity</span>
               </Link>
-            ) : (
+            ) : !isDraft ? (
               <button
                 type="button"
                 onClick={() => openOpportunityModal(createdPitch)}
@@ -1165,7 +1175,7 @@ export const CreatePitchPage = () => {
                 <span className="material-symbols-outlined text-[16px]">work</span>
                 <span>Create Opportunity</span>
               </button>
-            )}
+            ) : null}
             <button
               type="button"
               onClick={() => openPitchEditor(createdPitch)}
@@ -1473,6 +1483,7 @@ export const CreatePitchPage = () => {
           <div className="relative">
             <input
               id="pitch-title-input"
+              name="pitch-title"
               autoComplete="off"
               className="w-full rounded-2xl border border-outline-variant/70 bg-surface px-4 py-3.5 text-base font-semibold text-on-surface placeholder:text-outline focus:border-brand focus:bg-surface-container-lowest focus:outline-none focus:ring-4 focus:ring-brand/10 transition-all"
               maxLength={100}
@@ -1503,7 +1514,10 @@ export const CreatePitchPage = () => {
         <div className="rounded-3xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-sm transition-all md:p-8 space-y-5">
           <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
             <div>
-              <label className="flex items-center gap-2 text-sm font-bold text-on-surface">
+              <label
+                htmlFor="pitch-category-select"
+                className="flex items-center gap-2 text-sm font-bold text-on-surface"
+              >
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand text-[11px] font-bold text-white">
                   2
                 </span>
@@ -1521,6 +1535,8 @@ export const CreatePitchPage = () => {
                 search
               </span>
               <input
+                id="pitch-category-filter"
+                name="pitch-category-filter"
                 type="text"
                 placeholder="Filter categories…"
                 value={categoryQuery}
@@ -1585,6 +1601,8 @@ export const CreatePitchPage = () => {
               Selected: <strong className="text-on-surface">{form.category || 'None'}</strong>
             </span>
             <select
+              id="pitch-category-select"
+              name="pitch-category"
               className="rounded-lg border border-outline-variant/60 bg-surface px-2.5 py-1 text-xs text-on-surface focus:border-brand focus:outline-none"
               onChange={(e) => updateForm('category', e.target.value as PitchCategory)}
               value={form.category}
@@ -1632,6 +1650,7 @@ export const CreatePitchPage = () => {
 
           <textarea
             id="pitch-description-input"
+            name="pitch-description"
             required
             className="w-full min-h-20 resize-y rounded-2xl border border-outline-variant/70 bg-surface px-4 py-3 text-sm text-on-surface placeholder:text-outline focus:border-brand focus:bg-surface-container-lowest focus:outline-none focus:ring-4 focus:ring-brand/10 transition-all"
             maxLength={300}
@@ -1645,7 +1664,10 @@ export const CreatePitchPage = () => {
         <div className="rounded-3xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-sm transition-all md:p-8 space-y-5">
           <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
             <div>
-              <label className="flex items-center gap-2 text-sm font-bold text-on-surface">
+              <label
+                htmlFor="pitch-content-input"
+                className="flex items-center gap-2 text-sm font-bold text-on-surface"
+              >
                 <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand text-[11px] font-bold text-white">
                   4
                 </span>
@@ -1798,6 +1820,8 @@ export const CreatePitchPage = () => {
             {(editorMode === 'write' || editorMode === 'split') && (
               <div className="flex flex-col space-y-2">
                 <textarea
+                  id="pitch-content-input"
+                  name="pitch-content"
                   ref={textareaRef}
                   className="w-full min-h-[380px] resize-y rounded-2xl border border-outline-variant/70 bg-surface p-4 font-mono text-sm leading-relaxed text-on-surface placeholder:text-outline focus:border-brand focus:bg-surface-container-lowest focus:outline-none focus:ring-4 focus:ring-brand/10 transition-all"
                   onChange={(e) => updateForm('content', e.target.value)}

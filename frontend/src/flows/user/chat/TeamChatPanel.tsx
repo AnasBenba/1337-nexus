@@ -328,6 +328,8 @@ export const TeamChatPanel = ({
         <>
           <div className="grid gap-3 md:grid-cols-[1fr_auto]">
             <input
+              id="team-chat-pitch-uuid"
+              name="pitch-uuid"
               aria-label="Pitch UUID"
               className="min-w-0 rounded-xl border border-outline-variant bg-surface px-4 py-2.5 text-sm"
               onChange={(event) => setPitchId(event.target.value)}
@@ -346,6 +348,8 @@ export const TeamChatPanel = ({
 
           <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
             <input
+              id="team-chat-team-uuid"
+              name="team-uuid"
               aria-label="Team UUID"
               className="min-w-0 rounded-xl border border-outline-variant bg-surface px-4 py-2.5 text-sm"
               disabled={connected}
@@ -422,6 +426,8 @@ export const TeamChatPanel = ({
 
       <form className="flex gap-2" onSubmit={sendMessage}>
         <input
+          id="team-chat-message-input"
+          name="team-chat-message"
           className="min-w-0 flex-1 rounded-xl border border-outline-variant bg-surface px-3.5 py-2.5 text-sm text-on-surface focus:outline-none focus:border-primary"
           disabled={!connected}
           maxLength={4000}

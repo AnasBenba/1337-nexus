@@ -65,7 +65,10 @@ async def get_peers_list(
     db: AsyncSession = Depends(get_db_session),
 ) -> list[dict[str, object]]:
     """Return the list of all peers with their online/offline presence status."""
-    current_user = await resolve_current_user(request, db)
+    try:
+        current_user: Users | None = await resolve_current_user(request, db)
+    except HTTPException:
+        current_user = None
 
     stmt = select(Users).order_by(Users.login.asc())
     result = await db.execute(stmt)

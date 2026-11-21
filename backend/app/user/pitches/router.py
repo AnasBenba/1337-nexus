@@ -149,8 +149,12 @@ async def get_pitch_votes_endpoint(
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> PitchVoteResponse:
-    current_user = await resolve_current_user(request=request, db=db)
-    return await get_pitch_votes(db=db, pitch_id=pitch_id, user_id=current_user.id)
+    try:
+        current_user = await resolve_current_user(request=request, db=db)
+        user_id = current_user.id
+    except HTTPException:
+        user_id = None
+    return await get_pitch_votes(db=db, pitch_id=pitch_id, user_id=user_id)
 
 
 @router.get(

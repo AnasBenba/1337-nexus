@@ -75,6 +75,8 @@ export const Composer: React.FC<ComposerProps> = ({
         {/* Multi-line Text Input */}
         <div className="relative flex items-end gap-space-xs px-space-xs">
           <textarea
+            id="copilot-prompt-input"
+            name="copilot-prompt"
             ref={textareaRef}
             value={input}
             onChange={(e) => onChangeInput(e.target.value)}

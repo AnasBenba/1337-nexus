@@ -505,6 +505,8 @@ export const ChatPage = () => {
                 search
               </span>
               <input
+                id="chat-search-friends"
+                name="chat-search-friends"
                 type="text"
                 placeholder="Search friends…"
                 value={searchQuery}
@@ -730,6 +732,8 @@ export const ChatPage = () => {
             {/* Input Bar */}
             <form className="flex gap-3 border-t border-outline-variant/40 p-4 bg-surface" onSubmit={sendMessage}>
               <input
+                id="chat-message-input"
+                name="chat-message"
                 className="min-w-0 flex-1 rounded-2xl border border-outline-variant/60 bg-surface-container-lowest px-4 py-3 text-sm text-on-surface placeholder:text-outline focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20 transition-all"
                 disabled={!active || !receiverId}
                 onChange={(event) => setDraft(event.target.value)}

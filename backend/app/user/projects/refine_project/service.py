@@ -204,9 +204,15 @@ async def get_pitch_refine_status(
     )
 
     if latest_job is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No critique request found for this pitch",
+        return RefineStatusResponse(
+            job_id=None,
+            status="none",
+            error_message=None,
+            summary=None,
+            suggestions=[],
+            critique_created_at=None,
+            version_token=None,
+            is_stale=False,
         )
 
     if latest_job.status != "succeeded":

@@ -411,6 +411,8 @@ export const BoardPage: React.FC = () => {
             <h3 className="text-base font-bold text-on-surface mb-3">Add Board Column</h3>
             <form onSubmit={handleCreateColumn} className="space-y-3">
               <input
+                id="board-col-name-input"
+                name="column-name"
                 type="text"
                 placeholder="Column name (e.g. In QA, Review)"
                 value={colName}
@@ -446,8 +448,15 @@ export const BoardPage: React.FC = () => {
             <h3 className="text-base font-bold text-on-surface mb-3">Create Task Card</h3>
             <form onSubmit={handleCreateCard} className="space-y-3">
               <div>
-                <label className="block text-[11px] font-semibold text-on-surface mb-1">Task Title</label>
+                <label
+                  htmlFor="board-card-title-input"
+                  className="block text-[11px] font-semibold text-on-surface mb-1"
+                >
+                  Task Title
+                </label>
                 <input
+                  id="board-card-title-input"
+                  name="card-title"
                   type="text"
                   placeholder="e.g. Implement WebSocket reconnection logic"
                   value={cardTitle}
@@ -458,8 +467,15 @@ export const BoardPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-on-surface mb-1">Description (optional)</label>
+                <label
+                  htmlFor="board-card-desc-input"
+                  className="block text-[11px] font-semibold text-on-surface mb-1"
+                >
+                  Description (optional)
+                </label>
                 <textarea
+                  id="board-card-desc-input"
+                  name="card-description"
                   rows={3}
                   placeholder="Details, steps, or acceptance criteria..."
                   value={cardDesc}

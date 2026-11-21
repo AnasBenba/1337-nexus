@@ -1,4 +1,5 @@
 export type RefineJobStatus =
+  | 'none'
   | 'pending'
   | 'queued'
   | 'running'
@@ -28,7 +29,7 @@ export interface CritiqueSummary {
 }
 
 export interface RefineStatusResponse {
-  job_id: string;
+  job_id: string | null;
   status: RefineJobStatus;
   error_message?: string | null;
   summary?: CritiqueSummary | null;
