@@ -340,10 +340,28 @@ export const Layout: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="pl-64">
-        <main className="w-full min-h-screen pt-16 bg-surface p-margin">
+      <div className="pl-64 flex flex-col min-h-screen">
+        <main className="w-full flex-1 pt-16 bg-surface p-margin">
           <Outlet context={{ me: me as Me, setMe: setMe as (me: Me) => void } satisfies LayoutContext} />
         </main>
+
+        {/* Mandatory 42 Subject Footer (Privacy Policy & Terms of Service) */}
+        <footer className="w-full bg-surface-container-lowest border-t border-outline-variant py-6 px-margin text-xs text-on-surface-variant">
+          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="italic">
+              This project has been created as part of the 42 curriculum by the 1337 Nexus team.
+            </p>
+            <div className="flex items-center gap-6 font-medium">
+              <Link to="/terms" className="hover:text-primary transition-colors">
+                Terms of Service
+              </Link>
+              <Link to="/privacy" className="hover:text-primary transition-colors">
+                Privacy Policy
+              </Link>
+              <span className="text-outline">© 2026 1337 Nexus</span>
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );

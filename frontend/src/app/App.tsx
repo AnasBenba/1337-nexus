@@ -14,6 +14,7 @@ import { AdminUsersPage } from '@/flows/admin/users';
 import { ChatPage } from '@/flows/user/chat/ChatPage';
 import { CreatePitchPage } from '@/flows/user/pitches/CreatePitchPage';
 import { HomePitchFeedPage } from '@/flows/user/pitches/HomePitchFeedPage';
+import { PrivacyPage, TermsPage } from '@/flows/legal';
 import Login from './authentication/login/Login';
 
 const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -139,6 +140,8 @@ export const App: React.FC = () => {
               </RequireAuth>
             }
           />
+          <Route path="privacy" element={<PrivacyPage />} />
+          <Route path="terms" element={<TermsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
