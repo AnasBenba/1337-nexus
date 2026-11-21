@@ -46,7 +46,7 @@ services:
       - "8000"
     volumes:
       - media_data:/media
-    mem_limit: 400m
+    mem_limit: 800m
     networks:
       - nexus
 

@@ -4,10 +4,10 @@ from sqlalchemy import CheckConstraint, ColumnElement, String, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
-from ..core import base
+from app.shared.models import Base
 
 
-class Users(base.Base):
+class Users(Base):
     __tablename__ = "users"
     # Same values as app.oauth.permissions.Role; the DB rejects anything else.
     __table_args__ = (
