@@ -34,6 +34,8 @@ export interface RemotePeer {
   cursor: Point;
   /** Assigned highlight colour for this peer */
   color: string;
+  /** Live in-progress shape being drawn while mouse button is held down */
+  activeShape?: CanvasShape | null;
 }
 
 /** Payload sent/received on the 'canvas:awareness' event */
@@ -41,6 +43,8 @@ export interface AwarenessPayload {
   user: string;
   cursor: Point;
   color: string;
+  /** Live in-progress shape being drawn while mouse button is held down */
+  activeShape?: CanvasShape | null;
   /** sid is populated by the server on inbound awareness events */
   sid?: string;
 }

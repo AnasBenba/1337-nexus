@@ -172,12 +172,17 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
     for (const s of shapes) {
       drawShape(ctx, s);
     }
+    for (const peer of peers.values()) {
+      if (peer.activeShape) {
+        drawShape(ctx, peer.activeShape);
+      }
+    }
     if (activeShape) {
       drawShape(ctx, activeShape);
     }
 
     ctx.restore();
-  }, [shapes, activeShape, pan, drawShape]);
+  }, [shapes, activeShape, peers, pan, drawShape]);
 
   useEffect(() => {
     renderCanvas();
@@ -242,47 +247,47 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const screenRect = canvas.getBoundingClientRect();
-    sendAwareness({
-      user: currentUser?.login || 'Student',
-      cursor: {
-        x: e.clientX - screenRect.left,
-        y: e.clientY - screenRect.top,
-      },
-      color: currentColor,
-    });
+    const pt = getCanvasCoordinates(e, canvas, pan);
 
     if (panStart) {
-      setPan({
+      const nextPan = {
         x: e.clientX - panStart.x,
         y: e.clientY - panStart.y,
+      };
+      setPan(nextPan);
+      sendAwareness({
+        user: currentUser?.login || 'Student',
+        cursor: getCanvasCoordinates(e, canvas, nextPan),
+        color: currentColor,
+        activeShape: null,
       });
       return;
     }
 
-    if (!isDrawing || !activeShape) return;
-    const pt = getCanvasCoordinates(e, canvas, pan);
-
-    if (activeShape.type === 'pen' || activeShape.type === 'eraser') {
-      setActiveShape((prev) =>
-        prev
-          ? {
-              ...prev,
-              points: [...(prev.points || []), pt],
-            }
-          : null
-      );
-    } else if (activeShape.x !== undefined && activeShape.y !== undefined) {
-      setActiveShape((prev) =>
-        prev
-          ? {
-              ...prev,
-              width: pt.x - (prev.x ?? 0),
-              height: pt.y - (prev.y ?? 0),
-            }
-          : null
-      );
+    let nextActiveShape: CanvasShape | null = activeShape;
+    if (isDrawing && activeShape) {
+      if (activeShape.type === 'pen' || activeShape.type === 'eraser') {
+        nextActiveShape = {
+          ...activeShape,
+          points: [...(activeShape.points || []), pt],
+        };
+        setActiveShape(nextActiveShape);
+      } else if (activeShape.x !== undefined && activeShape.y !== undefined) {
+        nextActiveShape = {
+          ...activeShape,
+          width: pt.x - (activeShape.x ?? 0),
+          height: pt.y - (activeShape.y ?? 0),
+        };
+        setActiveShape(nextActiveShape);
+      }
     }
+
+    sendAwareness({
+      user: currentUser?.login || 'Student',
+      cursor: pt,
+      color: currentColor,
+      activeShape: isDrawing ? nextActiveShape : null,
+    });
   };
 
   const handlePointerUp = () => {
@@ -294,6 +299,15 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
       addShape(activeShape);
       setActiveShape(null);
       setIsDrawing(false);
+      sendAwareness({
+        user: currentUser?.login || 'Student',
+        cursor: {
+          x: activeShape.x ?? activeShape.points?.[activeShape.points.length - 1]?.x ?? 0,
+          y: activeShape.y ?? activeShape.points?.[activeShape.points.length - 1]?.y ?? 0,
+        },
+        color: currentColor,
+        activeShape: null,
+      });
     }
   };
 
@@ -423,7 +437,7 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
         onPointerCancel={handlePointerUp}
         onResize={renderCanvas}
       >
-        <RemoteCursors peers={peers} />
+        <RemoteCursors peers={peers} pan={pan} />
       </CanvasStage>
 
       {/* Custom Text Input Modal */}

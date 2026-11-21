@@ -110,6 +110,7 @@ export function useCanvasSocket({
           user: data.user || 'Peer',
           cursor: data.cursor,
           color: data.color || getPeerColor(sid),
+          activeShape: data.activeShape ?? null,
         });
         return next;
       });

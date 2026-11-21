@@ -1,5 +1,5 @@
 import React, { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   LOGIN_PATTERN,
   PASSWORD_MAX,
@@ -251,9 +251,9 @@ function ThemeToggle({ dark, onToggle }: { dark: boolean; onToggle: () => void }
 
 /* ---------- views ---------- */
 
-type StudentViewProps = { onEmail: () => void; onSignup: () => void; onTerms: () => void };
+type StudentViewProps = { onEmail: () => void; onSignup: () => void };
 
-function StudentView({ onEmail, onSignup, onTerms }: StudentViewProps) {
+function StudentView({ onEmail, onSignup }: StudentViewProps) {
   return (
     <div className="view">
       <div className="card">
@@ -277,7 +277,10 @@ function StudentView({ onEmail, onSignup, onTerms }: StudentViewProps) {
         </button>
 
         <p className="subtext">
-          <button type="button" className="terms-word" onClick={onTerms}>Terms</button>
+          By continuing, you agree to our{' '}
+          <Link to="/terms" className="terms-word">Terms of Service</Link>
+          {' '}and{' '}
+          <Link to="/privacy" className="terms-word">Privacy Policy</Link>.
         </p>
 
         <div className="divider"><span>OR</span></div>
@@ -339,34 +342,12 @@ function SignupView({ onBack, onSwitch, onDone }: FormViewProps) {
   );
 }
 
-/* ---------- terms modal ---------- */
-
-function TermsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  return (
-    <div className={`modal-overlay${open ? ' open' : ''}`} role="dialog" aria-modal="true" aria-hidden={!open}>
-      <div className="modal-card">
-        <div className="modal-head">
-          <span>Terms &amp; Conditions</span>
-          <button type="button" className="modal-close" onClick={onClose} aria-label="Close">✕</button>
-        </div>
-        <div className="modal-body">
-          <p>By using this prototype, you agree it’s for UI/UX exploration only — no real accounts, projects, or messages are stored.</p>
-          <p>Content and mock data shown are illustrative and don’t represent real 1337 or UM6P students, projects, or opportunities.</p>
-          <p>Don’t be a jerk in project chats. Be excellent to your teammates, across every campus.</p>
-        </div>
-        <button type="button" className="modal-ok" onClick={onClose}>Got it</button>
-      </div>
-    </div>
-  );
-}
-
 /* ---------- page ---------- */
 
 export default function Login() {
   const navigate = useNavigate();
   const [view, setView] = useState<View>('student');
   const [dark, setDark] = useState(false);
-  const [termsOpen, setTermsOpen] = useState(false);
   // Already signed in? Then /login has nothing to offer: go home instead of showing the form.
   const [checking, setChecking] = useState(true);
 
@@ -401,13 +382,11 @@ export default function Login() {
 
       <div className="wrap">
         {view === 'student' && (
-          <StudentView onEmail={() => setView('email')} onSignup={() => setView('signup')} onTerms={() => setTermsOpen(true)} />
+          <StudentView onEmail={() => setView('email')} onSignup={() => setView('signup')} />
         )}
         {view === 'email' && <EmailView onBack={back} onSwitch={() => setView('signup')} onDone={enterApp} />}
         {view === 'signup' && <SignupView onBack={back} onSwitch={() => setView('email')} onDone={enterApp} />}
       </div>
-
-      <TermsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
     </main>
   );
 }
