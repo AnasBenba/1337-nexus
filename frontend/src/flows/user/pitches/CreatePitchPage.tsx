@@ -188,7 +188,7 @@ const markdownComponents = {
     <h3 className="text-sm font-semibold text-on-surface mt-2 mb-1" {...props} />
   ),
   p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
-    <p className="text-sm text-on-surface-variant leading-relaxed mb-2" {...props} />
+    <p className="whitespace-pre-line text-sm text-on-surface-variant leading-relaxed mb-2" {...props} />
   ),
   ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
     <ul className="list-disc list-inside space-y-1 text-sm text-on-surface-variant my-2" {...props} />
@@ -766,7 +766,7 @@ export const CreatePitchPage = () => {
         return [saved, ...filtered];
       });
       setNotification(
-        'Pitch saved to the database! You can now optionally refine it with AI, keep it as a draft, or publish it.',
+        'Pitch saved! You can now optionally refine it with AI, keep it as a draft, or publish it.',
       );
       setViewMode('detail');
     } catch (saveError) {
@@ -803,11 +803,8 @@ export const CreatePitchPage = () => {
 
       setCreatedPitch(updated);
       setMyPitches((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-      setNotification(
-        targetStatus === 'published'
-          ? '🚀 Pitch published successfully to the 1337 campus feed!'
-          : '💾 Pitch saved as draft. You can come back and refine or publish it later.',
-      );
+      setViewMode('hub');
+      void loadMyPitches();
     } catch (statusError) {
       setError(statusError instanceof Error ? statusError.message : 'Could not update pitch status.');
     } finally {
@@ -1027,7 +1024,7 @@ export const CreatePitchPage = () => {
                 You haven&apos;t created any pitches yet
               </h2>
               <p className="text-sm text-on-surface-variant">
-                Draft your idea first, save it to the database, and optionally refine it with the
+                Draft your idea first, save it, and optionally refine it with the
                 1337 AI Copilot whenever you&apos;re ready.
               </p>
             </div>
@@ -1195,33 +1192,6 @@ export const CreatePitchPage = () => {
           </div>
         </div>
 
-        {/* Ephemeral Notification */}
-        {notification && (
-          <div
-            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-50 p-4 text-sm text-emerald-900 shadow-sm"
-            role="status"
-          >
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-emerald-600">check_circle</span>
-              <span className="font-semibold">{notification}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              {createdPitch.state.toLowerCase() === 'published' && (
-                <Link to="/" className="text-xs font-bold text-emerald-800 underline">
-                  View on Home Feed →
-                </Link>
-              )}
-              <button
-                type="button"
-                onClick={() => setNotification(null)}
-                className="text-xs text-emerald-700 hover:underline"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Error Banner */}
         {error && (
           <div
@@ -1259,7 +1229,7 @@ export const CreatePitchPage = () => {
               {createdPitch.title}
             </h1>
             {createdPitch.description && (
-              <p className="text-sm font-medium text-on-surface-variant">
+              <p className="whitespace-pre-line text-sm font-medium text-on-surface-variant">
                 {createdPitch.description}
               </p>
             )}
@@ -1291,7 +1261,7 @@ export const CreatePitchPage = () => {
               </div>
               <p className="text-xs text-on-surface-variant">
                 {isDraft
-                  ? 'Your pitch is saved in the database. Run an AI critique on your problem statement, scope, and milestones — or skip straight to publishing.'
+                  ? 'Your pitch is saved as a draft. Run an AI critique on your problem statement, scope, and milestones — or skip straight to publishing.'
                   : 'This pitch is currently published. Clicking Refine with AI will switch it back to draft so you can review and apply AI improvements.'}
               </p>
             </div>
@@ -1349,6 +1319,28 @@ export const CreatePitchPage = () => {
             </button>
           </div>
         </section>
+
+        {/* Bottom Ephemeral Notification */}
+        {notification && (
+          <div
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-50 p-4 text-sm text-emerald-900 shadow-sm"
+            role="status"
+          >
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-emerald-600">check_circle</span>
+              <span className="font-semibold">{notification}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setNotification(null)}
+                className="text-xs text-emerald-700 hover:underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* AI Refiner Modal */}
         <RefineProjectModal
@@ -1879,7 +1871,7 @@ export const CreatePitchPage = () => {
         {/* 5. Next Step Action Bar (saves pitch to database first, then reveals Refine & Draft/Publish) */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 rounded-3xl border border-outline-variant/60 bg-surface-container-lowest p-6 shadow-sm">
           <p className="text-xs text-on-surface-variant">
-            Clicking <strong>Next</strong> saves your pitch to the database so you can review,
+            Clicking <strong>Next</strong> saves your pitch so you can review,
             optionally refine with AI, or publish it.
           </p>
 

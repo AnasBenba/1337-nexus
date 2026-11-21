@@ -229,7 +229,7 @@ const markdownComponents = {
     <h3 className="text-sm font-semibold text-on-surface mt-2 mb-1" {...props} />
   ),
   p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
-    <p className="text-sm text-on-surface-variant leading-relaxed mb-2" {...props} />
+    <p className="whitespace-pre-line text-sm text-on-surface-variant leading-relaxed mb-2" {...props} />
   ),
   ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
     <ul className="list-disc list-inside space-y-1 text-sm text-on-surface-variant my-2" {...props} />
@@ -1090,7 +1090,7 @@ export const HomePitchFeedPage: React.FC = () => {
                   {selectedPitch.title}
                 </h2>
                 {selectedPitch.description && (
-                  <p className="text-sm text-on-surface-variant">{selectedPitch.description}</p>
+                  <p className="whitespace-pre-line text-sm text-on-surface-variant">{selectedPitch.description}</p>
                 )}
               </div>
 
