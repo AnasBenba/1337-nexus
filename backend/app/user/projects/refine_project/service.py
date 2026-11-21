@@ -361,18 +361,22 @@ async def apply_pitch_suggestion(
         )
 
     current_field_val = getattr(pitch, target_field) or ""
-    occurrences = current_field_val.count(sug.original_excerpt)
-    if occurrences != 1:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                f"Conflict: Original excerpt was expected to occur exactly once in {target_field}, "
-                f"but found {occurrences} occurrence(s)"
-            ),
-        )
-
-    # 6. Apply replacement to target field
-    new_field_val = current_field_val.replace(sug.original_excerpt, sug.suggested_text, 1)
+    if not sug.original_excerpt or not sug.original_excerpt.strip():
+        # Handle populating an empty optional field (e.g. description) or full-field replacement
+        # when original_excerpt is empty
+        new_field_val = sug.suggested_text
+    else:
+        occurrences = current_field_val.count(sug.original_excerpt)
+        if occurrences != 1:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"Conflict: Original excerpt was expected to occur exactly once in {target_field}, "
+                    f"but found {occurrences} occurrence(s)"
+                ),
+            )
+        # 6. Apply replacement to target field
+        new_field_val = current_field_val.replace(sug.original_excerpt, sug.suggested_text, 1)
 
     # 7. Build full PitchCreate preserving untouched fields and category
     new_pitch_create = PitchCreate(

@@ -1,16 +1,57 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { streamCopilotAnswer } from '@/lib/sse-client';
 import { ChatMessage, CopilotStatus } from './types';
 import { EmptyState } from './EmptyState';
 import { ThreadView } from './ThreadView';
 import { Composer } from './Composer';
 
+const STORAGE_MESSAGES_KEY = 'nexus_copilot_messages_v1';
+const STORAGE_THREAD_ID_KEY = 'nexus_copilot_thread_id_v1';
+
+function loadSavedMessages(): ChatMessage[] {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_MESSAGES_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export const CopilotPage: React.FC = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(() => loadSavedMessages());
+  const [threadId, setThreadId] = useState<string | undefined>(() => {
+    try {
+      return sessionStorage.getItem(STORAGE_THREAD_ID_KEY) || undefined;
+    } catch {
+      return undefined;
+    }
+  });
   const [input, setInput] = useState<string>('');
   const [status, setStatus] = useState<CopilotStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(messages));
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [messages]);
+
+  useEffect(() => {
+    try {
+      if (threadId) {
+        sessionStorage.setItem(STORAGE_THREAD_ID_KEY, threadId);
+      } else {
+        sessionStorage.removeItem(STORAGE_THREAD_ID_KEY);
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, [threadId]);
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const currentAssistantIndexRef = useRef<number | null>(null);
@@ -60,10 +101,14 @@ export const CopilotPage: React.FC = () => {
         body: {
           question,
           k: 8,
+          thread_id: threadId,
         },
         signal: controller.signal,
         callbacks: {
           onMeta: (meta) => {
+            if (meta.thread_id) {
+              setThreadId(meta.thread_id);
+            }
             setMessages((prev) => {
               const updated = [...prev];
               const idx = updated.length - 1;
