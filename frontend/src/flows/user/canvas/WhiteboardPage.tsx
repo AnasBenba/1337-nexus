@@ -445,6 +445,8 @@ export const WhiteboardPage: React.FC<WhiteboardPageProps> = ({
             </p>
             <form onSubmit={handleConfirmText} className="space-y-4">
               <input
+                id="whiteboard-text-note-input"
+                name="whiteboard-text-note"
                 type="text"
                 autoFocus
                 value={textInputVal}

@@ -46,7 +46,7 @@ async def get_board_detail(
 ) -> BoardDetailResponse:
     board = await db.scalar(select(WorkspaceBoard).where(WorkspaceBoard.id == board_id))
     if not board:
-        raise HTTPException(status_code=404, detail="Board not found")
+        return await get_team_board(team_id=board_id, db=db, current_user=current_user)
 
     columns = list(
         (

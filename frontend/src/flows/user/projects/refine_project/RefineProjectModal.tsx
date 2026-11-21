@@ -68,7 +68,10 @@ export const RefineProjectModal: React.FC<RefineProjectModalProps> = ({
           const data = await getRefineStatus(targetPitchId, currentUserId);
           setJobId(data.job_id);
 
-          if (data.status === 'succeeded') {
+          if (data.status === 'none') {
+            stopPolling();
+            setModalState('A');
+          } else if (data.status === 'succeeded') {
             stopPolling();
             setSummary(data.summary || null);
             setSuggestions(data.suggestions || []);
@@ -124,7 +127,9 @@ export const RefineProjectModal: React.FC<RefineProjectModalProps> = ({
       .then((data) => {
         if (isCancelled) return;
         setJobId(data.job_id);
-        if (data.status === 'pending' || data.status === 'queued' || data.status === 'running') {
+        if (data.status === 'none') {
+          setModalState('A');
+        } else if (data.status === 'pending' || data.status === 'queued' || data.status === 'running') {
           setModalState('C');
           startPolling(pitchId);
         } else if (data.status === 'succeeded') {

@@ -89,6 +89,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           />
         ))}
         <input
+          id="whiteboard-custom-color"
+          name="whiteboard-custom-color"
           type="color"
           value={currentColor}
           onChange={(e) => onSelectColor(e.target.value)}

@@ -54,12 +54,16 @@ export const OpportunitiesPage: React.FC = () => {
   const [createLoading, setCreateLoading] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
-  const availablePitches = myPitches.filter(
+  const publishedPitches = myPitches.filter(
+    (p) => (p.state ?? p.status ?? '').toLowerCase() === 'published',
+  );
+
+  const availablePitches = publishedPitches.filter(
     (p) => !opportunities.some((opp) => opp.project_id === p.id),
   );
 
   const handleOpenCreateModal = () => {
-    const available = myPitches.filter(
+    const available = publishedPitches.filter(
       (p) => !opportunities.some((opp) => opp.project_id === p.id),
     );
     if (available.length > 0) {
@@ -427,7 +431,7 @@ export const OpportunitiesPage: React.FC = () => {
 
             {myPitches.length === 0 ? (
               <div className="text-center py-6 text-xs text-on-surface-variant space-y-3">
-                <p>You need to create a pitch first before creating an opportunity from it.</p>
+                <p>You need to create and publish a pitch first before creating an opportunity from it.</p>
                 <Link
                   to="/pitches"
                   className="inline-block px-4 py-2 bg-primary text-white rounded-xl font-semibold"
@@ -435,23 +439,38 @@ export const OpportunitiesPage: React.FC = () => {
                   Go to Pitches
                 </Link>
               </div>
-            ) : availablePitches.length === 0 ? (
+            ) : publishedPitches.length === 0 ? (
               <div className="text-center py-6 text-xs text-on-surface-variant space-y-3">
-                <p>All your pitches already have an opportunity created. Only one opportunity can be created per pitch.</p>
+                <p>You only have draft pitches right now. Please publish a pitch before creating an opportunity from it.</p>
                 <Link
                   to="/pitches"
                   className="inline-block px-4 py-2 bg-primary text-white rounded-xl font-semibold"
                 >
-                  Create New Pitch
+                  Publish a Pitch
+                </Link>
+              </div>
+            ) : availablePitches.length === 0 ? (
+              <div className="text-center py-6 text-xs text-on-surface-variant space-y-3">
+                <p>All your published pitches already have an opportunity created. Only one opportunity can be created per pitch.</p>
+                <Link
+                  to="/pitches"
+                  className="inline-block px-4 py-2 bg-primary text-white rounded-xl font-semibold"
+                >
+                  Go to Pitches
                 </Link>
               </div>
             ) : (
               <form onSubmit={handleCreateOpportunity} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">
-                    Select Your Pitch
+                  <label
+                    htmlFor="create-opp-pitch-select"
+                    className="block text-xs font-semibold text-on-surface mb-1"
+                  >
+                    Select Your Published Pitch
                   </label>
                   <select
+                    id="create-opp-pitch-select"
+                    name="project_id"
                     value={selectedPitchId}
                     onChange={(e) => setSelectedPitchId(e.target.value)}
                     required
@@ -466,10 +485,15 @@ export const OpportunitiesPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">
+                  <label
+                    htmlFor="create-opp-title-input"
+                    className="block text-xs font-semibold text-on-surface mb-1"
+                  >
                     Opportunity Title / Role
                   </label>
                   <input
+                    id="create-opp-title-input"
+                    name="title"
                     type="text"
                     placeholder="e.g. Backend Engineer (Python / FastAPI / PostgreSQL)"
                     value={newTitle}
@@ -480,10 +504,15 @@ export const OpportunitiesPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">
+                  <label
+                    htmlFor="create-opp-skills-input"
+                    className="block text-xs font-semibold text-on-surface mb-1"
+                  >
                     Required Skills (comma separated)
                   </label>
                   <input
+                    id="create-opp-skills-input"
+                    name="required_skills"
                     type="text"
                     placeholder="e.g. Python, Docker, FastAPI, React"
                     value={newSkills}
@@ -494,10 +523,15 @@ export const OpportunitiesPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-on-surface mb-1">
+                  <label
+                    htmlFor="create-opp-description-input"
+                    className="block text-xs font-semibold text-on-surface mb-1"
+                  >
                     Description &amp; Responsibilities
                   </label>
                   <textarea
+                    id="create-opp-description-input"
+                    name="description"
                     rows={4}
                     placeholder="Describe what the teammate will work on, timeline, and expectations..."
                     value={newDesc}

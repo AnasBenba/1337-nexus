@@ -35,14 +35,18 @@ export const DiscoverPage: React.FC = () => {
 
   useEffect(() => {
     void fetchData();
-  }, []);
+  }, [outletCtx?.me?.id]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const [oppRes, myPitchesRes] = await Promise.allSettled([
-        authFetch('/opportunities/?limit=50&exclude_mine=true').then((r) => (r.ok ? r.json() : [])),
-        authFetch('/api/v1/user/pitches/me').then((r) => (r.ok ? r.json() : [])),
+        fetch('/opportunities/?limit=50&exclude_mine=true', { credentials: 'include' }).then((r) =>
+          r.ok ? r.json() : [],
+        ),
+        outletCtx?.me
+          ? authFetch('/api/v1/user/pitches/me').then((r) => (r.ok ? r.json() : []))
+          : Promise.resolve([]),
       ]);
 
       const ownIds = new Set<string>();
@@ -132,6 +136,8 @@ export const DiscoverPage: React.FC = () => {
             search
           </span>
           <input
+            id="discover-search"
+            name="discover-search"
             type="text"
             placeholder="Search opportunities or skills..."
             value={searchQuery}
@@ -254,10 +260,15 @@ export const DiscoverPage: React.FC = () => {
 
             <form onSubmit={handleApply} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-on-surface mb-1">
+                <label
+                  htmlFor="apply-skills"
+                  className="block text-xs font-semibold text-on-surface mb-1"
+                >
                   Your Candidate Skills (comma separated)
                 </label>
                 <input
+                  id="apply-skills"
+                  name="apply-skills"
                   type="text"
                   placeholder="e.g. Python, Docker, FastAPI, React"
                   value={applySkills}
@@ -268,10 +279,15 @@ export const DiscoverPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-on-surface mb-1">
+                <label
+                  htmlFor="apply-message"
+                  className="block text-xs font-semibold text-on-surface mb-1"
+                >
                   Message / Introduction to the team
                 </label>
                 <textarea
+                  id="apply-message"
+                  name="apply-message"
                   rows={4}
                   placeholder="Introduce yourself, your experience with this tech stack, and why you want to collaborate..."
                   value={applyMessage}
