@@ -281,10 +281,7 @@ async def stream_copilot_answer(
     final_status = "completed"
 
     try:
-        stream_fn = getattr(ai, "stream_chat", None) or getattr(ai, "stream_complete", None)
-        if stream_fn is None:
-            raise AttributeError("AI provider must implement stream_chat or stream_complete")
-        async for token in stream_fn(messages):
+        async for token in ai.stream_chat(messages):
             full_response.append(token)
             yield format_sse("delta", {"content": token})
 
@@ -331,7 +328,3 @@ async def stream_copilot_answer(
             "tokens": token_count,
         },
     )
-
-
-# Alias kept for Phase 1 callers and existing tests
-prepare_copilot_stream = pre_stream_transaction

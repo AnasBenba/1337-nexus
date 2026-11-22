@@ -128,7 +128,7 @@ async def refine_pitch_executor(
 
     # Gather LLM response
     raw_response_chunks: list[str] = []
-    gen: Any = ai.stream_complete(messages)
+    gen: Any = ai.stream_chat(messages)
     if asyncio.iscoroutine(gen):
         gen = await gen
     async for chunk in gen:
@@ -156,7 +156,7 @@ async def refine_pitch_executor(
             },
         ]
         repair_chunks: list[str] = []
-        r_gen: Any = ai.stream_complete(repair_messages)
+        r_gen: Any = ai.stream_chat(repair_messages)
         if asyncio.iscoroutine(r_gen):
             r_gen = await r_gen
         async for chunk in r_gen:

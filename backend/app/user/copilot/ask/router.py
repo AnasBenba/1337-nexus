@@ -42,7 +42,3 @@ async def ask_copilot_endpoint(
             "X-Accel-Buffering": "no",  # Prevents Nginx from buffering SSE chunks
         },
     )
-
-
-# Alias for backward compatibility
-ask_copilot = ask_copilot_endpoint

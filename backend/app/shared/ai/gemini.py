@@ -163,7 +163,7 @@ class GeminiAIProvider(AIProvider):
                 raise
         return []
 
-    async def stream_complete(self, messages: list[dict[str, Any]]) -> AsyncGenerator[str, None]:
+    async def stream_chat(self, messages: list[dict[str, Any]]) -> AsyncGenerator[str, None]:
         """
         Stream chat completions for conversational agents using Gemini.
         Includes fast default model (gemini-3.5-flash-lite), automatic model fallback,
@@ -214,9 +214,3 @@ class GeminiAIProvider(AIProvider):
                         await asyncio.sleep(0.5 * (attempt + 1))
                     continue
                 raise
-
-    stream_chat = stream_complete
-
-
-# Alias for backward-compatibility with remote provider naming
-RemoteAIProvider = GeminiAIProvider
