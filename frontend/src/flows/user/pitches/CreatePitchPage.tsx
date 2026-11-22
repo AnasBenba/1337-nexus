@@ -174,42 +174,61 @@ Build and demonstrate a working prototype of a collaborative code scratchpad for
 const markdownComponents = {
   h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
     <h1
-      className="text-xl font-extrabold text-on-surface border-b pb-1 mt-4 mb-2"
+      className="whitespace-pre-line text-xl font-extrabold text-on-surface border-b pb-1 mt-4 mb-2"
       {...props}
     />
   ),
   h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
     <h2
-      className="text-base font-bold text-on-surface border-b border-outline-variant/30 pb-1 mt-3 mb-2"
+      className="whitespace-pre-line text-base font-bold text-on-surface border-b border-outline-variant/30 pb-1 mt-3 mb-2"
       {...props}
     />
   ),
   h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
-    <h3 className="text-sm font-semibold text-on-surface mt-2 mb-1" {...props} />
+    <h3 className="whitespace-pre-line text-sm font-semibold text-on-surface mt-2 mb-1" {...props} />
   ),
   p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
     <p className="whitespace-pre-line text-sm text-on-surface-variant leading-relaxed mb-2" {...props} />
   ),
   ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
-    <ul className="list-disc list-inside space-y-1 text-sm text-on-surface-variant my-2" {...props} />
+    <ul className="whitespace-pre-line list-disc pl-5 space-y-1 text-sm text-on-surface-variant my-2" {...props} />
   ),
   ol: (props: React.HTMLAttributes<HTMLOListElement>) => (
-    <ol className="list-decimal list-inside space-y-1 text-sm text-on-surface-variant my-2" {...props} />
+    <ol className="whitespace-pre-line list-decimal pl-5 space-y-1 text-sm text-on-surface-variant my-2" {...props} />
+  ),
+  li: (props: React.LiHTMLAttributes<HTMLLIElement>) => (
+    <li className="whitespace-pre-line leading-relaxed" {...props} />
   ),
   blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
     <blockquote
-      className="border-l-4 border-brand bg-brand/5 px-3 py-1.5 rounded-r text-on-surface-variant italic text-xs my-2"
+      className="whitespace-pre-line border-l-4 border-brand bg-brand/5 px-3 py-1.5 rounded-r text-on-surface-variant italic text-xs my-2"
       {...props}
     />
   ),
-  code: ({ children, ...props }: React.HTMLAttributes<HTMLElement>) => (
-    <code
-      className="bg-surface-container px-1.5 py-0.5 rounded font-mono text-xs text-primary font-semibold"
+  pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
+    <pre
+      className="whitespace-pre-wrap overflow-x-auto rounded-xl bg-surface-container p-3 font-mono text-xs text-on-surface my-2"
       {...props}
-    >
-      {children}
-    </code>
+    />
   ),
+  code: ({ className, children, ...props }: React.HTMLAttributes<HTMLElement>) => {
+    const isBlock = Boolean(className) || (typeof children === 'string' && children.includes('\n'));
+    if (isBlock) {
+      return (
+        <code className="whitespace-pre-wrap font-mono text-xs text-primary font-semibold" {...props}>
+          {children}
+        </code>
+      );
+    }
+    return (
+      <code
+        className="whitespace-pre-wrap bg-surface-container px-1.5 py-0.5 rounded font-mono text-xs text-primary font-semibold"
+        {...props}
+      >
+        {children}
+      </code>
+    );
+  },
 };
 
 function formatRelativeDate(isoDate?: string | null): string {
@@ -595,6 +614,7 @@ export const CreatePitchPage = () => {
 
   const updateForm = <K extends keyof PitchForm>(key: K, value: PitchForm[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
+    if (error) setError('');
   };
 
   const populateFormFromPitch = (pitch: SavedPitch) => {
@@ -671,7 +691,12 @@ export const CreatePitchPage = () => {
   }, [categoryQuery]);
 
   // Insert markdown helpers into textarea
-  const insertMarkdown = (prefix: string, suffix: string = '', placeholder: string = '') => {
+  const insertMarkdown = (
+    prefix: string,
+    suffix: string = '',
+    placeholder: string = '',
+    blockLevel: boolean = false,
+  ) => {
     const textarea = textareaRef.current;
     if (!textarea) return;
 
@@ -681,12 +706,16 @@ export const CreatePitchPage = () => {
     const selected = text.slice(start, end);
     const insertion = selected || placeholder;
 
-    const newContent = text.slice(0, start) + prefix + insertion + suffix + text.slice(end);
+    const needsLeadingNewline = blockLevel && start > 0 && text[start - 1] !== '\n';
+    const effectivePrefix = (needsLeadingNewline ? '\n' : '') + prefix;
+
+    const newContent =
+      text.slice(0, start) + effectivePrefix + insertion + suffix + text.slice(end);
     updateForm('content', newContent);
 
     setTimeout(() => {
       textarea.focus();
-      const newCursorPos = start + prefix.length + insertion.length;
+      const newCursorPos = start + effectivePrefix.length + insertion.length;
       textarea.setSelectionRange(newCursorPos, newCursorPos);
     }, 10);
   };
@@ -1072,7 +1101,7 @@ export const CreatePitchPage = () => {
                       {pitch.title}
                     </h2>
 
-                    <p className="text-sm leading-relaxed text-on-surface-variant line-clamp-3">
+                    <p className="whitespace-pre-line text-sm leading-relaxed text-on-surface-variant line-clamp-3">
                       {getExcerpt(pitch)}
                     </p>
                   </div>
@@ -1342,6 +1371,17 @@ export const CreatePitchPage = () => {
           </div>
         )}
 
+        {/* Bottom Error Banner */}
+        {error && (
+          <div
+            className="flex items-center gap-3 rounded-2xl border border-error/30 bg-error-container p-4 text-sm text-on-error-container shadow-sm"
+            role="alert"
+          >
+            <span className="material-symbols-outlined text-xl text-error">error</span>
+            <span className="font-medium">{error}</span>
+          </div>
+        )}
+
         {/* AI Refiner Modal */}
         <RefineProjectModal
           isOpen={isRefinerOpen}
@@ -1429,17 +1469,6 @@ export const CreatePitchPage = () => {
           </div>
         </div>
       </div>
-
-      {/* Error Banner */}
-      {error && (
-        <div
-          className="flex items-center gap-3 rounded-2xl border border-error/30 bg-error-container p-4 text-sm text-on-error-container shadow-sm"
-          role="alert"
-        >
-          <span className="material-symbols-outlined text-xl text-error">error</span>
-          <span className="font-medium">{error}</span>
-        </div>
-      )}
 
       {/* Main Pitch Creation Form */}
       <form onSubmit={handleNextStep} className="space-y-8">
@@ -1736,7 +1765,7 @@ export const CreatePitchPage = () => {
               <button
                 type="button"
                 title="Heading 2"
-                onClick={() => insertMarkdown('## ', '\n', 'Section Title')}
+                onClick={() => insertMarkdown('## ', '\n', 'Section Title', true)}
                 className="rounded p-1.5 text-outline hover:bg-surface-container hover:text-on-surface"
               >
                 <span className="font-bold font-mono text-xs">H2</span>
@@ -1744,7 +1773,7 @@ export const CreatePitchPage = () => {
               <button
                 type="button"
                 title="Heading 3"
-                onClick={() => insertMarkdown('### ', '\n', 'Subheading')}
+                onClick={() => insertMarkdown('### ', '\n', 'Subheading', true)}
                 className="rounded p-1.5 text-outline hover:bg-surface-container hover:text-on-surface"
               >
                 <span className="font-bold font-mono text-xs">H3</span>
@@ -1768,7 +1797,7 @@ export const CreatePitchPage = () => {
               <button
                 type="button"
                 title="Code block"
-                onClick={() => insertMarkdown('\n```c\n', '\n```\n', '// 1337 code snippet')}
+                onClick={() => insertMarkdown('```c\n', '\n```\n', '// 1337 code snippet', true)}
                 className="rounded p-1.5 text-outline hover:bg-surface-container hover:text-on-surface"
               >
                 <span className="material-symbols-outlined text-sm">code</span>
@@ -1776,7 +1805,7 @@ export const CreatePitchPage = () => {
               <button
                 type="button"
                 title="Quote"
-                onClick={() => insertMarkdown('> ', '\n', 'Important quote')}
+                onClick={() => insertMarkdown('> ', '\n', 'Important quote', true)}
                 className="rounded p-1.5 text-outline hover:bg-surface-container hover:text-on-surface"
               >
                 <span className="material-symbols-outlined text-sm">format_quote</span>
@@ -1784,7 +1813,7 @@ export const CreatePitchPage = () => {
               <button
                 type="button"
                 title="Bullet List"
-                onClick={() => insertMarkdown('- ', '\n', 'List item')}
+                onClick={() => insertMarkdown('- ', '\n', 'List item', true)}
                 className="rounded p-1.5 text-outline hover:bg-surface-container hover:text-on-surface"
               >
                 <span className="material-symbols-outlined text-sm">format_list_bulleted</span>
@@ -1792,7 +1821,7 @@ export const CreatePitchPage = () => {
               <button
                 type="button"
                 title="Task List"
-                onClick={() => insertMarkdown('- [ ] ', '\n', 'Todo milestone')}
+                onClick={() => insertMarkdown('- [ ] ', '\n', 'Todo milestone', true)}
                 className="rounded p-1.5 text-outline hover:bg-surface-container hover:text-on-surface"
               >
                 <span className="material-symbols-outlined text-sm">check_box</span>
@@ -1899,6 +1928,26 @@ export const CreatePitchPage = () => {
             </button>
           </div>
         </div>
+
+        {/* Bottom Error Banner (shown at the bottom after clicking Next so the user sees it immediately) */}
+        {error && (
+          <div
+            className="flex items-center justify-between gap-3 rounded-2xl border border-error/30 bg-error-container p-4 text-sm text-on-error-container shadow-sm"
+            role="alert"
+          >
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-xl text-error">error</span>
+              <span className="font-medium">{error}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setError('')}
+              className="text-xs font-semibold text-error hover:underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );

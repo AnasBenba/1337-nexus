@@ -215,42 +215,61 @@ function getStatusBadgeClasses(state: string): string {
 const markdownComponents = {
   h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
     <h1
-      className="text-xl font-extrabold text-on-surface border-b border-outline-variant/40 pb-1 mt-4 mb-2"
+      className="whitespace-pre-line text-xl font-extrabold text-on-surface border-b border-outline-variant/40 pb-1 mt-4 mb-2"
       {...props}
     />
   ),
   h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
     <h2
-      className="text-base font-bold text-on-surface border-b border-outline-variant/30 pb-1 mt-3 mb-2"
+      className="whitespace-pre-line text-base font-bold text-on-surface border-b border-outline-variant/30 pb-1 mt-3 mb-2"
       {...props}
     />
   ),
   h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => (
-    <h3 className="text-sm font-semibold text-on-surface mt-2 mb-1" {...props} />
+    <h3 className="whitespace-pre-line text-sm font-semibold text-on-surface mt-2 mb-1" {...props} />
   ),
   p: (props: React.HTMLAttributes<HTMLParagraphElement>) => (
     <p className="whitespace-pre-line text-sm text-on-surface-variant leading-relaxed mb-2" {...props} />
   ),
   ul: (props: React.HTMLAttributes<HTMLUListElement>) => (
-    <ul className="list-disc list-inside space-y-1 text-sm text-on-surface-variant my-2" {...props} />
+    <ul className="whitespace-pre-line list-disc pl-5 space-y-1 text-sm text-on-surface-variant my-2" {...props} />
   ),
   ol: (props: React.HTMLAttributes<HTMLOListElement>) => (
-    <ol className="list-decimal list-inside space-y-1 text-sm text-on-surface-variant my-2" {...props} />
+    <ol className="whitespace-pre-line list-decimal pl-5 space-y-1 text-sm text-on-surface-variant my-2" {...props} />
+  ),
+  li: (props: React.LiHTMLAttributes<HTMLLIElement>) => (
+    <li className="whitespace-pre-line leading-relaxed" {...props} />
   ),
   blockquote: (props: React.HTMLAttributes<HTMLQuoteElement>) => (
     <blockquote
-      className="border-l-4 border-brand bg-brand/5 px-3 py-1.5 rounded-r text-on-surface-variant italic text-xs my-2"
+      className="whitespace-pre-line border-l-4 border-brand bg-brand/5 px-3 py-1.5 rounded-r text-on-surface-variant italic text-xs my-2"
       {...props}
     />
   ),
-  code: ({ children, ...props }: React.HTMLAttributes<HTMLElement>) => (
-    <code
-      className="bg-surface-container px-1.5 py-0.5 rounded font-mono text-xs text-primary font-semibold"
+  pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
+    <pre
+      className="whitespace-pre-wrap overflow-x-auto rounded-xl bg-surface-container p-3 font-mono text-xs text-on-surface my-2"
       {...props}
-    >
-      {children}
-    </code>
+    />
   ),
+  code: ({ className, children, ...props }: React.HTMLAttributes<HTMLElement>) => {
+    const isBlock = Boolean(className) || (typeof children === 'string' && children.includes('\n'));
+    if (isBlock) {
+      return (
+        <code className="whitespace-pre-wrap font-mono text-xs text-primary font-semibold" {...props}>
+          {children}
+        </code>
+      );
+    }
+    return (
+      <code
+        className="whitespace-pre-wrap bg-surface-container px-1.5 py-0.5 rounded font-mono text-xs text-primary font-semibold"
+        {...props}
+      >
+        {children}
+      </code>
+    );
+  },
 };
 
 export const HomePitchFeedPage: React.FC = () => {
@@ -968,7 +987,7 @@ export const HomePitchFeedPage: React.FC = () => {
                     >
                       {pitch.title}
                     </h2>
-                    <p className="text-sm leading-relaxed text-on-surface-variant line-clamp-3">
+                    <p className="whitespace-pre-line text-sm leading-relaxed text-on-surface-variant line-clamp-3">
                       {getPitchExcerpt(pitch)}
                     </p>
                   </div>

@@ -247,7 +247,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
               <span className="text-[10px] uppercase font-mono font-semibold text-rose-700 tracking-wider block mb-0.5">
                 Current draft:
               </span>
-              <span className="line-through opacity-85 leading-relaxed">
+              <span className="whitespace-pre-line line-through opacity-85 leading-relaxed">
                 {suggestion.original_excerpt}
               </span>
             </div>
@@ -260,7 +260,7 @@ export const SuggestionCard: React.FC<SuggestionCardProps> = ({
             <span className="text-[10px] uppercase font-mono font-semibold text-emerald-700 tracking-wider block mb-0.5">
               Suggested replacement:
             </span>
-            <span className="font-medium leading-relaxed">
+            <span className="whitespace-pre-line font-medium leading-relaxed">
               {suggestion.suggested_text}
             </span>
           </div>
