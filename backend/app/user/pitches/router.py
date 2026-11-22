@@ -27,7 +27,7 @@ from app.user.pitches.service import (
     get_published_pitches,
     get_user_vote,
     remove_user_vote,
-    search_pitches,
+    # search_pitches,
     update_pitch,
     user_vote_on_pitch,
 )
@@ -43,19 +43,19 @@ async def resolve_current_user(
     return await get_authenticated_user(request=request, db=db)
 
 
-@router.get(
-    "/api/v1/user/pitches/search",
-    response_model=list[PitchResponse],
-    summary="Search project pitches by semantic similarity",
-)
-async def search_pitches_endpoint(
-    db: Annotated[AsyncSession, Depends(get_db_session)],
-    query: str = Query(...),
-    limit: int = Query(default=10, le=50),
-    category: PitchCategory | None = None,
-) -> list[Pitch]:
-    results = await search_pitches(db=db, query=query, limit=limit, category=category)
-    return list(results)
+# @router.get(
+#     "/api/v1/user/pitches/search",
+#     response_model=list[PitchResponse],
+#     summary="Search project pitches by semantic similarity",
+# )
+# async def search_pitches_endpoint(
+#     db: Annotated[AsyncSession, Depends(get_db_session)],
+#     query: str = Query(...),
+#     limit: int = Query(default=10, le=50),
+#     category: PitchCategory | None = None,
+# ) -> list[Pitch]:
+#     results = await search_pitches(db=db, query=query, limit=limit, category=category)
+#     return list(results)
 
 
 @router.post(

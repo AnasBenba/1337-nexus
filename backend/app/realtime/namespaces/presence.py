@@ -63,10 +63,11 @@ class PresenceNamespace(socketio.AsyncNamespace):  # type: ignore[misc]
                 {"user_id": uid_str, "online": online},
                 room=_user_room(fid),
             )
-        # Also broadcast to the /chat namespace so ChatPage updates immediately
-        if self.server is not None:
-            await self.server.emit(
-                "presence_change",
-                {"user_id": uid_str, "status": "online" if online else "offline"},
-                namespace="/chat",
-            )
+            # Also notify the friend's room on the /chat namespace so ChatPage updates immediately
+            if self.server is not None:
+                await self.server.emit(
+                    "presence_change",
+                    {"user_id": uid_str, "status": "online" if online else "offline"},
+                    room=_user_room(fid),
+                    namespace="/chat",
+                )

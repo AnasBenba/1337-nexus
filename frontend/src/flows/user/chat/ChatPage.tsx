@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import type { Socket } from 'socket.io-client';
+import { onPresence } from '@/lib/presence';
 
 type ChatMessage = {
   id: string;
@@ -216,7 +218,7 @@ export const ChatPage = () => {
       }
     });
 
-    // Real-time presence updates (user went online/offline)
+    // Real-time presence updates (friend went online/offline on /chat)
     socket.on('presence_change', (payload: { user_id: string; status: 'online' | 'offline' }) => {
       if (payload?.user_id) {
         setPeers((prev) =>
@@ -270,6 +272,19 @@ export const ChatPage = () => {
       socketRef.current = null;
     };
   }, []);
+
+  // Also subscribe to global /presence friend online/offline events
+  useEffect(
+    () =>
+      onPresence(({ user_id, online }) => {
+        setPeers((prev) =>
+          prev.map((peer) =>
+            peer.id === user_id ? { ...peer, is_online: online } : peer,
+          ),
+        );
+      }),
+    [],
+  );
 
   // Load chat history whenever receiverId or currentUser.id changes
   const loadHistory = async (peerId: string) => {
@@ -516,6 +531,22 @@ export const ChatPage = () => {
             </div>
 
             {/* Peers List Scroll Area */}
+            {peers.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-outline-variant/60 bg-surface p-4 text-center space-y-2">
+                <span className="material-symbols-outlined text-2xl text-outline">group_add</span>
+                <p className="text-xs font-semibold text-on-surface">No friends added yet</p>
+                <p className="text-[11px] text-on-surface-variant leading-relaxed">
+                  Add peers as friends to see when they are online or offline and chat with them.
+                </p>
+                <Link
+                  to="/friends"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-3 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-brand-hover transition-all"
+                >
+                  <span className="material-symbols-outlined text-sm">person_add</span>
+                  <span>Find Friends</span>
+                </Link>
+              </div>
+            ) : (
             <div className="space-y-4 max-h-[560px] overflow-y-auto pr-1">
               {/* Online Friends Section */}
               <div className="space-y-1">
@@ -623,6 +654,7 @@ export const ChatPage = () => {
                 )}
               </div>
             </div>
+            )}
           </aside>
 
           {/* RIGHT SIDE: Active Conversation Box */}

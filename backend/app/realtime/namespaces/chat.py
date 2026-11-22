@@ -14,6 +14,7 @@ from app.oauth.dependencies import get_authenticated_user
 from app.oauth.user import Users, get_user_by_intra_id
 from app.realtime.presence import presence_manager
 from app.teams.models import WorkspaceTeamMember
+from app.user.friends.service import friend_ids
 
 router = APIRouter()
 
@@ -42,7 +43,6 @@ async def get_current_user_profile(
 
 
 @router.get("/api/v1/messages/unread-count")
-@router.get("/messages/unread-count")
 async def get_unread_messages_count(
     request: Request,
     db: AsyncSession = Depends(get_db_session),
@@ -63,16 +63,35 @@ async def get_unread_messages_count(
 async def get_peers_list(
     request: Request,
     db: AsyncSession = Depends(get_db_session),
+    scope: str = "friends",
 ) -> list[dict[str, object]]:
-    """Return the list of all peers with their online/offline presence status."""
+    """Return the list of accepted friends (or all users when scope='all') with presence status."""
     try:
         current_user: Users | None = await resolve_current_user(request, db)
     except HTTPException:
         current_user = None
 
-    stmt = select(Users).order_by(Users.login.asc())
-    result = await db.execute(stmt)
-    users = list(result.scalars().all())
+    if scope == "all":
+        stmt = select(Users).order_by(Users.login.asc())
+        result = await db.execute(stmt)
+        users = list(result.scalars().all())
+        accepted_friend_set: set[UUID] = (
+            set(await friend_ids(db, current_user.id)) if current_user is not None else set()
+        )
+    else:
+        if current_user is None:
+            return []
+        accepted_friend_ids = await friend_ids(db, current_user.id)
+        if not accepted_friend_ids:
+            return []
+        accepted_friend_set = set(accepted_friend_ids)
+        stmt = (
+            select(Users)
+            .where(Users.id.in_(accepted_friend_ids))
+            .order_by(Users.login.asc())
+        )
+        result = await db.execute(stmt)
+        users = list(result.scalars().all())
 
     online_ids = presence_manager.get_online_user_ids()
 
@@ -95,6 +114,7 @@ async def get_peers_list(
     for u in users:
         uid_str = str(u.id)
         is_self = current_user is not None and u.id == current_user.id
+        is_friend = u.id in accepted_friend_set
         peers.append(
             {
                 "id": uid_str,
@@ -102,7 +122,8 @@ async def get_peers_list(
                 "fullname": u.fullname,
                 "role": u.role,
                 "is_self": is_self,
-                "is_online": uid_str in online_ids,
+                "is_friend": is_friend,
+                "is_online": is_friend and (uid_str in online_ids),
                 "unread_count": unread_by_sender.get(uid_str, 0),
             }
         )
@@ -245,26 +266,33 @@ class ChatNamespace(socketio.AsyncNamespace):  # type: ignore[misc]
         await self.enter_room(sid, f"user:{user_id}")
 
         became_online = presence_manager.add_connection(str(user_id), f"chat:{sid}")
-        if became_online:
+        async with SessionLocal() as db:
+            my_friend_ids = {str(fid) for fid in await friend_ids(db, user_id)}
+            online_friends = [
+                uid for uid in presence_manager.get_online_user_ids() if uid in my_friend_ids
+            ]
+
+            if became_online:
+                for fid in my_friend_ids:
+                    await self.emit(
+                        "presence_change",
+                        {"user_id": str(user_id), "status": "online"},
+                        room=f"user:{fid}",
+                    )
+
+            # Send identity and current online friends directly to newly connected socket
             await self.emit(
-                "presence_change",
-                {"user_id": str(user_id), "status": "online"},
+                "my_identity",
+                {
+                    "id": str(user.id),
+                    "login": user.login,
+                    "fullname": user.fullname,
+                    "role": user.role,
+                    "online_user_ids": online_friends,
+                },
+                room=sid,
             )
 
-        # Send identity and current online users directly to newly connected socket
-        await self.emit(
-            "my_identity",
-            {
-                "id": str(user.id),
-                "login": user.login,
-                "fullname": user.fullname,
-                "role": user.role,
-                "online_user_ids": list(presence_manager.get_online_user_ids()),
-            },
-            room=sid,
-        )
-
-        async with SessionLocal() as db:
             statement = (
                 select(Message)
                 .where(
@@ -300,10 +328,18 @@ class ChatNamespace(socketio.AsyncNamespace):  # type: ignore[misc]
     async def on_disconnect(self, sid: str, *args: Any) -> None:
         user_id, is_offline = presence_manager.remove_connection(f"chat:{sid}")
         if is_offline and user_id:
-            await self.emit(
-                "presence_change",
-                {"user_id": user_id, "status": "offline"},
-            )
+            try:
+                uid = UUID(str(user_id))
+                async with SessionLocal() as db:
+                    fids = await friend_ids(db, uid)
+                for fid in fids:
+                    await self.emit(
+                        "presence_change",
+                        {"user_id": user_id, "status": "offline"},
+                        room=f"user:{fid}",
+                    )
+            except (ValueError, TypeError):
+                pass
 
     async def on_send_dm(self, sid: str, data: Any) -> dict[str, Any]:
         if not isinstance(data, dict):

@@ -114,22 +114,22 @@ async def remove_user_vote(
     return await get_pitch_votes(db, pitch_id, user_id)
 
 
-async def search_pitches(
-    db: AsyncSession,
-    query: str,
-    limit: int = 10,
-    category: PitchCategory | str | None = None,
-) -> list[Pitch]:
-    ai = get_ai_provider()
-    query_embedding = await ai.embed([query])
-    db_query = select(Pitch)
-    if category:
-        db_query = db_query.where(Pitch.category == category)
-    db_query = db_query.order_by(
-        Pitch.embedding.cosine_distance(query_embedding[0])
-    ).limit(limit)
-    result = await db.execute(db_query)
-    return list(result.scalars().all())
+# async def search_pitches(
+#     db: AsyncSession,
+#     query: str,
+#     limit: int = 10,
+#     category: PitchCategory | str | None = None,
+# ) -> list[Pitch]:
+#     ai = get_ai_provider()
+#     query_embedding = await ai.embed([query])
+#     db_query = select(Pitch)
+#     if category:
+#         db_query = db_query.where(Pitch.category == category)
+#     db_query = db_query.order_by(
+#         Pitch.embedding.cosine_distance(query_embedding[0])
+#     ).limit(limit)
+#     result = await db.execute(db_query)
+#     return list(result.scalars().all())
 
 
 async def create_pitch(
@@ -137,14 +137,14 @@ async def create_pitch(
     pitch: PitchCreate,
     author_id: UUID | None = None,
 ) -> Pitch:
-    ai = get_ai_provider()
     pitch_data = pitch.model_dump()
-    embeddings = await ai.embed([pitch_data["content"]])
+    # ai = get_ai_provider()
+    # embeddings = await ai.embed([pitch_data["content"]])
     pitch_data["rendered_content"] = render_and_sanitize(pitch_data["content"])
 
     new_pitch = Pitch(**pitch_data, author_id=author_id)
-    if embeddings:
-        new_pitch.embedding = embeddings[0]
+    # if embeddings:
+    #     new_pitch.embedding = embeddings[0]
     db.add(new_pitch)
     await db.commit()
     await db.refresh(new_pitch)
@@ -225,10 +225,10 @@ async def update_pitch(
 ) -> Pitch:
     existing_pitch = await get_one_pitch(db=db, pitch_id=pitch_id)
 
-    if embedding is None:
-        ai = get_ai_provider()
-        embeddings = await ai.embed([pitch.content])
-        embedding = embeddings[0]
+    # if embedding is None:
+    #     ai = get_ai_provider()
+    #     embeddings = await ai.embed([pitch.content])
+    #     embedding = embeddings[0]
 
     pitch_data = pitch.model_dump()
     pitch_data["rendered_content"] = render_and_sanitize(pitch_data["content"])
@@ -237,7 +237,8 @@ async def update_pitch(
 
     for field, value in pitch_data.items():
         setattr(existing_pitch, field, value)
-    existing_pitch.embedding = embedding
+    if embedding is not None:
+        existing_pitch.embedding = embedding
 
     await db.commit()
     await db.refresh(existing_pitch)

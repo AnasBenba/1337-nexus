@@ -277,8 +277,6 @@ export const HomePitchFeedPage: React.FC = () => {
   const outletCtx = useOutletContext<LayoutContext | undefined>();
   const signedInMe = outletCtx?.me ?? null;
   const [pitches, setPitches] = useState<FeedPitch[]>([]);
-  const [semanticResults, setSemanticResults] = useState<FeedPitch[] | null>(null);
-  const [semanticQueryLabel, setSemanticQueryLabel] = useState<string>('');
   const [votesByPitchId, setVotesByPitchId] = useState<Record<string, PitchVotes>>({});
   const [authorsById, setAuthorsById] = useState<Record<string, AuthorProfile>>({});
   const [currentUser, setCurrentUser] = useState<AuthorProfile | null>(null);
@@ -286,11 +284,9 @@ export const HomePitchFeedPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<PitchCategory | 'all'>('all');
   const [statusFilter, setStatusFilter] = useState<PitchStatusFilter>('all');
   const [onlyMine, setOnlyMine] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<PitchSortOption>('newest');
 
   const [loading, setLoading] = useState(true);
-  const [searchingSemantic, setSearchingSemantic] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   const [votingPitchId, setVotingPitchId] = useState<string | null>(null);
@@ -347,7 +343,7 @@ export const HomePitchFeedPage: React.FC = () => {
     }
 
     try {
-      const peersRes = await fetch('/messages/peers', { credentials: 'include' });
+      const peersRes = await fetch('/messages/peers?scope=all', { credentials: 'include' });
       if (peersRes.ok) {
         const peersData = (await peersRes.json()) as unknown;
         if (Array.isArray(peersData)) {
@@ -397,8 +393,6 @@ export const HomePitchFeedPage: React.FC = () => {
 
       const loadedPitches = data as FeedPitch[];
       setPitches(loadedPitches);
-      setSemanticResults(null);
-      setSemanticQueryLabel('');
 
       void loadVotesForPitches(loadedPitches);
       void loadAuthorsAndCurrentUser();
@@ -427,52 +421,6 @@ export const HomePitchFeedPage: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedPitch]);
-
-  const handleSemanticSearch = async () => {
-    const trimmed = searchQuery.trim();
-    if (!trimmed) {
-      setSemanticResults(null);
-      setSemanticQueryLabel('');
-      return;
-    }
-
-    setSearchingSemantic(true);
-    try {
-      const params = new URLSearchParams({ query: trimmed, limit: '40' });
-      if (selectedCategory !== 'all') {
-        params.set('category', selectedCategory);
-      }
-      const response = await fetch(`/api/v1/user/pitches/search?${params.toString()}`, {
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        throw new Error(`Semantic search unavailable (${response.status})`);
-      }
-
-      const data = (await response.json()) as unknown;
-      if (!Array.isArray(data)) {
-        throw new Error('Invalid semantic search response.');
-      }
-
-      const results = (data as FeedPitch[]).filter(
-        (pitch) => pitch.state.toLowerCase() === 'published',
-      );
-      setSemanticResults(results);
-      setSemanticQueryLabel(trimmed);
-      void loadVotesForPitches(results);
-    } catch {
-      setSemanticResults(null);
-      setSemanticQueryLabel('');
-      showNotice('AI semantic search is unavailable right now — showing instant keyword matches instead.');
-    } finally {
-      setSearchingSemantic(false);
-    }
-  };
-
-  const clearSemanticSearch = () => {
-    setSemanticResults(null);
-    setSemanticQueryLabel('');
-  };
 
   const handleVote = async (pitchId: string, direction: 'up' | 'down') => {
     if (!currentUser) {
@@ -531,9 +479,6 @@ export const HomePitchFeedPage: React.FC = () => {
       }
 
       setPitches((current) => current.filter((item) => item.id !== pitch.id));
-      setSemanticResults((current) =>
-        current ? current.filter((item) => item.id !== pitch.id) : null,
-      );
       if (selectedPitch?.id === pitch.id) {
         setSelectedPitch(null);
       }
@@ -575,22 +520,6 @@ export const HomePitchFeedPage: React.FC = () => {
   }, [pitches]);
 
   const displayedPitches = useMemo(() => {
-    if (semanticResults !== null) {
-      return filterAndSortPitches(
-        semanticResults,
-        {
-          category: selectedCategory,
-          status: statusFilter,
-          onlyMine,
-          currentUserId: currentUser?.id ?? null,
-          query: '',
-          sort: sortBy,
-        },
-        votesByPitchId,
-        authorsById,
-      );
-    }
-
     return filterAndSortPitches(
       pitches,
       {
@@ -598,7 +527,7 @@ export const HomePitchFeedPage: React.FC = () => {
         status: statusFilter,
         onlyMine,
         currentUserId: currentUser?.id ?? null,
-        query: searchQuery,
+        query: '',
         sort: sortBy,
       },
       votesByPitchId,
@@ -609,9 +538,7 @@ export const HomePitchFeedPage: React.FC = () => {
     currentUser?.id,
     onlyMine,
     pitches,
-    searchQuery,
     selectedCategory,
-    semanticResults,
     sortBy,
     statusFilter,
     votesByPitchId,
@@ -620,17 +547,12 @@ export const HomePitchFeedPage: React.FC = () => {
   const hasActiveFilters =
     selectedCategory !== 'all' ||
     statusFilter !== 'all' ||
-    onlyMine ||
-    searchQuery.trim().length > 0 ||
-    semanticResults !== null;
+    onlyMine;
 
   const resetFilters = () => {
     setSelectedCategory('all');
     setStatusFilter('all');
     setOnlyMine(false);
-    setSearchQuery('');
-    setSemanticResults(null);
-    setSemanticQueryLabel('');
   };
 
   return (
@@ -704,82 +626,61 @@ export const HomePitchFeedPage: React.FC = () => {
         </div>
       )}
 
-      {/* Search, Filter & Sort Toolbar */}
+      {/* Filter & Sort Toolbar */}
       <section className="rounded-3xl border border-outline-variant/60 bg-surface-container-lowest p-5 shadow-sm space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          {/* Search Input + Semantic Search Trigger */}
-          <div className="flex flex-1 items-center gap-2">
-            <div className="relative flex-1">
-              <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-[19px] text-outline">
-                search
-              </span>
-              <input
-                id="pitch-search"
-                name="pitch-search"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  if (semanticResults !== null) {
-                    setSemanticResults(null);
-                    setSemanticQueryLabel('');
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && searchQuery.trim()) {
-                    e.preventDefault();
-                    void handleSemanticSearch();
-                  }
-                }}
-                placeholder="Filter pitches by title, stack, description, or author..."
-                className="w-full rounded-2xl border border-outline-variant/70 bg-surface py-2.5 pl-10 pr-9 text-sm text-on-surface placeholder:text-outline focus:border-brand focus:bg-surface-container-lowest focus:outline-none focus:ring-4 focus:ring-brand/10 transition-all"
-              />
-              {searchQuery && (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Category Pills */}
+          <div className="hide-scrollbar flex min-w-0 flex-1 items-center gap-2 overflow-x-auto pb-1 pr-2">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('all')}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                selectedCategory === 'all'
+                  ? 'border-brand bg-brand text-white shadow-sm'
+                  : 'border-outline-variant/60 bg-surface text-on-surface-variant hover:border-outline hover:text-on-surface'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[15px]">apps</span>
+              <span>All Categories</span>
+              {pitches.length > 0 && (
+                <span className="rounded-full bg-black/10 px-1.5 py-0.5 font-mono text-[10px]">
+                  {pitches.length}
+                </span>
+              )}
+            </button>
+
+            {CATEGORIES.map((category) => {
+              const count = categoryCounts[category.id] ?? 0;
+              const isActive = selectedCategory === category.id;
+              return (
                 <button
+                  key={category.id}
                   type="button"
-                  aria-label="Clear search"
-                  onClick={() => {
-                    setSearchQuery('');
-                    clearSemanticSearch();
-                  }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface"
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                    isActive
+                      ? 'border-brand bg-brand text-white shadow-sm'
+                      : 'border-outline-variant/60 bg-surface text-on-surface-variant hover:border-outline hover:text-on-surface'
+                  }`}
                 >
-                  <span className="material-symbols-outlined text-[18px]">close</span>
+                  <span className="material-symbols-outlined text-[15px]">{category.icon}</span>
+                  <span>{category.name}</span>
+                  {count > 0 && (
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 font-mono text-[10px] ${
+                        isActive ? 'bg-white/20 text-white' : 'bg-surface-container text-outline'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  )}
                 </button>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => void handleSemanticSearch()}
-              disabled={searchingSemantic || !searchQuery.trim()}
-              title="Run AI semantic similarity search on pitch content"
-              className="inline-flex items-center gap-1.5 rounded-2xl border border-brand/40 bg-brand/10 px-4 py-2.5 text-xs font-bold text-brand hover:bg-brand hover:text-white transition-all disabled:opacity-45 disabled:cursor-not-allowed shrink-0"
-            >
-              {searchingSemantic ? (
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              ) : (
-                <span className="material-symbols-outlined text-[17px]">auto_awesome</span>
-              )}
-              <span className="hidden sm:inline">AI Search</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => void loadFeed()}
-              disabled={loading}
-              aria-label="Refresh feed"
-              title="Refresh pitch feed"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-outline-variant/60 bg-surface text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all disabled:opacity-50 shrink-0"
-            >
-              <span className={`material-symbols-outlined text-[19px] ${loading ? 'animate-spin' : ''}`}>
-                refresh
-              </span>
-            </button>
+              );
+            })}
           </div>
 
-          {/* Sort */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Sort & Refresh */}
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
             <select
               id="pitch-sort"
               name="pitch-sort"
@@ -791,76 +692,20 @@ export const HomePitchFeedPage: React.FC = () => {
               <option value="newest">Newest First</option>
               <option value="popular">Most Upvoted</option>
             </select>
-          </div>
-        </div>
 
-        {/* Semantic search active indicator */}
-        {semanticResults !== null && (
-          <div className="flex items-center justify-between rounded-xl bg-brand/10 px-3.5 py-2 text-xs text-on-surface">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[16px] text-brand">auto_awesome</span>
-              <span>
-                Showing AI semantic matches for <strong>“{semanticQueryLabel}”</strong> ({displayedPitches.length})
-              </span>
-            </div>
             <button
               type="button"
-              onClick={clearSemanticSearch}
-              className="font-bold text-brand hover:underline"
+              onClick={() => void loadFeed()}
+              disabled={loading}
+              aria-label="Refresh feed"
+              title="Refresh pitch feed"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-outline-variant/60 bg-surface text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all disabled:opacity-50 shrink-0"
             >
-              Back to all pitches
+              <span className={`material-symbols-outlined text-[18px] ${loading ? 'animate-spin' : ''}`}>
+                refresh
+              </span>
             </button>
           </div>
-        )}
-
-        {/* Category Pills */}
-        <div className="hide-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto pb-1 pr-2">
-          <button
-            type="button"
-            onClick={() => setSelectedCategory('all')}
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${
-              selectedCategory === 'all'
-                ? 'border-brand bg-brand text-white shadow-sm'
-                : 'border-outline-variant/60 bg-surface text-on-surface-variant hover:border-outline hover:text-on-surface'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[15px]">apps</span>
-            <span>All Categories</span>
-            {pitches.length > 0 && (
-              <span className="rounded-full bg-black/10 px-1.5 py-0.5 font-mono text-[10px]">
-                {pitches.length}
-              </span>
-            )}
-          </button>
-
-          {CATEGORIES.map((category) => {
-            const count = categoryCounts[category.id] ?? 0;
-            const isActive = selectedCategory === category.id;
-            return (
-              <button
-                key={category.id}
-                type="button"
-                onClick={() => setSelectedCategory(category.id)}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${
-                  isActive
-                    ? 'border-brand bg-brand text-white shadow-sm'
-                    : 'border-outline-variant/60 bg-surface text-on-surface-variant hover:border-outline hover:text-on-surface'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[15px]">{category.icon}</span>
-                <span>{category.name}</span>
-                {count > 0 && (
-                  <span
-                    className={`rounded-full px-1.5 py-0.5 font-mono text-[10px] ${
-                      isActive ? 'bg-white/20 text-white' : 'bg-surface-container text-outline'
-                    }`}
-                  >
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
         </div>
       </section>
 
