@@ -91,7 +91,7 @@ export const Layout: React.FC = () => {
   return (
     <div className="min-h-screen bg-surface font-body-md text-body-md text-on-surface antialiased">
       {/* Top Header */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl z-50 flex items-center justify-between px-4 sm:px-margin shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+      <header className="fixed top-0 left-0 right-0 h-[var(--header-height)] bg-surface-container-lowest/90 backdrop-blur-xl z-50 flex items-center justify-between px-4 sm:px-margin shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-2 sm:gap-space-sm md:w-64 shrink-0">
           {/* Mobile hamburger menu toggle */}
           <button
@@ -156,7 +156,7 @@ export const Layout: React.FC = () => {
       {/* Mobile Backdrop Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 top-16 bg-black/40 backdrop-blur-sm z-30 md:hidden"
+          className="fixed inset-0 top-[var(--header-height)] bg-black/40 backdrop-blur-sm z-30 md:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
@@ -164,7 +164,7 @@ export const Layout: React.FC = () => {
 
       {/* Left Navigation Sidebar / Drawer */}
       <aside
-        className={`fixed left-0 top-16 bottom-0 w-64 bg-surface-container-lowest z-40 flex flex-col p-space-md shadow-[0_1px_8px_rgba(0,0,0,0.03)] overflow-y-auto transition-transform duration-200 ease-in-out ${
+        className={`fixed left-0 top-[var(--header-height)] bottom-0 w-64 bg-surface-container-lowest z-40 flex flex-col p-space-md shadow-[0_1px_8px_rgba(0,0,0,0.03)] overflow-y-auto transition-transform duration-200 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
@@ -179,9 +179,10 @@ export const Layout: React.FC = () => {
                   className="w-12 h-12 text-label-md ring-4 ring-surface-container-low"
                 />
               </Link>
-              <div className="overflow-hidden">
+              <div className="min-w-0 flex-1 overflow-hidden">
                 <Link
                   to={profilePath}
+                  title={me.fullname}
                   className="block font-label-md text-label-md text-on-surface truncate font-bold hover:text-primary"
                 >
                   {me.fullname}
@@ -311,7 +312,7 @@ export const Layout: React.FC = () => {
               <span className="material-symbols-outlined text-[20px]">chat_bubble</span>
               <span className="font-label-md text-label-md">Messages</span>
             </div>
-            {me && (
+            {me && unreadMessages > 0 && (
               <span
                 className={`px-2 py-0.5 rounded-full font-label-code-tag text-[10px] ${
                   unreadMessages > 0
@@ -374,8 +375,8 @@ export const Layout: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="md:pl-64 flex flex-col min-h-screen w-full min-w-0">
-        <main className="w-full flex-1 pt-16 bg-surface p-4 sm:p-margin">
+      <div className="flex w-full min-w-0 flex-col min-h-screen md:ml-64 md:w-auto">
+        <main className="w-full min-w-0 flex-1 bg-surface px-4 pb-4 pt-[calc(var(--header-height)+1rem)] sm:px-margin sm:pb-margin sm:pt-[calc(var(--header-height)+1rem)]">
           <Outlet context={{ me: me as Me, setMe: setMe as (me: Me) => void } satisfies LayoutContext} />
         </main>
 

@@ -795,7 +795,7 @@ export const HomePitchFeedPage: React.FC = () => {
         )}
 
         {/* Category Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <div className="hide-scrollbar flex min-w-0 items-center gap-2 overflow-x-auto pb-1 pr-2">
           <button
             type="button"
             onClick={() => setSelectedCategory('all')}
@@ -807,9 +807,11 @@ export const HomePitchFeedPage: React.FC = () => {
           >
             <span className="material-symbols-outlined text-[15px]">apps</span>
             <span>All Categories</span>
-            <span className="rounded-full bg-black/10 px-1.5 py-0.5 font-mono text-[10px]">
-              {pitches.length}
-            </span>
+            {pitches.length > 0 && (
+              <span className="rounded-full bg-black/10 px-1.5 py-0.5 font-mono text-[10px]">
+                {pitches.length}
+              </span>
+            )}
           </button>
 
           {CATEGORIES.map((category) => {
