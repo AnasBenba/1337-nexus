@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { getMe, isSignedIn, logout, type Me } from '@/app/authentication/login/Auth.api';
 import { Avatar } from '@/components/Avatar';
 import { RoleBadge } from '@/flows/admin/users';
@@ -14,6 +14,13 @@ export const Layout: React.FC = () => {
   // undefined = still checking, null = not signed in
   const [me, setMe] = useState<Me | null | undefined>(undefined);
   const [unreadMessages, setUnreadMessages] = useState<number>(0);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const location = useLocation();
+
+  // Close mobile drawer on route navigation
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   useEffect(() => {
     // Ask /auth/session first: it never answers 401, so a logged-out visitor's console stays
@@ -84,14 +91,28 @@ export const Layout: React.FC = () => {
   return (
     <div className="min-h-screen bg-surface font-body-md text-body-md text-on-surface antialiased">
       {/* Top Header */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl z-50 flex items-center justify-between px-margin shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
-        <div className="flex items-center gap-space-sm w-64 shrink-0">
-          <div className="w-9 h-9 rounded bg-primary flex items-center justify-center text-on-primary shadow-sm">
-            <span className="material-symbols-outlined text-[20px]">hub</span>
-          </div>
-          <span className="font-headline-sm text-headline-sm font-bold tracking-tight text-on-surface">
-            1337<span className="text-primary-container font-extrabold">.Nexus</span>
-          </span>
+      <header className="fixed top-0 left-0 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl z-50 flex items-center justify-between px-4 sm:px-margin shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+        <div className="flex items-center gap-2 sm:gap-space-sm md:w-64 shrink-0">
+          {/* Mobile hamburger menu toggle */}
+          <button
+            type="button"
+            onClick={() => setSidebarOpen((prev) => !prev)}
+            aria-label={sidebarOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            className="md:hidden w-9 h-9 rounded-lg flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[24px]">
+              {sidebarOpen ? 'close' : 'menu'}
+            </span>
+          </button>
+
+          <Link to="/" className="flex items-center gap-2 sm:gap-space-sm" onClick={() => setSidebarOpen(false)}>
+            <div className="w-9 h-9 rounded bg-primary flex items-center justify-center text-on-primary shadow-sm shrink-0">
+              <span className="material-symbols-outlined text-[20px]">hub</span>
+            </div>
+            <span className="font-headline-sm text-headline-sm font-bold tracking-tight text-on-surface">
+              1337<span className="text-primary-container font-extrabold">.Nexus</span>
+            </span>
+          </Link>
         </div>
 
         {me ? (
@@ -132,8 +153,21 @@ export const Layout: React.FC = () => {
         )}
       </header>
 
-      {/* Left Navigation Sidebar */}
-      <aside className="fixed left-0 top-16 bottom-0 w-64 bg-surface-container-lowest z-40 flex flex-col p-space-md shadow-[0_1px_8px_rgba(0,0,0,0.03)] overflow-y-auto">
+      {/* Mobile Backdrop Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 top-16 bg-black/40 backdrop-blur-sm z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Left Navigation Sidebar / Drawer */}
+      <aside
+        className={`fixed left-0 top-16 bottom-0 w-64 bg-surface-container-lowest z-40 flex flex-col p-space-md shadow-[0_1px_8px_rgba(0,0,0,0.03)] overflow-y-auto transition-transform duration-200 ease-in-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
         {me ? (
           <div className="bg-surface-container-low rounded p-space-md mb-space-md relative overflow-hidden">
             <div className="h-12 -mx-space-md -mt-space-md bg-gradient-to-r from-primary-container to-secondary-fixed" />
@@ -340,13 +374,13 @@ export const Layout: React.FC = () => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="pl-64 flex flex-col min-h-screen">
-        <main className="w-full flex-1 pt-16 bg-surface p-margin">
+      <div className="md:pl-64 flex flex-col min-h-screen w-full min-w-0">
+        <main className="w-full flex-1 pt-16 bg-surface p-4 sm:p-margin">
           <Outlet context={{ me: me as Me, setMe: setMe as (me: Me) => void } satisfies LayoutContext} />
         </main>
 
         {/* Mandatory 42 Subject Footer (Privacy Policy & Terms of Service) */}
-        <footer className="w-full bg-surface-container-lowest border-t border-outline-variant py-6 px-margin text-xs text-on-surface-variant">
+        <footer className="w-full bg-surface-container-lowest border-t border-outline-variant py-6 px-4 sm:px-margin text-xs text-on-surface-variant">
           <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="italic">
               This project has been created as part of the 42 curriculum by the 1337 Nexus team.
