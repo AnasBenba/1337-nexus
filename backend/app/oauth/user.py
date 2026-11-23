@@ -1,12 +1,13 @@
 from uuid import UUID, uuid4
 
-from sqlalchemy import CheckConstraint, ColumnElement, String, or_, text
+from sqlalchemy import CheckConstraint, ColumnElement, String, or_, select, text
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column
 
-from ..core import base
+from app.shared.models import Base
 
 
-class Users(base.Base):
+class Users(Base):
     __tablename__ = "users"
     # Same values as app.oauth.permissions.Role; the DB rejects anything else.
     __table_args__ = (
@@ -35,3 +36,8 @@ def login_or_name_contains(q: str) -> ColumnElement[bool]:
     # Escape LIKE wildcards so "%" or "_" in the query are matched literally.
     pattern = "%" + q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
     return or_(Users.login.ilike(pattern, escape="\\"), Users.fullname.ilike(pattern, escape="\\"))
+
+
+async def get_user_by_intra_id(db: AsyncSession, intra_id: int) -> Users | None:
+    result = await db.execute(select(Users).where(Users.intra_id == intra_id))
+    return result.scalar_one_or_none()

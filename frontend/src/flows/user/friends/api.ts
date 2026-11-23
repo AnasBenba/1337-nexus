@@ -1,6 +1,6 @@
 import { api } from '@/lib/http';
 
-export type UserSummary = { id: number; login: string; fullname: string; avatar_url: string | null };
+export type UserSummary = { id: string; login: string; fullname: string; avatar_url: string | null };
 
 /** How I relate to another user. */
 export type FriendStatus = 'none' | 'outgoing' | 'incoming' | 'friends';

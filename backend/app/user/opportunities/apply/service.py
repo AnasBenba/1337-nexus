@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.user.opportunities.browse_opportunities.models import Opportunity
+from app.user.pitches.models import Pitch
 
 from .models import Application
 
@@ -12,7 +13,7 @@ from .models import Application
 async def apply_to_opportunity(
     db: AsyncSession,
     opportunity_id: UUID,
-    user_id: int,
+    user_id: UUID,
     message: str | None = None,
     candidate_skills: list[str] | None = None,
 ) -> Application:
@@ -23,6 +24,10 @@ async def apply_to_opportunity(
 
     if opportunity.status != "open":
         raise ValueError("Opportunity is not open for applications")
+
+    pitch = await db.get(Pitch, opportunity.project_id)
+    if pitch is not None and pitch.author_id == user_id:
+        raise ValueError("You cannot apply to your own opportunity")
 
     statement = select(Application).where(
         Application.user_id == user_id,

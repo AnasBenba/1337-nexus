@@ -26,7 +26,7 @@ services:
       retries: 5
       start_period: 10s
 
-    mem_limit: 512m
+    mem_limit: 768m
 
     networks:
       - nexus
@@ -36,66 +36,37 @@ services:
     build:
       context: ..
       dockerfile: backend/Dockerfile
-
     restart: unless-stopped
-    
     env_file:
       - .env
-
-
-    environment:
-    
-      # DATABASE_URL: ${DATABASE_URL}
-      # MIGRATION_DATABASE_URL: ${MIGRATION_DATABASE_URL}
-      # TRUSTED_PROXY_SUBNET: ${TRUSTED_PROXY_SUBNET}
-      UVICORN_RELOAD: "1"
-
     depends_on:
       postgres:
         condition: service_healthy
-
     expose:
       - "8000"
-
     volumes:
       - media_data:/media
-
-    mem_limit: 400m
-
+    mem_limit: 1500m
     networks:
       - nexus
-
 
   nginx:
     build:
       context: ..
       dockerfile: nginx/Dockerfile
-      args:
-        NODE_IMAGE: ${NODE_IMAGE}
-        NGINX_IMAGE: ${NGINX_IMAGE}
-
     restart: unless-stopped
-
     env_file:
       - .env
-    # environment:
-    #   TLS_CERT_PEM: ${TLS_CERT_PEM}
-    #   TLS_KEY_PEM: ${TLS_KEY_PEM}
-
     depends_on:
       backend:
         condition: service_started
       grafana:
         condition: service_started
-
     ports:
-      - "${NGINX_PORT:-443}:8443"
-
+      - "${NGINX_PORT:-8443}:8443"
     volumes:
       - media_data:/media:ro
-
-    mem_limit: 32m
-
+    mem_limit: 64m
     networks:
       - nexus
   
@@ -118,7 +89,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    mem_limit: 256m
+    mem_limit: 384m
     networks:
       - nexus
   postgres-exporter:
@@ -174,8 +145,8 @@ services:
     image: ${GRAFANA_IMAGE:-grafana/grafana:11.5.2}
     restart: unless-stopped
     environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-Anasbenba123}
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
       GF_AUTH_ANONYMOUS_ENABLED: "false"
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/grafana/"
@@ -188,7 +159,7 @@ services:
         condition: service_healthy
     expose:
       - "3000"
-    mem_limit: 192m
+    mem_limit: 256m
     networks:
       - nexus
 

@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --header-height: 4rem;
+  }
+
   html, body {
     margin: 0;
     padding: 0;
@@ -10,6 +14,13 @@
   body {
     overscroll-behavior: none;
   }
+}
+
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Custom scrollbar matching Stitch */

@@ -65,23 +65,25 @@ export const Composer: React.FC<ComposerProps> = ({
             </span>
           </div>
 
-          <div className="hidden sm:flex items-center gap-1 text-outline font-label-code-tag text-[11px]">
+          {/* <div className="hidden sm:flex items-center gap-1 text-outline font-label-code-tag text-[11px]">
             <span className="bg-surface-container px-1 py-0.5 rounded font-mono">↵ Send</span>
             <span>•</span>
             <span className="bg-surface-container px-1 py-0.5 rounded font-mono">Shift+↵ Newline</span>
-          </div>
+          </div> */}
         </div>
 
         {/* Multi-line Text Input */}
         <div className="relative flex items-end gap-space-xs px-space-xs">
           <textarea
+            id="copilot-prompt-input"
+            name="copilot-prompt"
             ref={textareaRef}
             value={input}
             onChange={(e) => onChangeInput(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isSending}
             rows={2}
-            placeholder="Ask Nexus Co-Pilot about 42 intra subjects, evaluation traps, code bugs, or cluster rules..."
+            placeholder="Ask Nexus Co-Pilot about 42 intra subjects ..."
             className="w-full bg-transparent resize-none border-0 outline-none font-body-md text-body-md text-on-surface placeholder:text-outline py-space-xs leading-relaxed max-h-36 overflow-y-auto"
           />
 
@@ -135,7 +137,7 @@ export const Composer: React.FC<ComposerProps> = ({
         {/* Disclaimer / Legal Footer */}
         <div className="flex items-center justify-center pt-1 text-center">
           <span className="text-outline font-label-sm text-[11px]">
-            Co-Pilot answers are grounded in 42 peer-evaluation guides. Always verify with official intra PDFs before final push.
+            Always verify with official intra PDFs before final push.
           </span>
         </div>
       </div>

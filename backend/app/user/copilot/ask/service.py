@@ -180,7 +180,7 @@ async def pre_stream_transaction(
         # 2. Retrieve top-K curriculum chunks via pgvector (default bumped to 8 for full coverage)
         requested_k = body.k
         retrieval_k = (
-            _DEFAULT_RETRIEVAL_K if (requested_k is None or requested_k == 5) else requested_k
+            _DEFAULT_RETRIEVAL_K if (requested_k is None or requested_k == 8) else requested_k
         )
         retrieval_query = RetrievalQuery(query=body.question, k=retrieval_k)
         retrieval_result = await retrieve_curriculum(retrieval_query, db, ai)
@@ -281,10 +281,7 @@ async def stream_copilot_answer(
     final_status = "completed"
 
     try:
-        stream_fn = getattr(ai, "stream_chat", None) or getattr(ai, "stream_complete", None)
-        if stream_fn is None:
-            raise AttributeError("AI provider must implement stream_chat or stream_complete")
-        async for token in stream_fn(messages):
+        async for token in ai.stream_chat(messages):
             full_response.append(token)
             yield format_sse("delta", {"content": token})
 
@@ -331,7 +328,3 @@ async def stream_copilot_answer(
             "tokens": token_count,
         },
     )
-
-
-# Alias kept for Phase 1 callers and existing tests
-prepare_copilot_stream = pre_stream_transaction

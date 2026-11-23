@@ -45,18 +45,18 @@ async def main():
 
     # 2. Collect all markdown files from subjects directory and mds/
     md_files = list(subjects_dir.glob("*.md")) + list(md_folder.glob("*.md"))
-    # Deduplicate by absolute path
     unique_md_files = list({p.resolve(): p for p in md_files}.values())
 
     if not unique_md_files:
         print(f"No markdown or PDF files found in {subjects_dir}.")
         return
 
-    print(f"Found {len(unique_md_files)} subject document(s) to ingest.")
+    print(f"Found {len(unique_md_files)} subject document(s) to check.")
 
     for md_file in unique_md_files:
-        print(f"Processing {md_file.name}...")
-        raw_text = md_file.read_text()
+        file_bytes = md_file.read_bytes()
+        file_hash = hashlib.sha256(file_bytes).hexdigest()
+        raw_text = file_bytes.decode("utf-8")
 
         # Parse YAML frontmatter (with fallback to normalized filename)
         post = frontmatter.loads(raw_text)
@@ -66,6 +66,56 @@ async def main():
         language = post.get("language")
         content_text = post.content if post.content.strip() else raw_text
 
+        # --- CHECK DB BEFORE CHUNKING OR CALLING EMBEDDING API ---
+        cached_embeddings: dict[str, list[float]] = {}
+        skip_file = False
+
+        async with SessionLocal() as db:
+            subj_res = await db.execute(select(Subject).where(Subject.slug == subject_slug))
+            existing_subject = subj_res.scalar_one_or_none()
+
+            doc_conditions = [SubjectDocument.sha256_hash == file_hash]
+            if existing_subject:
+                doc_conditions.append(
+                    (SubjectDocument.subject_id == existing_subject.id)
+                    & (SubjectDocument.original_filename == md_file.name)
+                )
+
+            doc_res = await db.execute(
+                select(SubjectDocument).where(
+                    doc_conditions[0]
+                    if len(doc_conditions) == 1
+                    else (doc_conditions[0] | doc_conditions[1])
+                )
+            )
+            existing_doc = doc_res.scalar_one_or_none()
+
+            if existing_doc:
+                chunk_rows = (
+                    await db.execute(
+                        select(CurriculumChunk.content, CurriculumChunk.embedding).where(
+                            CurriculumChunk.document_id == existing_doc.id
+                        )
+                    )
+                ).all()
+
+                # Level 1: Exact file hash already ingested with chunks -> skip completely
+                if existing_doc.sha256_hash == file_hash and chunk_rows:
+                    print(
+                        f"Skipping {md_file.name}: unchanged ({len(chunk_rows)} chunks already in DB)."
+                    )
+                    skip_file = True
+                else:
+                    # Level 2: File changed -> cache existing chunk vectors by exact content
+                    for content, vec in chunk_rows:
+                        if vec is not None and len(vec) == EMBEDDING_DIMENSIONS:
+                            cached_embeddings[content] = [float(x) for x in vec]
+
+        if skip_file:
+            continue
+
+        print(f"Processing {md_file.name}...")
+
         # Two-stage chunking (headers then 800-token chunks with 100-token overlap)
         splitter = MarkdownHeaderTextSplitter(headers_to_split_on=headers_to_split_on)
         header_chunks = splitter.split_text(content_text)
@@ -74,9 +124,37 @@ async def main():
         )
         final_documents = token_splitter.split_documents(header_chunks)
 
-        text_chunks = [doc.page_content for doc in final_documents]
-        embeddings = await ai.embed(text_chunks)
+        if not final_documents:
+            print(f"Skipping {md_file.name}: no chunks produced.")
+            continue
 
+        # Reuse cached embeddings; only send missing/modified chunks to the AI provider
+        embeddings: list[list[float] | None] = [None] * len(final_documents)
+        missing_indices: list[int] = []
+        missing_texts: list[str] = []
+
+        for idx, doc in enumerate(final_documents):
+            cached_vec = cached_embeddings.get(doc.page_content)
+            if cached_vec is not None:
+                embeddings[idx] = cached_vec
+            else:
+                missing_indices.append(idx)
+                missing_texts.append(doc.page_content)
+
+        reused_count = len(final_documents) - len(missing_texts)
+
+        if missing_texts:
+            print(
+                f"  Embedding {len(missing_texts)} new/changed chunk(s) "
+                f"(reusing {reused_count} cached)..."
+            )
+            new_embeddings = await ai.embed(missing_texts)
+            for idx, vec in zip(missing_indices, new_embeddings, strict=True):
+                embeddings[idx] = vec
+        else:
+            print(f"  All {reused_count} chunk(s) reused from DB (0 API calls).")
+
+        # --- SAVE TO DB ---
         async with SessionLocal() as db:
             # 1. Upsert Subject
             stmt = select(Subject).where(Subject.slug == subject_slug)
@@ -95,8 +173,6 @@ async def main():
                 subject.name = subject_name
 
             # 2. Upsert SubjectDocument
-            file_bytes = md_file.read_bytes()
-            file_hash = hashlib.sha256(file_bytes).hexdigest()
             doc_stmt = select(SubjectDocument).where(
                 (SubjectDocument.sha256_hash == file_hash)
                 | (
@@ -120,17 +196,18 @@ async def main():
                 subject_doc.sha256_hash = file_hash
                 subject_doc.storage_path = str(md_file)
 
-            # 3. Clean upsert: Delete existing chunks for this document before inserting
+            # 3. Replace chunks (preserving reused vectors so chunk_index stays clean)
             del_stmt = delete(CurriculumChunk).where(CurriculumChunk.document_id == subject_doc.id)
             await db.execute(del_stmt)
 
             # 4. Insert chunks
             inserted_count = 0
             for idx, (chunk, vector) in enumerate(zip(final_documents, embeddings, strict=True)):
-                if len(vector) != EMBEDDING_DIMENSIONS:
+                if vector is None or len(vector) != EMBEDDING_DIMENSIONS:
+                    got_dims = len(vector) if vector is not None else 0
                     print(
                         f"Warning: Skipping chunk, expected {EMBEDDING_DIMENSIONS} dims, "
-                        f"got {len(vector)}"
+                        f"got {got_dims}"
                     )
                     continue
 
@@ -151,7 +228,10 @@ async def main():
                 inserted_count += 1
 
             await db.commit()
-            print(f"Ingested {inserted_count} chunks for {subject_name} ({subject_slug})")
+            print(
+                f"Ingested {inserted_count} chunks for {subject_name} ({subject_slug}) "
+                f"[embedded: {len(missing_texts)}, reused: {reused_count}]"
+            )
 
 
 if __name__ == "__main__":

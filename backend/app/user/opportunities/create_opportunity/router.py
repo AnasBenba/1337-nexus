@@ -32,6 +32,12 @@ async def create(
             current_user_id=current_user.id,
         )
     except ValueError as error:
-        raise HTTPException(status_code=404, detail=str(error)) from error
+        err_msg = str(error)
+        status_code = (
+            status.HTTP_404_NOT_FOUND
+            if "not found" in err_msg.lower()
+            else status.HTTP_400_BAD_REQUEST
+        )
+        raise HTTPException(status_code=status_code, detail=err_msg) from error
     except PermissionError as error:
         raise HTTPException(status_code=403, detail=str(error)) from error

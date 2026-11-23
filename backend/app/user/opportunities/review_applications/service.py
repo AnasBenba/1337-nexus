@@ -5,8 +5,8 @@ from sqlalchemy import select
 
 from app.teams.provision_workspace.service import provision_workspace_for_application
 from app.user.opportunities.browse_opportunities.models import Opportunity
-from app.user.projects.models import Project
 from app.user.opportunities.apply.models import Application
+from app.user.pitches.models import Pitch
 
 ALLOWED_STATUSES = frozenset({"pending", "under_review", "accepted", "rejected"})
 ALLOWED_TRANSITIONS = {
@@ -21,7 +21,7 @@ async def update_application_status(
     db: AsyncSession,
     application_id: UUID,
     new_status: str,
-    current_user_id: int | None = None,
+    current_user_id: UUID | None = None,
 ) -> Application:
     if new_status not in ALLOWED_STATUSES:
         raise ValueError("Invalid application status")
@@ -33,15 +33,15 @@ async def update_application_status(
         opportunity = await db.scalar(
             select(Opportunity).where(Opportunity.id == application.opportunity_id)
         )
-        project = (
-            await db.scalar(select(Project).where(Project.id == opportunity.project_id))
+        pitch = (
+            await db.scalar(select(Pitch).where(Pitch.id == opportunity.project_id))
             if opportunity is not None
             else None
         )
-        if project is None:
+        if pitch is None:
             raise ValueError("Opportunity not found")
-        if project.owner_id != current_user_id:
-            raise PermissionError("Only the project owner can review applications")
+        if pitch.author_id != current_user_id:
+            raise PermissionError("Only the pitch owner can review applications")
 
     allowed_transitions = ALLOWED_TRANSITIONS.get(application.status)
     if allowed_transitions is None or new_status not in allowed_transitions:

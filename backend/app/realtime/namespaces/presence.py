@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from http.cookies import SimpleCookie
 from typing import Any
+from uuid import UUID
 
 import socketio  # type: ignore[import-untyped]
 from fastapi import HTTPException
@@ -16,18 +17,17 @@ from app.user.friends.service import friend_ids
 logger = logging.getLogger(__name__)
 
 
-def _user_room(user_id: int) -> str:
+def _user_room(user_id: UUID | str | int) -> str:
     return f"user:{user_id}"
 
 
 class PresenceNamespace(socketio.AsyncNamespace):  # type: ignore[misc]
-    """/presence: the app keeps one connection open per tab; friends get live online/offline events.
+    """/presence: the app keeps one connection open per tab; friends and chat peers get live online/offline events.
 
-    Server -> client event: "presence" {"user_id": int, "online": bool}
+    Server -> client event: "presence" {"user_id": str, "online": bool}
     """
 
     async def on_connect(self, sid: str, environ: dict[str, Any], auth: Any = None) -> None:
-        # Same login cookie as the REST API; the browser sends it with the handshake.
         cookie = SimpleCookie(environ.get("HTTP_COOKIE", ""))
         token = cookie["access_token"].value if "access_token" in cookie else None
         if not token:
@@ -44,17 +44,30 @@ class PresenceNamespace(socketio.AsyncNamespace):  # type: ignore[misc]
 
         await self.save_session(sid, {"user_id": user_id})
         await self.enter_room(sid, _user_room(user_id))
-        if presence.connect(user_id, sid):
+        if presence.connect(user_id, f"presence:{sid}"):
             await self._notify_friends(user_id, online=True)
 
     async def on_disconnect(self, sid: str, *args: Any) -> None:
         session = await self.get_session(sid)
         user_id = session.get("user_id") if session else None
-        if user_id is not None and presence.disconnect(user_id, sid):
+        if user_id is not None and presence.disconnect(user_id, f"presence:{sid}"):
             await self._notify_friends(user_id, online=False)
 
-    async def _notify_friends(self, user_id: int, online: bool) -> None:
+    async def _notify_friends(self, user_id: UUID, online: bool) -> None:
+        uid_str = str(user_id)
         async with SessionLocal() as session:
             ids = await friend_ids(session, user_id)
         for fid in ids:
-            await self.emit("presence", {"user_id": user_id, "online": online}, room=_user_room(fid))
+            await self.emit(
+                "presence",
+                {"user_id": uid_str, "online": online},
+                room=_user_room(fid),
+            )
+            # Also notify the friend's room on the /chat namespace so ChatPage updates immediately
+            if self.server is not None:
+                await self.server.emit(
+                    "presence_change",
+                    {"user_id": uid_str, "status": "online" if online else "offline"},
+                    room=_user_room(fid),
+                    namespace="/chat",
+                )

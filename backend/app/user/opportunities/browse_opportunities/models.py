@@ -21,7 +21,7 @@ class Opportunity(Base):
 
     project_id: Mapped[UUID] = mapped_column(
         PostgreSQLUUID(as_uuid=True),
-        ForeignKey("projects.id"),
+        ForeignKey("pitches.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

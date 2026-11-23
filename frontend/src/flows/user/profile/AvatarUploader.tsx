@@ -54,7 +54,15 @@ export const AvatarUploader: React.FC<Props> = ({ me, onChange, className }) => 
         >
           <span className="material-symbols-outlined text-[18px]">{busy ? 'hourglass_empty' : 'photo_camera'}</span>
         </button>
-        <input ref={inputRef} type="file" accept={ALLOWED_TYPES.join(',')} onChange={handleFile} className="hidden" />
+        <input
+          id="avatar-file-upload"
+          name="avatar-file"
+          ref={inputRef}
+          type="file"
+          accept={ALLOWED_TYPES.join(',')}
+          onChange={handleFile}
+          className="hidden"
+        />
       </div>
 
       {me.avatar_url && !busy && (

@@ -16,6 +16,10 @@ from app.shared.ai.client import get_ai_provider
 from app.user.pitches.models import Pitch
 from app.user.pitches.schemas import PitchCreate
 from app.user.pitches.service import update_pitch
+from app.user.projects.refine_project.rate_limit import (
+    SlidingWindowRateLimiter,
+    pitch_refine_rate_limiter,
+)
 from app.user.projects.refine_project.schemas import (
     ApplySuggestionResponse,
     CritiqueSummary,
@@ -49,7 +53,7 @@ def check_pitch_authorization(pitch: Pitch, current_user: Users) -> None:
     is_admin = (
         getattr(current_user, "is_superuser", False)
         or getattr(current_user, "is_admin", False)
-        or getattr(current_user, "role", "") == "admin"
+        or getattr(current_user, "role", "") in {"admin", "superadmin"}
     )
     if is_admin:
         return
@@ -65,6 +69,7 @@ async def request_pitch_refinement(
     db: AsyncSession,
     pitch_id: uuid.UUID,
     current_user: Users,
+    rate_limiter: SlidingWindowRateLimiter | None = None,
 ) -> RefineResponse:
     """
     Initiate an AI critique workflow for a pitch.
@@ -101,7 +106,7 @@ async def request_pitch_refinement(
     # 5. Compute canonical hash
     content_hash = compute_pitch_hash(pitch.title, pitch.description, pitch.content)
 
-    # 6. Check existing active job (queued or running) with same pitch_id and base_hash
+    # 6. Check existing active job (queued or running) with same pitch_id
     jobs_stmt = (
         select(AIJob)
         .where(
@@ -113,18 +118,32 @@ async def request_pitch_refinement(
     active_jobs = (await db.execute(jobs_stmt)).scalars().all()
     for job in active_jobs:
         payload = job.payload or {}
-        if payload.get("pitch_id") == str(pitch_id) and payload.get("base_hash") == content_hash:
-            return RefineResponse(
-                job_id=job.id,
-                status=job.status,
-                base_hash=content_hash,
-                message="A refinement job for this exact pitch version is already in progress",
-            )
+        if payload.get("pitch_id") == str(pitch_id):
+            if payload.get("base_hash") == content_hash:
+                return RefineResponse(
+                    job_id=job.id,
+                    status=job.status,
+                    base_hash=content_hash,
+                    message="A refinement job for this exact pitch version is already in progress",
+                )
+            else:
+                # Pitch has been edited; supersede older active job for previous version
+                job.status = "superseded"
+                flag_modified(job, "status")
+
+    # Rate limit check for new AI refinement job
+    limiter = rate_limiter or pitch_refine_rate_limiter
+    rate_key = (
+        f"user:{current_user.id}"
+        if current_user and getattr(current_user, "id", None)
+        else f"pitch:{pitch.id}"
+    )
+    await limiter.enforce(rate_key)
 
     # 7. Snapshot and enqueue new job
     snapshot_payload = {
         "pitch_id": str(pitch.id),
-        "author_id": current_user.id,
+        "author_id": str(current_user.id),
         "title": pitch.title,
         "description": pitch.description,
         "content": pitch.content,
@@ -167,20 +186,33 @@ async def get_pitch_refine_status(
 
     current_hash = compute_pitch_hash(pitch.title, pitch.description, pitch.content)
 
-    # Find latest AIJob for this pitch
+    # Find latest AIJob for this pitch (ignoring superseded jobs)
     jobs_stmt = (
-        select(AIJob).where(AIJob.job_type == "pitch.refine").order_by(AIJob.created_at.desc())
+        select(AIJob)
+        .where(AIJob.job_type == "pitch.refine")
+        .order_by(AIJob.created_at.desc(), AIJob.id.desc())
     )
     all_jobs = (await db.execute(jobs_stmt)).scalars().all()
     latest_job = next(
-        (j for j in all_jobs if (j.payload or {}).get("pitch_id") == str(pitch_id)),
+        (
+            j
+            for j in all_jobs
+            if (j.payload or {}).get("pitch_id") == str(pitch_id)
+            and j.status != "superseded"
+        ),
         None,
     )
 
     if latest_job is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No critique request found for this pitch",
+        return RefineStatusResponse(
+            job_id=None,
+            status="none",
+            error_message=None,
+            summary=None,
+            suggestions=[],
+            critique_created_at=None,
+            version_token=None,
+            is_stale=False,
         )
 
     if latest_job.status != "succeeded":
@@ -329,18 +361,22 @@ async def apply_pitch_suggestion(
         )
 
     current_field_val = getattr(pitch, target_field) or ""
-    occurrences = current_field_val.count(sug.original_excerpt)
-    if occurrences != 1:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                f"Conflict: Original excerpt was expected to occur exactly once in {target_field}, "
-                f"but found {occurrences} occurrence(s)"
-            ),
-        )
-
-    # 6. Apply replacement to target field
-    new_field_val = current_field_val.replace(sug.original_excerpt, sug.suggested_text, 1)
+    if not sug.original_excerpt or not sug.original_excerpt.strip():
+        # Handle populating an empty optional field (e.g. description) or full-field replacement
+        # when original_excerpt is empty
+        new_field_val = sug.suggested_text
+    else:
+        occurrences = current_field_val.count(sug.original_excerpt)
+        if occurrences != 1:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"Conflict: Original excerpt was expected to occur exactly once in {target_field}, "
+                    f"but found {occurrences} occurrence(s)"
+                ),
+            )
+        # 6. Apply replacement to target field
+        new_field_val = current_field_val.replace(sug.original_excerpt, sug.suggested_text, 1)
 
     # 7. Build full PitchCreate preserving untouched fields and category
     new_pitch_create = PitchCreate(

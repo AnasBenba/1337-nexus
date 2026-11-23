@@ -72,6 +72,8 @@ export const AdminUserActions: React.FC<Props> = ({ me, user, onChanged, onDelet
       <div className="flex flex-wrap items-center justify-end gap-space-xs">
         {can(me, Permission.MANAGE_ROLES) && (
           <select
+            id={`admin-role-${user.id}`}
+            name={`role-${user.id}`}
             aria-label={`Role of @${user.login}`}
             title="Change role"
             value={user.role}

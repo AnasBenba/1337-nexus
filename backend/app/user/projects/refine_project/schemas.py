@@ -40,8 +40,8 @@ class CritiqueSummary(BaseModel):
 
 
 class RefineStatusResponse(BaseModel):
-    job_id: UUID
-    status: str  # pending, running, succeeded, failed
+    job_id: UUID | None = None
+    status: str  # none, pending, running, succeeded, failed
     error_message: str | None = None
     summary: CritiqueSummary | None = None
     suggestions: list[SuggestionItem] = Field(default_factory=list)

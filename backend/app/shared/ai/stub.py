@@ -13,12 +13,10 @@ class stub(AIProvider):
     def __init__(self) -> None:
         self.response = "This is a stub response."
 
-    async def stream_complete(self, messages: list[dict[str, Any]]) -> AsyncGenerator[str, None]:
+    async def stream_chat(self, messages: list[dict[str, Any]]) -> AsyncGenerator[str, None]:
         for chunk in re.split(r"(\s+)", self.response):
             yield chunk
             await asyncio.sleep(0.05)
-
-    stream_chat = stream_complete
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
         embeddings = []

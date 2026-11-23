@@ -7,7 +7,6 @@ interface JobProgressProps {
 }
 
 export const JobProgress: React.FC<JobProgressProps> = ({
-  jobId = 'critique-task',
   step = 2,
   onClose,
 }) => {
@@ -17,7 +16,7 @@ export const JobProgress: React.FC<JobProgressProps> = ({
         <h3 className="font-display font-bold text-lg text-slate-900 mb-1">
           Critique in progress
         </h3>
-        <p className="text-xs text-slate-500 font-mono">Job ID: #{jobId.slice(0, 16)}</p>
+        <p className="text-xs text-slate-500 font-medium">Evaluating pitch with AI Copilot</p>
       </div>
 
       {/* 3-step progress tracker */}

@@ -6,7 +6,7 @@ from .config import (
     GEMINI_API_KEY,
     GOOGLE_API_KEY,
 )
-from .gemini import GeminiAIProvider, RemoteAIProvider
+from .gemini import GeminiAIProvider
 from .provider import AIProvider
 from .stub import stub
 
@@ -18,7 +18,6 @@ __all__ = [
     "GEMINI_API_KEY",
     "GOOGLE_API_KEY",
     "GeminiAIProvider",
-    "RemoteAIProvider",
     "get_ai_provider",
     "stub",
 ]

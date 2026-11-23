@@ -1,7 +1,14 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint, func
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    String,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID as PostgreSQLUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -15,6 +22,15 @@ class WorkspaceTeam(Base):
             "opportunity_id",
             name="uq_workspace_team_opportunity",
         ),
+        UniqueConstraint(
+            "pitch_id",
+            name="uq_workspace_team_pitch",
+        ),
+        CheckConstraint(
+            "(opportunity_id IS NOT NULL AND pitch_id IS NULL) OR "
+            "(opportunity_id IS NULL AND pitch_id IS NOT NULL)",
+            name="ck_workspace_teams_exactly_one_owner",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(
@@ -22,10 +38,15 @@ class WorkspaceTeam(Base):
         primary_key=True,
         default=uuid4,
     )
-    opportunity_id: Mapped[UUID] = mapped_column(
+    opportunity_id: Mapped[UUID | None] = mapped_column(
         PostgreSQLUUID(as_uuid=True),
-        nullable=False,
+        nullable=True,
         index=True,
+    )
+    pitch_id: Mapped[UUID | None] = mapped_column(
+        PostgreSQLUUID(as_uuid=True),
+        ForeignKey("pitches.id", ondelete="CASCADE"),
+        nullable=True,
     )
     founder_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
@@ -58,6 +79,10 @@ class WorkspaceTeam(Base):
         cascade="all, delete-orphan",
     )
 
+    @property
+    def memberships(self) -> list["WorkspaceTeamMember"]:
+        return self.members
+
 
 class WorkspaceTeamMember(Base):
     __tablename__ = "workspace_team_members"
@@ -66,6 +91,10 @@ class WorkspaceTeamMember(Base):
             "team_id",
             "user_id",
             name="uq_workspace_team_member",
+        ),
+        CheckConstraint(
+            "role IN ('admin', 'member')",
+            name="ck_workspace_team_members_role",
         ),
     )
 
@@ -90,6 +119,12 @@ class WorkspaceTeamMember(Base):
         nullable=False,
         default="invited",
         server_default="invited",
+    )
+    role: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="member",
+        server_default="member",
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
